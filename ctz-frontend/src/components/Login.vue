@@ -26,8 +26,7 @@
             required 
           />
         </div>
-
-        <button class="btn-login">Iniciar Sesión</button>
+        <button class="btn-login" @click="$emit('login-ok')">Iniciar Sesión</button>
       </form>
     </div>
   </div>
@@ -65,11 +64,11 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: #f5f5f500;
 }
 
 .login-card {
-  background: white;
+  background: rgba(255, 255, 255, 0);
   padding: 50px;
   border-radius: 2px;
   border: 1px solid #4aa4ff;
@@ -102,6 +101,7 @@ form {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  color:#333;
 }
 
 label {
@@ -116,7 +116,13 @@ input {
   border-radius: 4px;
   font-size: 14px;
   transition: border-color 0.3s ease;
-  background-color:white
+  background-color: rgba(255, 255, 255, 0);
+  color: #000; /* texto en negro */
+}
+
+input::placeholder {
+  color: #888; /* placeholder legible */
+  opacity: 1;
 }
 
 input:focus {

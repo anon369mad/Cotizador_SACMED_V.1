@@ -9,25 +9,24 @@
       </div>
     </div>
     <div class="login-section">
-      <Login />
+      <Login @login-ok="$emit('login-ok')" />
     </div>
   </div>
 </template>
 
 <style>
 .app-wrapper {
-  position: relative;
   width: 100%;
+  min-height: 100vh;   /* 🔥 CLAVE */
   display: flex;
   flex-direction: row;
 }
-
-.logo-section {
+.logo-section,
+.login-section {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
 }
 
 .logo-wrap {
