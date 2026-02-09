@@ -1,7 +1,6 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import AddOrHist from './Add_or_Hist.vue'
-import Cotizador from './Cotizador.vue'
 import Preview from './Preview.vue' 
 import Parent_Add from './Parent_Add.vue'
 
@@ -93,12 +92,10 @@ function logout() {
   window.dispatchEvent(event)
 }
 
-// sample historial seleccionable
-const history = ref([
-  { company: 'Empresa Star', user: 'Carolina', date: '19-01-2026, 09:52 a. m.', plan:'Plan 5', connections:1, price:59500, items:[{name:'Plan 5', quantity:1, value:59500, discount:0}], conditions:[] },
-  { company: 'Empresa Luna', user: 'Carolina', date: '18-01-2026, 08:12 a. m.', plan:'Plan 4', connections:2, price:45000, items:[{name:'Plan 4', quantity:2, value:22500, discount:0}], conditions:[] },
-  { company: 'Empresa Sol', user: 'Carolina', date: '17-01-2026, 10:20 a. m.', plan:'Plan 3', connections:4, price:120000, items:[{name:'Plan 3', quantity:4, value:30000, discount:0}], conditions:[] }
-])
+const history = ref([])
+const isLoadingHistory = ref(false)
+const historyError = ref('')
+const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const previewQuote = reactive({
   ejecutivo: 'Usuario',
@@ -120,6 +117,88 @@ function selectHistory(h){
 }
 
 function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
+
+function statusLabel(status){
+  if (!status) return 'Borrador'
+  const normalized = status.toString().toLowerCase()
+  if (normalized.includes('confirm')) return 'Confirmada'
+  return 'Borrador'
+}
+
+function statusClass(status){
+  return statusLabel(status) === 'Confirmada' ? 'confirmed' : 'draft'
+}
+
+function formatDate(value){
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+function mapHistoryItem(item){
+  return {
+    id: item.id_cotizacion,
+    company: `Cliente #${item.id_cliente}`,
+    user: `Usuario #${item.id_usuario}`,
+    date: formatDate(item.fecha_emision),
+    plan: item.tipo || '—',
+    connections: item.conexiones || 0,
+    periods: item.meses || 6,
+    price: item.total || 0,
+    items: [],
+    conditions: item.condiciones_adicionales
+      ? [item.condiciones_adicionales]
+      : [],
+    status: item.estado
+  }
+}
+
+function duplicateQuote(h){
+  const id = Date.now() + Math.random()
+  tabs.value.push({
+    id,
+    title: `Cotización ${tabs.value.length + 1}`,
+    data: {
+      ejecutivo: h.user,
+      rut: '',
+      name: h.company,
+      connections: h.connections || 0,
+      periodMonths: h.periods || 6,
+      items: JSON.parse(JSON.stringify(h.items || [])),
+      conditions: JSON.parse(JSON.stringify(h.conditions || []))
+    }
+  })
+  activeTabId.value = id
+  currentView.value = 'tabs'
+}
+
+async function loadHistory(){
+  isLoadingHistory.value = true
+  historyError.value = ''
+  try {
+    const response = await fetch(`${apiBaseUrl}/cotizaciones`)
+    if (!response.ok) {
+      throw new Error('No se pudo cargar el historial de cotizaciones')
+    }
+    const data = await response.json()
+    history.value = (Array.isArray(data) ? data : []).map(mapHistoryItem)
+  } catch (error) {
+    historyError.value = error instanceof Error
+      ? error.message
+      : 'Error inesperado al cargar el historial'
+  } finally {
+    isLoadingHistory.value = false
+  }
+}
+
+onMounted(() => {
+  loadHistory()
+})
 </script>
 
 <template>
@@ -167,14 +246,21 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
             <h4>Historial de Cotizaciones</h4>
             <input class="search" placeholder="Buscar por cliente o ejecutivo..." />
 
-            <ul class="list">
-              <li class="list-item" v-for="(h,i) in history" :key="i" @click="selectHistory(h)">
+            <div v-if="isLoadingHistory" class="list-empty">Cargando historial...</div>
+            <div v-else-if="historyError" class="list-empty error">{{ historyError }}</div>
+            <div v-else-if="!history.length" class="list-empty">No hay cotizaciones registradas.</div>
+            <ul v-else class="list">
+              <li class="list-item" v-for="h in history" :key="h.id">
                 <div class="list-left">
                   <div class="company">{{ h.company }}</div>
                   <div class="meta">{{ h.user }} · {{ h.date }}<br/><small>{{ h.plan }} · {{ h.connections }} conexiones</small></div>
+                  <div class="list-actions">
+                    <button class="action-btn" type="button" @click="selectHistory(h)">Visualizar</button>
+                    <button class="action-btn secondary" type="button" @click="duplicateQuote(h)">Duplicar</button>
+                  </div>
                 </div>
                 <div class="list-right">
-                  <div class="status confirmed">Confirmada</div>
+                  <div class="status" :class="statusClass(h.status)">{{ statusLabel(h.status) }}</div>
                   <div class="price">{{ formatMoney(h.price) }}</div>
                 </div>
               </li>
@@ -255,12 +341,17 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
 .search { width:90%; padding:10px 12px; border-radius:6px; border:1px solid rgba(15, 21, 64, 0.146); margin-bottom:14px; background:white; }
 
 .list { list-style:none; padding: 0; margin:0; display:flex; flex-direction:column; gap:10px; }
-.list-item { display:flex; justify-content:space-between; align-items:center; padding:14px; background:rgba(114, 226, 243, 0.372); border-radius:6px; border:1px solid rgba(15,21,64,0.03); }
+.list-item { display:flex; justify-content:space-between; align-items:center; padding:14px; background:rgba(114, 226, 243, 0.372); border-radius:6px; border:1px solid rgba(15,21,64,0.03); gap:12px; }
 .company { font-size:12px; font-weight:600; color:#155a52; }
 .meta { color:#6b747a; font-size:10px }
+.list-actions { display:flex; gap:8px; margin-top:8px; }
+.action-btn { border:1px solid rgba(15,21,64,0.12); background:white; color:#0f2140; padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; }
+.action-btn.secondary { background:transparent; color:#0f2140; }
+.list-empty { font-size:12px; color:#6b747a; padding:12px 4px; }
+.list-empty.error { color:#c0392b; }
 .status { padding:4px 8px; border-radius:12px; font-size:12px; }
 .status.confirmed { background:#1fb800; color:#ffffff; }
-.status.processing { background:#ffb300; color:#ffffff; }
+.status.draft { background:#ffb300; color:#ffffff; }
 .price { color:#0073ff; font-weight:700 }
 
 .preview-card { background:white; border-radius:8px; box-shadow: 0 2px 8px rgba(2,22,66,0.04); }
