@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class CotizacionDetalleBase(BaseModel):
+    id_cotizacion: int
     id_prestacion: Optional[int]
     descripcion_manual: Optional[str]
     cantidad: int
