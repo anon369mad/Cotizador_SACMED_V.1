@@ -4,7 +4,7 @@
       <h1 class="title">Sistema de Cotizaciones</h1>
       <p class="subtitle">Ingresa tus credenciales para continuar</p>
       
-      <form @submit.prevent="login">
+      <form @submit.prevent="login" novalidate>
         <div class="form-group">
           <label for="email">Correo Electrónico</label>
           <input 
@@ -13,7 +13,9 @@
             type="email"
             placeholder="tu@email.com" 
             required
+            @input="clearFieldError('email')"
           />
+          <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
         </div>
 
         <div class="form-group">
@@ -23,10 +25,15 @@
             v-model="password" 
             type="password" 
             placeholder="Ingresa tu contraseña"
-            required 
+            required
+            @input="clearFieldError('password')"
           />
+          <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
         </div>
-        <button class="btn-login" @click="$emit('login-ok')">Iniciar Sesión</button>
+        <p v-if="formError" class="form-error">{{ formError }}</p>
+        <button class="btn-login" type="submit" :disabled="loading">
+          {{ loading ? 'Ingresando...' : 'Iniciar Sesión' }}
+        </button>
       </form>
     </div>
   </div>
@@ -37,24 +44,77 @@ export default {
   data() {
     return {
       email: '',
-      password: ''
+      password: '',
+      errors: {},
+      formError: '',
+      loading: false
     }
   },
   methods: {
-    async login() {
-      const res = await fetch('http://localhost:8000/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: this.email,
-          password: this.password
-        })
-      })
+    clearFieldError(field) {
+      if (this.errors[field]) {
+        this.errors = { ...this.errors, [field]: '' }
+      }
+    },
+    validateForm() {
+      const errors = {}
+      const emailValue = this.email.trim()
+      const passwordValue = this.password.trim()
 
-      const data = await res.json()
-      console.log(data)
+      if (!emailValue) {
+        errors.email = 'El correo es obligatorio.'
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+        errors.email = 'Ingresa un correo válido.'
+      }
+
+      if (!passwordValue) {
+        errors.password = 'La contraseña es obligatoria.'
+      } else if (passwordValue.length < 6) {
+        errors.password = 'La contraseña debe tener al menos 6 caracteres.'
+      }
+
+      this.errors = errors
+      return Object.keys(errors).length === 0
+    },
+    async login() {
+      this.formError = ''
+
+      if (!this.validateForm()) {
+        return
+      }
+
+      this.loading = true
+
+      try {
+        // Se valida el usuario contra el sistema existente.
+        const res = await fetch('http://localhost:8000/usuarios')
+
+        if (!res.ok) {
+          throw new Error('No se pudo validar el usuario.')
+        }
+
+        const usuarios = await res.json()
+        const usuario = usuarios.find(
+          item => item.email?.toLowerCase() === this.email.trim().toLowerCase()
+        )
+
+        if (!usuario) {
+          this.formError = 'Usuario no registrado.'
+          return
+        }
+
+        if (usuario.activo === false) {
+          this.formError = 'El usuario está inactivo.'
+          return
+        }
+
+        localStorage.setItem('cotizador_user', JSON.stringify(usuario))
+        this.$emit('login-ok', usuario)
+      } catch (error) {
+        this.formError = 'No pudimos iniciar sesión. Intenta nuevamente.'
+      } finally {
+        this.loading = false
+      }
     }
   }
 }
@@ -104,6 +164,17 @@ form {
   color:#333;
 }
 
+.field-error {
+  font-size: 12px;
+  color: #d93025;
+}
+
+.form-error {
+  font-size: 13px;
+  color: #d93025;
+  text-align: center;
+}
+
 label {
   font-size: 14px;
   font-weight: 600;
@@ -141,6 +212,11 @@ input:focus {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s ease;
+}
+
+.btn-login:disabled {
+  cursor: not-allowed;
+  background: #8ccfff;
 }
 
 .btn-login:hover {
