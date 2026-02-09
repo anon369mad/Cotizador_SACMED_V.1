@@ -1,41 +1,81 @@
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref, watch, computed } from 'vue'
 import Cotizador from './Cotizador.vue'
 import Editable_Preview from './Editable_Preview.vue'
+
+const props = defineProps({
+  tabId: {
+    type: [String, Number],
+    required: true
+  },
+  quote: {
+    type: Object,
+    default: null
+  }
+})
+
+const resetKey = ref(0)
 
 const previewData = reactive({
   ejecutivo: '',
   cliente: '',
   rut: '',
+  planType: 'Período',
   conexiones: 0,
   periodMonths: 0,
-  items: [],
-  subtotal: 0,
-  iva: 0,
-  total: 0
+  condiciones: '',
+  items: []
 })
-defineProps({
-  tabId: {
-    type: [String, Number],
-    required: true
+
+const defaultPreview = () => ({
+  ejecutivo: '',
+  cliente: '',
+  rut: '',
+  planType: 'Período',
+  conexiones: 0,
+  periodMonths: 0,
+  condiciones: '',
+  items: []
+})
+
+function normalizeQuote(quote) {
+  const base = defaultPreview()
+  if (!quote) return base
+
+  const mapped = {
+    ...quote,
+    ejecutivo: quote.ejecutivo ?? quote.user ?? base.ejecutivo,
+    cliente: quote.cliente ?? quote.name ?? base.cliente,
+    conexiones: quote.conexiones ?? quote.connections ?? base.conexiones,
+    condiciones: quote.condiciones ?? quote.conditions ?? base.condiciones
   }
-})
+
+  return {
+    ...base,
+    ...mapped,
+    items: JSON.parse(JSON.stringify(mapped.items || base.items))
+  }
+}
+
+const initialData = computed(() => normalizeQuote(props.quote))
+
+watch(
+  () => props.quote,
+  (value) => {
+    Object.assign(previewData, normalizeQuote(value))
+  },
+  { immediate: true }
+)
+
 function updatePreview(data) {
   Object.assign(previewData, data)
 }
 function resetAll() {
   // Reset preview
-  previewData.ejecutivo = ''
-  previewData.cliente = ''
-  previewData.rut = ''
-  previewData.conexiones = 0
-  previewData.periodMonths = 0
-  previewData.items = []
-  previewData.subtotal = 0
-  previewData.iva = 0
-  previewData.total = 0
+  Object.assign(previewData, defaultPreview())
 
   // Avisar al Cotizador (opcional)
+  localStorage.removeItem(`cotizador_form_${props.tabId}`)
   resetKey.value++
 }
 
@@ -45,9 +85,11 @@ function resetAll() {
     <div class="form-cotizador">
   <!-- IZQUIERDA -->
   <Cotizador
+  :key="`${tabId}-${resetKey}`"
   :tab-id="tabId"
+  :initial-data="initialData"
   @update-preview="updatePreview"
-/>
+  />
     </div>
 
   <!-- DERECHA -->

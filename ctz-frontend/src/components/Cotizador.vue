@@ -7,6 +7,10 @@ const props = defineProps({
   tabId: {
     type: [String, Number],
     required: true
+  },
+  initialData: {
+    type: Object,
+    default: null
   }
 })
 
@@ -26,13 +30,28 @@ const defaultForm = {
   items: []
 }
 
-const savedForm = localStorage.getItem(STORAGE_KEY.value)
+function normalizeInitialData(data) {
+  if (!data) return {}
+  return {
+    ...data,
+    ejecutivo: data.ejecutivo ?? data.user ?? '',
+    cliente: data.cliente ?? data.name ?? '',
+    conexiones: data.conexiones ?? data.connections ?? 1,
+    condiciones: data.condiciones ?? data.conditions ?? '',
+    items: Array.isArray(data.items)
+      ? JSON.parse(JSON.stringify(data.items))
+      : []
+  }
+}
 
-const form = reactive(
-  savedForm
-    ? JSON.parse(savedForm)
-    : structuredClone(defaultForm)
-)
+const savedForm = localStorage.getItem(STORAGE_KEY.value)
+const initialForm = {
+  ...structuredClone(defaultForm),
+  ...normalizeInitialData(props.initialData),
+  ...(savedForm ? JSON.parse(savedForm) : {})
+}
+
+const form = reactive(initialForm)
 
 
 const items = ref([
