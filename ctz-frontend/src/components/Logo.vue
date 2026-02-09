@@ -9,7 +9,7 @@
       </div>
     </div>
     <div class="login-section">
-      <Login @login-ok="$emit('login-ok')" />
+      <Login @login-ok="(u) => $emit('login-ok', u)" />
     </div>
   </div>
 </template>

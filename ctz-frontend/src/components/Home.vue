@@ -5,6 +5,13 @@ import Cotizador from './Cotizador.vue'
 import Preview from './Preview.vue' 
 import Parent_Add from './Parent_Add.vue'
 
+defineProps({
+  userName: {
+    type: String,
+    default: 'Usuario'
+  }
+})
+
 const mode = ref('add') // for demo: 'add' or 'hist'
 const currentView = ref('home') // 'home' or 'cotizador'
 
@@ -81,8 +88,9 @@ function onBack() {
   currentView.value = 'home'
 }
 function logout() {
-  // replace with real logout logic when available
-  console.log('logout clicked')
+  // Emitir evento de logout al componente padre (App.vue)
+  const event = new CustomEvent('logout')
+  window.dispatchEvent(event)
 }
 
 // sample historial seleccionable
@@ -122,7 +130,7 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
         <div class="subtitle">Panel</div>
       </div>
       <div class="topbar-right">
-        <div class="user">Carolina</div>
+        <div class="user">{{ userName }}</div>
         <button class="btn-exit" @click="logout">Salir</button>
       </div>
     </header>

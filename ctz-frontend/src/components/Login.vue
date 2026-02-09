@@ -11,7 +11,7 @@
             id="email"
             v-model="email" 
             type="email"
-            placeholder="tu@email.com" 
+            placeholder="tu@sacmed.cl" 
             required
             @input="clearFieldError('email')"
           />
