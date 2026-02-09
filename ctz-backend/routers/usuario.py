@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.usuario import Usuario
-from schemas.usuario import UsuarioCreate, UsuarioResponse, UsuarioUpdate
+from schemas.usuario import UsuarioCreate, UsuarioLogin, UsuarioResponse, UsuarioUpdate
 
 router = APIRouter(tags=["Usuarios"])
 
@@ -11,10 +11,25 @@ def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
     existe = db.query(Usuario).filter(Usuario.email == data.email).first()
     if existe:
         raise HTTPException(status_code=400, detail="Email ya registrado")
-    usuario = Usuario(**data.dict())
+    usuario = Usuario(**data.dict(exclude={"password"}), password_hash=data.password)
     db.add(usuario)
     db.commit()
     db.refresh(usuario)
+    return usuario
+
+@router.post("/login", response_model=UsuarioResponse)
+def login(data: UsuarioLogin, db: Session = Depends(get_db)):
+    usuario = (
+        db.query(Usuario)
+        .filter(
+            Usuario.email == data.email,
+            Usuario.password_hash == data.password,
+            Usuario.activo.is_(True),
+        )
+        .first()
+    )
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
     return usuario
 
 @router.get("/usuarios", response_model=list[UsuarioResponse])

@@ -10,6 +10,10 @@ class UsuarioBase(BaseModel):
 class UsuarioCreate(UsuarioBase):
     password: str
 
+class UsuarioLogin(BaseModel):
+    email: EmailStr
+    password: str
+
 class UsuarioUpdate(BaseModel):
     nombre: Optional[str]
     email: Optional[EmailStr]
