@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from database.connection import engine
 from sqlalchemy.orm import Session
 from database.session import get_db
@@ -7,6 +8,14 @@ from repositories.cliente_repository import get_clientes
 
 
 app = FastAPI(title="SACMED Cotizador API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def root():
