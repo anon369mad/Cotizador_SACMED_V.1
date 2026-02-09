@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 const emit = defineEmits(['discard'])
 
 const props = defineProps({
@@ -20,6 +20,10 @@ const subtotal = computed(() =>
 
 const iva = computed(() => Math.round(subtotal.value * 0.19))
 const total = computed(() => subtotal.value + iva.value)
+const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const isSaving = ref(false)
+const errorMessage = ref('')
+const successMessage = ref('')
 
 function rowTotal(it) {
   return it.qty * it.unitValue * (1 - it.discountPct / 100)
@@ -34,9 +38,84 @@ function removeItem(id) {
   const idx = props.baseData.items.findIndex(i => i.id === id)
   if (idx !== -1) props.baseData.items.splice(idx, 1)
 }
-function confirmQuote() {
-  console.log('Cotización confirmada', props.baseData)
-  // Aquí luego llamas API / guardas / envías
+async function confirmQuote() {
+  isSaving.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+  try {
+    const payload = {
+      tipo: props.baseData.planType === 'Única' ? 'UNICA' : 'PERIODO',
+      id_cliente: Number(props.baseData.idCliente ?? 1),
+      id_usuario: Number(props.baseData.idUsuario ?? 1),
+      id_iva: Number(props.baseData.idIva ?? 1),
+      meses: props.baseData.planType === 'Única' ? null : props.baseData.periodMonths,
+      conexiones: props.baseData.conexiones ?? 0,
+      condiciones_adicionales: props.baseData.condiciones || null
+    }
+
+    const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!headerResponse.ok) {
+      throw new Error('No se pudo crear la cotización')
+    }
+
+    const headerData = await headerResponse.json()
+    const idCotizacion = headerData?.id_cotizacion
+    if (!idCotizacion) {
+      throw new Error('La respuesta no incluyó el id de cotización')
+    }
+
+    for (const item of props.baseData.items || []) {
+      const detailPayload = {
+        id_cotizacion: idCotizacion,
+        id_prestacion: item.id_prestacion ?? null,
+        descripcion_manual: item.name ?? null,
+        cantidad: item.qty,
+        valor_unitario: item.unitValue,
+        descuento: item.discountPct ?? 0
+      }
+
+      const detailResponse = await fetch(`${apiBaseUrl}/cotizacion_detalles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(detailPayload)
+      })
+
+      if (!detailResponse.ok) {
+        throw new Error(`No se pudo crear el detalle ${item.name || ''}`.trim())
+      }
+    }
+
+    if (props.baseData.confirmOnSave) {
+      const statusResponse = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ estado: 'CONFIRMADA' })
+      })
+
+      if (!statusResponse.ok) {
+        throw new Error('No se pudo confirmar el estado de la cotización')
+      }
+    }
+
+    successMessage.value = 'Cotización confirmada y guardada correctamente.'
+  } catch (error) {
+    errorMessage.value = error instanceof Error
+      ? error.message
+      : 'Ocurrió un error inesperado al confirmar la cotización'
+  } finally {
+    isSaving.value = false
+  }
 }
 
 function discardQuote() {
@@ -134,10 +213,12 @@ function discardQuote() {
     Descartar
   </button>
 
-  <button class="btn-confirm" @click="confirmQuote">
-    Confirmar cotización
+  <button class="btn-confirm" :disabled="isSaving" @click="confirmQuote">
+    {{ isSaving ? 'Guardando...' : 'Confirmar cotización' }}
   </button>
 </div>
+<p v-if="errorMessage" class="status-message error">{{ errorMessage }}</p>
+<p v-if="successMessage" class="status-message success">{{ successMessage }}</p>
 </template>
 
 <style scoped>
@@ -197,6 +278,19 @@ function discardQuote() {
 .bold {
   font-weight: 600;
   color: #0f172a;
+}
+
+.status-message {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.status-message.error {
+  color: #b91c1c;
+}
+
+.status-message.success {
+  color: #15803d;
 }
 
 /* === BOTONES === */
