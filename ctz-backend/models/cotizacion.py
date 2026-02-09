@@ -18,7 +18,7 @@ class Cotizacion(Base):
     conexiones = Column(Integer)
 
     subtotal = Column(DECIMAL(12,2))
-    descuento = Column(DECIMAL(12,2))
+    descuento_total = Column(DECIMAL(12,2))
     total = Column(DECIMAL(12,2))
 
     condiciones_adicionales = Column(Text)

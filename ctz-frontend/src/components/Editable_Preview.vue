@@ -11,6 +11,58 @@ const props = defineProps({
 
 const items = computed(() => props.baseData.items || [])
 
+const conditionsList = computed(() => {
+  const c = props.baseData.condiciones ?? props.baseData.condiciones_adicionales ?? null
+  if (!c) return []
+  if (Array.isArray(c)) return c
+  return String(c).split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+})
+
+const editIndex = ref(-1)
+const editText = ref('')
+
+function ensureConditionsArray() {
+  if (!props.baseData.condiciones) {
+    props.baseData.condiciones = []
+    return
+  }
+  if (!Array.isArray(props.baseData.condiciones)) {
+    props.baseData.condiciones = String(props.baseData.condiciones)
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(Boolean)
+  }
+}
+
+function startEditCondition(i) {
+  ensureConditionsArray()
+  editIndex.value = i
+  editText.value = props.baseData.condiciones[i] || ''
+}
+
+function saveCondition(i) {
+  ensureConditionsArray()
+  const v = String(editText.value || '').trim()
+  if (!v) {
+    props.baseData.condiciones.splice(i, 1)
+  } else {
+    props.baseData.condiciones.splice(i, 1, v)
+  }
+  editIndex.value = -1
+  editText.value = ''
+}
+
+function cancelEditCondition() {
+  editIndex.value = -1
+  editText.value = ''
+}
+
+function removeCondition(i) {
+  ensureConditionsArray()
+  if (i >= 0 && i < props.baseData.condiciones.length) {
+    props.baseData.condiciones.splice(i, 1)
+  }
+}
 const subtotal = computed(() =>
   items.value.reduce(
     (s, it) => s + it.qty * it.unitValue * (1 - it.discountPct / 100),
@@ -121,7 +173,6 @@ async function confirmQuote() {
 function discardQuote() {
   emit('discard')
 }
-
 </script>
 
 
@@ -208,6 +259,27 @@ function discardQuote() {
   </div>
 
 </section>
+  
+  <!-- CONDICIONES ADICIONALES -->
+  <div class="conditions" v-if="conditionsList.length">
+    <h5 class="conditions-title">Condiciones adicionales</h5>
+    <ul class="conditions-list">
+      <li v-for="(c, i) in conditionsList" :key="i" class="conditions-item">
+        <template v-if="editIndex === i">
+          <input class="condition-input" v-model="editText" />
+          <button class="cond-action" @click="saveCondition(i)">Guardar</button>
+          <button class="cond-action" @click="cancelEditCondition">Cancelar</button>
+        </template>
+        <template v-else>
+          <span class="cond-text">{{ c }}</span>
+          <span class="conditions-item-actions">
+            <button @click="startEditCondition(i)" title="Editar">✏️</button>
+            <button @click="removeCondition(i)" title="Eliminar">🗑️</button>
+          </span>
+        </template>
+      </li>
+    </ul>
+  </div>
 <div class="final-actions">
   <button class="btn-discard" @click="discardQuote">
     Descartar
@@ -229,6 +301,7 @@ function discardQuote() {
   font-size: 13px;
   background: white;
   overflow: hidden;
+  color: black;
 }
 
 .services-table th {
@@ -341,6 +414,62 @@ function discardQuote() {
   font-size: 15px;
   font-weight: 600;
   color: #0f172a;
+}
+/* === CONDICIONES ADICIONALES === */
+.conditions {
+  margin-top: 14px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(15,23,42,0.04);
+  border-radius: 10px;
+}
+.conditions-title {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 600;
+}
+.conditions-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 13px;
+}
+.conditions-list li {
+  margin-bottom: 6px;
+}
+.conditions-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.conditions-item .cond-text {
+  flex: 1 1 auto;
+  margin-right: 8px;
+}
+.conditions-item .conditions-item-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 6px;
+  opacity: 0.7;
+}
+.condition-input {
+  flex: 1 1 auto;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(15,23,42,0.08);
+  margin-right: 8px;
+}
+.cond-action {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: none;
+  background: #eef2ff;
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 6px;
 }
 .tipo {
   font-size: 11px;

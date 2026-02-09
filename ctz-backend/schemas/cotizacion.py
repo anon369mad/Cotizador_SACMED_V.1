@@ -4,13 +4,14 @@ from datetime import date
 # un schema es una representación estructurada de los datos que se utilizan para validar y serializar la información que se intercambia entre el cliente y el servidor en una API.
 #mas simplemente, los schemas definen cómo deben lucir los datos que se envían y reciben, asegurando que cumplan con ciertos formatos y tipos antes de ser procesados o almacenados.
 class CotizacionBase(BaseModel):
-    tipo: str  # PERIODO | UNICA
-    id_cliente: int
-    id_usuario: int
-    id_iva: int
-    meses: Optional[int]
-    conexiones: Optional[int]
-    condiciones_adicionales: Optional[str]
+    tipo: Optional[str] = None
+    id_cliente: Optional[int] = None
+    id_usuario: Optional[int] = None
+    id_iva: Optional[int] = None
+    meses: Optional[int] = None
+    conexiones: Optional[int] = None
+    condiciones_adicionales: Optional[str] = None
+
 
 class CotizacionCreate(CotizacionBase):
     pass
@@ -20,14 +21,13 @@ class CotizacionUpdate(BaseModel):
     condiciones_adicionales: Optional[str]
 
 class CotizacionResponse(CotizacionBase):
-    id_cotizacion: int
-    subtotal: float
-    descuento_total: float
-    iva_monto: float
-    total: float
-    estado: str
-    fecha_emision: date
-    fecha_vencimiento: date
+    subtotal: Optional[float] = None
+    descuento_total: Optional[float] = None
+    iva_monto: Optional[float] = None
+    total: Optional[float] = None
+    estado: Optional[str] = None
+    fecha_emision: Optional[date] = None
+    fecha_vencimiento: Optional[date] = None
 
     class Config:
         from_attributes = True

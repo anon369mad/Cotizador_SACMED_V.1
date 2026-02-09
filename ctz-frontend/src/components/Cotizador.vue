@@ -22,7 +22,8 @@ const defaultForm = {
   planType: 'Período',
   periodMonths: 6,
   conexiones: 1,
-  condiciones: '',
+  condicion:'',
+  condiciones: [],
   cantidad: 1,
   valor: 0,
   descuento: 0,
@@ -102,6 +103,12 @@ function addService() {
   form.cantidad = 1
   form.valor = 0
   form.descuento = 0
+
+}
+function addCondicion() {
+  if (!form.condiciones) return
+  form.condiciones.push(form.condicion)
+  form.condicion = ''
 
 }
 
@@ -259,11 +266,11 @@ watch(
         <div class="section-head">
           <h4>Condiciones adicionales</h4>
           <button class="btn-add circle">
-            <img src="/icon_add.png" alt="Agregar" class="icon-add">
+            <img src="/icon_add.png" alt="Agregar" class="icon-add" @click="addCondicion">
           </button>
         </div>
         <div class="field">
-          <input v-model="form.condiciones" placeholder="Ej: capacitación: costo $0" />
+          <input v-model="form.condicion" placeholder="Ej: capacitación: costo $0" />
         </div>
       </div>
     </div>
