@@ -87,26 +87,27 @@ export default {
 
       try {
         // Se valida el usuario contra el sistema existente.
-        const res = await fetch('http://localhost:8000/usuarios')
+        const res = await fetch('http://localhost:8000/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: this.email.trim(),
+            password: this.password.trim()
+          })
+        })
 
         if (!res.ok) {
+          if (res.status === 401) {
+            this.formError = 'Credenciales inválidas.'
+            return
+          }
+
           throw new Error('No se pudo validar el usuario.')
         }
 
-        const usuarios = await res.json()
-        const usuario = usuarios.find(
-          item => item.email?.toLowerCase() === this.email.trim().toLowerCase()
-        )
-
-        if (!usuario) {
-          this.formError = 'Usuario no registrado.'
-          return
-        }
-
-        if (usuario.activo === false) {
-          this.formError = 'El usuario está inactivo.'
-          return
-        }
+        const usuario = await res.json()
 
         localStorage.setItem('cotizador_user', JSON.stringify(usuario))
         this.$emit('login-ok', usuario)
