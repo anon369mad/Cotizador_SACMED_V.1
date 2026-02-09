@@ -3,7 +3,6 @@ import { ref, reactive } from 'vue'
 import AddOrHist from './Add_or_Hist.vue'
 import Cotizador from './Cotizador.vue'
 import Preview from './Preview.vue' 
-import Parent_Add from './Parent_Add.vue'
 
 const mode = ref('add') // for demo: 'add' or 'hist'
 const currentView = ref('home') // 'home' or 'cotizador'
@@ -13,68 +12,13 @@ function handleChange(newMode) {
 }
 
 function handleAction(action) {
+  // action = 'add' | 'hist' based on which icon was clicked
   if (action === 'add') {
-    localStorage.removeItem('cotizador_form_v1')
-    const id = Date.now() + Math.random()
-
-
-    tabs.value.push({
-      id,
-      title: `Cotización ${tabs.value.length + 1}`,
-      data: createEmptyQuote()
-    })
-
-    activeTabId.value = id
-    currentView.value = 'tabs'
-  }
-
-  if (action === 'hist') {
+    currentView.value = 'cotizador'
+  } else if (action === 'hist') {
     currentView.value = 'home'
   }
 }
-
-const tabs = ref([])
-/*
-tab = {
-  id,
-  title,
-  data: { ...quote }
-}
-*/
-
-const activeTabId = ref(null)
-function closeTab(id) {
-  const idx = tabs.value.findIndex(t => t.id === id)
-  if (idx === -1) return
-
-  tabs.value.splice(idx, 1)
-
-  if (activeTabId.value === id) {
-    activeTabId.value =
-      tabs.value[idx - 1]?.id ||
-      tabs.value[0]?.id ||
-      null
-  }
-
-  if (!tabs.value.length) {
-    currentView.value = 'home'
-  }
-}
-
-
-function createEmptyQuote() {
-  return {
-    ejecutivo: 'Carolina',
-    rut: '',
-    name: '',
-    connections: 0,
-    periodMonths: 6,
-    items: [],
-    conditions: []
-  }
-}
-
-
 
 function onBack() {
   console.log('Home: onBack called')
@@ -86,12 +30,16 @@ function logout() {
 }
 
 // sample historial seleccionable
-const history = ref([
+const Planes = ref([
   { company: 'Empresa Star', user: 'Carolina', date: '19-01-2026, 09:52 a. m.', plan:'Plan 5', connections:1, price:59500, items:[{name:'Plan 5', quantity:1, value:59500, discount:0}], conditions:[] },
   { company: 'Empresa Luna', user: 'Carolina', date: '18-01-2026, 08:12 a. m.', plan:'Plan 4', connections:2, price:45000, items:[{name:'Plan 4', quantity:2, value:22500, discount:0}], conditions:[] },
   { company: 'Empresa Sol', user: 'Carolina', date: '17-01-2026, 10:20 a. m.', plan:'Plan 3', connections:4, price:120000, items:[{name:'Plan 3', quantity:4, value:30000, discount:0}], conditions:[] }
 ])
-
+const Servicios = ref([
+  { company: 'Empresa Star', user: 'Carolina', date: '19-01-2026, 09:52 a. m.', plan:'Plan 5', connections:1, price:59500, items:[{name:'Plan 5', quantity:1, value:59500, discount:0}], conditions:[] },
+  { company: 'Empresa Luna', user: 'Carolina', date: '18-01-2026, 08:12 a. m.', plan:'Plan 4', connections:2, price:45000, items:[{name:'Plan 4', quantity:2, value:22500, discount:0}], conditions:[] },
+  { company: 'Empresa Sol', user: 'Carolina', date: '17-01-2026, 10:20 a. m.', plan:'Plan 3', connections:4, price:120000, items:[{name:'Plan 3', quantity:4, value:30000, discount:0}], conditions:[] }
+])
 const previewQuote = reactive({
   ejecutivo: 'Usuario',
   rut: '',
@@ -119,40 +67,18 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
     <header class="topbar">
       <div class="topbar-left">
         <h2 class="brand">Sistema de Cotizaciones</h2>
-        <div class="subtitle">Panel</div>
+        <div class="subtitle">Panel de Administración</div>
       </div>
       <div class="topbar-right">
         <div class="user">Carolina</div>
         <button class="btn-exit" @click="logout">Salir</button>
       </div>
     </header>
-     <div v-if="currentView === 'tabs'" class="tabs-bar">
-
-  <div
-    v-for="t in tabs"
-    :key="t.id"
-    class="tab"
-    :class="{ active: t.id === activeTabId }"
-    @click="activeTabId = t.id"
-  >
-    {{ t.title }}
-    <span class="close" @click.stop="closeTab(t.id)">✕</span>
-  </div>
-
-  <!-- BOTÓN NUEVA PESTAÑA -->
-  <div
-    class="tab add-tab"
-    @click="handleAction('add')"
-  >
-    +
-  </div>
-
-</div>
 
     <main
-       class="container-home"
-        :class="{ 'container-parent': currentView === 'parentAdd' }"
-        >
+      class="container"
+      :class="{ single: currentView === 'cotizador' }"
+    >
       <template v-if="currentView === 'home'">
         <section class="main-area">
           <div class="hist-card">
@@ -172,25 +98,20 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
               </li>
             </ul>
           </div>
-          <aside class="sidebar">
-            <Preview :quote="previewQuote" />
-          </aside>
         </section>
+        <aside class="sidebar">
+          <Preview :quote="previewQuote" />
+        </aside>
       </template>
 
-      <template v-if="currentView === 'tabs'">
-  <section class="main-area">
-    <Parent_Add
-  :key="activeTabId"
-  :quote="tabs.find(t => t.id === activeTabId)?.data"
-  :tab-id="activeTabId"
-  @back="currentView = 'home'"
-/>
-
-
-  </section>
-</template>
-
+      <template v-else>
+        <section class="main-area">
+         <Cotizador @back="onBack" />
+        </section>
+         <aside class="sidebar">
+          <Preview :quote="previewQuote" />
+        </aside>
+      </template>
     </main>
 
     <AddOrHist initial="add" position="left" @change="handleChange" @action="handleAction" />
@@ -212,6 +133,7 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(15, 21, 64, 0.146);
+  /*position: sticky; /* keep on top */
   top: 0;
   z-index: 20;
 }
@@ -224,14 +146,16 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
 .btn-exit { background: transparent; border: 1px solid rgba(15,21,64,0.08); padding:6px 10px; border-radius:6px; color:#0f2140; cursor:pointer }
 .btn-exit:hover { background: rgba(2,22,66,0.04) }
 
-.container-home {
+.container {
   display: grid;
+  grid-template-columns: 1fr 420px;
   padding: 16px 86px; /* reduce padding so content fits without scroll */
   align-items: center; /* center columns vertically */
   flex: 0.1; /* make it fill remaining vertical space */
+  /*min-height: calc(100vh - 56px); /* leave room for topbar */
 }
-.container-parent { }
-.main-area { display:grid; grid-template-columns: 1fr 1fr; align-items:center; }
+
+.main-area { display:flex; justify-content:center; align-items:center; }
 
 .hist-card {
   width: 420px; /* slightly narrower to feel more centered */
@@ -255,7 +179,7 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
 .status.processing { background:#ffb300; color:#ffffff; }
 .price { color:#0073ff; font-weight:700 }
 
-.preview-card { background:white; border-radius:8px; box-shadow: 0 2px 8px rgba(2,22,66,0.04); }
+.preview-card { background:white; border-radius:8px; /*padding:18px;*/ box-shadow: 0 2px 8px rgba(2,22,66,0.04); }
 .tag { font-size:12px; display:inline-block; padding:6px 8px; border-radius:12px; color:white }
 .tag.confirmed { background:#00d18a }
 .preview-body { margin-top:12px }
@@ -264,94 +188,11 @@ function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
 .service-box { background:#f7f9fb; padding:8px; margin:12px 0; border-radius:6px }
 .service-row { display:flex; justify-content:space-between; padding:6px 0 }
 
-/* ------------------------
-   TABS - diseño estilo imagen
-   ------------------------ */
-.tabs-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px 0;
-  border-bottom: 1px solid #e6eef7; /* línea tenue bajo toda la barra */
-  overflow-x: auto;
-  white-space: nowrap;
-}
 
-/* Tab individual (estilo limpio: texto, sin background pesado) */
-.tab {
-  padding: 10px 16px;
-  background: transparent;
-  border-radius: 6px 6px 0 0;
-  cursor: pointer;
-  font-size: 14px;
-  color: #6b7280; /* gris para inactivo */
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  user-select: none;
-  border: none;
-  margin-bottom: -1px; /* evita salto con border-bottom */
-}
-
-/* estilo del texto cuando está activo */
-.tab.active {
-  color: #0f2140;
-  font-weight: 600;
-}
-
-/* línea azul en la pestaña activa (no altera layout) */
-.tab.active::after {
-  content: "";
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: -1px; /* sobresale apenas sobre el borde de la barra */
-  height: 3px;
-  background: #1aa3ff; /* azul claro brillante */
-  border-radius: 4px;
-}
-
-/* boton "+" como pestaña */
-.add-tab {
-  background: transparent;
-  border: 1px solid transparent;
-  font-weight: 700;
-  color: #93a0ab;
-  min-width: 36px;
-  text-align: center;
-  padding: 8px 10px;
-  border-radius: 6px;
-  margin-left: 6px;
-}
-
-/* pequeño hover para añadir claridad */
-.tab:hover {
-  background: rgba(2, 22, 66, 0.02);
-}
-
-/* close (cruz) más discreta y alineada */
-.close {
-  margin-left: 8px;
-  cursor: pointer;
-  opacity: 0.6;
-  font-size: 12px;
-  line-height: 1;
-  display: inline-block;
-  vertical-align: middle;
-}
-.close:hover { opacity: 1 }
-
-/* cuando hay muchas tabs permitir scroll horizontal limpio */
-.tabs-bar::-webkit-scrollbar { height: 6px; }
-.tabs-bar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.06); border-radius: 4px; }
-
-/* responsive: adaptar padding y tamaño */
 @media (max-width: 960px) {
-  .container-home { padding: 12px 18px; }
+  .container { grid-template-columns: 1fr; }
   .hist-card { width: 100%; }
   .topbar { padding: 12px 18px }
-  .tab { padding: 8px 12px; font-size: 13px; }
-  .add-tab { min-width: 30px; padding: 6px 8px; }
 }
-</style>
+</style> 
+    

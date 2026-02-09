@@ -1,80 +1,131 @@
 <script setup>
-import { reactive, computed, watch } from 'vue'
-const emit = defineEmits(['back', 'update-preview'])
+import { reactive, computed, watch, ref } from 'vue'
 
-const form = reactive({
-  ejecutivo: 'Carolina',
+const emit = defineEmits(['back', 'update-preview', 'add-service'])
+
+const props = defineProps({
+  tabId: {
+    type: [String, Number],
+    required: true
+  }
+})
+
+const STORAGE_KEY = computed(() => `cotizador_form_${props.tabId}`)
+const defaultForm = {
+  ejecutivo: '',
   cliente: '',
   rut: '',
   planType: 'Período',
   periodMonths: 6,
   conexiones: 1,
-  observaciones: '',
-  items: [
-    { id: 1, name: 'CotizadorX', qty: 1, unitValue: 900000, discountPct: 0 }
-  ]
-})
+  condiciones: '',
+  cantidad: 1,
+  valor: 0,
+  descuento: 0,
+  seleccionado: '',
+  items: []
+}
 
-/* util */
-function formatMoney(v) { return '$' + Number(v).toLocaleString('es-CL') }
+const savedForm = localStorage.getItem(STORAGE_KEY.value)
 
-/* items y totales */
-const subtotal = computed(() => {
-  return form.items.reduce((s, it) => {
-    const val = Number(it.unitValue) || 0
-    const q = Number(it.qty) || 0
-    const disc = Number(it.discountPct) || 0
-    const line = q * val * (1 - disc / 100)
-    return s + line
+const form = reactive(
+  savedForm
+    ? JSON.parse(savedForm)
+    : structuredClone(defaultForm)
+)
+
+
+const items = ref([
+  { name: 'CotizadorX' },
+  { name: 'Servicio Y' },
+  { name: 'Servicio Z' }
+])
+
+function formatMoney(v) {
+  return '$' + Number(v || 0).toLocaleString('es-CL')
+}
+function formatRut(e) {
+  let v = e.target.value
+
+  // Solo números y K
+  v = v.replace(/[^0-9kK]/g, '').toUpperCase()
+
+  if (v.length <= 1) {
+    e.target.value = v
+    form.rut = v
+    return
+  }
+
+  const body = v.slice(0, -1)
+  const dv = v.slice(-1)
+
+  // Puntos
+  let formatted = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+
+  const result = `${formatted}-${dv}`
+
+  e.target.value = result
+  form.rut = result
+}
+function addService() {
+  if (!form.seleccionado) return
+
+  form.items.push({
+    id: Date.now(),
+    name: form.seleccionado,
+    qty: form.cantidad,
+    unitValue: form.valor,
+    discountPct: form.descuento
+  })
+
+  // Limpiar inputs
+  form.seleccionado = ''
+  form.cantidad = 1
+  form.valor = 0
+  form.descuento = 0
+
+}
+
+const subtotal = computed(() =>
+  form.items.reduce((sum, it) => {
+    return sum + it.qty * it.unitValue * (1 - it.discountPct / 100)
   }, 0)
-})
+)
+
 const iva = computed(() => Math.round(subtotal.value * 0.19))
 const total = computed(() => subtotal.value + iva.value)
 
-/* funciones de UI */
-function addItem() {
-  const id = Date.now()
-  form.items.push({ id, name: 'Nuevo servicio', qty: 1, unitValue: 0, discountPct: 0 })
-}
-function removeItem(id) {
-  const idx = form.items.findIndex(i => i.id === id)
-  if (idx >= 0) form.items.splice(idx, 1)
-}
-function onBackClick() { emit('back') }
-function submit() {
-  // aquí iría la lógica real de guardar
-  console.log('Enviar cotización', JSON.parse(JSON.stringify(form)))
-  emit('update-preview', buildPreview())
-}
-
-/* construye el objeto que el preview usará */
 function buildPreview() {
-  const items = form.items.map(it => ({
-    name: it.name,
-    qty: Number(it.qty) || 0,
-    unit: Number(it.unitValue) || 0,
-    discount: Number(it.discountPct) || 0,
-    total: Math.round((Number(it.qty) || 0) * (Number(it.unitValue) || 0) * (1 - (Number(it.discountPct) || 0) / 100))
-  }))
   return {
     ejecutivo: form.ejecutivo,
-    name: form.cliente || '—',
-    rut: form.rut || '—',
-    connections: Number(form.conexiones) || 0,
-    periodMonths: Number(form.periodMonths) || 6,
-    items,
-    subtotal: Math.round(subtotal.value),
-    iva: Math.round(iva.value),
-    total: Math.round(total.value),
-    issuedAt: new Date().toLocaleString(),
-    dueAt: ''
+    cliente: form.cliente,
+    rut: form.rut,
+
+    planType: form.planType,
+    periodMonths: form.periodMonths,
+    conexiones: form.conexiones,
+    condiciones: form.condiciones,
+
+    items: form.items,
   }
 }
 
 watch(form, () => {
   emit('update-preview', buildPreview())
 }, { deep: true, immediate: true })
+watch(
+  form,
+  (v) => {
+    localStorage.setItem(
+      STORAGE_KEY.value,
+      JSON.stringify(v)
+    )
+  },
+  { deep: true }
+)
+
 </script>
+
 
 <template>
   <section class="cotizador-card">
@@ -109,16 +160,25 @@ watch(form, () => {
           <div class="row two">
             <div class="field">
               <label>RUT Persona/Empresa *</label>
-              <input v-model="form.rut" placeholder="Ej: 76.123.456-7" />
+             <input
+              v-model="form.rut"
+              placeholder="Ej: 12.345.678-5"
+              @input="formatRut"
+              maxlength="12"
+              required/>
+              <small v-if="rutError" class="error">
+                RUT inválido
+              </small>
+
             </div>
             <div class="field">
-              <label>Nombre / Razón Social *</label>
-              <input v-model="form.cliente" placeholder="Ej: Empresa ABC Ltda." />
+              <label>Nombre/Razón Social *</label>
+              <input v-model="form.cliente" placeholder="Ej: Empresa ABC Ltda." required/>
             </div>
           </div>
         </div>
 
-        <div class="section">
+        <div class="section" v-if="form.planType === 'Período'">
           <h4>Configuración del servicio</h4>
           <div class="row two">
             <div class="field">
@@ -136,32 +196,41 @@ watch(form, () => {
       <div class="section">
         <div class="section-head">
           <h4>Servicios</h4>
-          <button class="btn-add" type="button" @click="addItem()">+ Agregar servicio</button>
+         <button class="btn-add circle" @click="addService">
+            <img src="/icon_add.png" alt="Agregar" class="icon-add">
+         </button>
         </div>
 
         <div class="items-list">
-          <div class="item" v-for="it in form.items" :key="it.id">
+          <div class="item">
             <div class="svc-main">
-              <label>Servicio</label>
-              <input class="svc-name" v-model="it.name" placeholder="Ej: CotizadorX" />
+                <select v-model="form.seleccionado" class="svc-name">
+                  <option disabled value="">Selecciona un servicio</option>
+                    <option
+                        v-for="(it, i) in items"
+                        :key="i"
+                         :value="it.name"
+                      >
+                        {{ it.name }}
+                  </option>
+                </select>
             </div>
             <div class="svc-controls">
               <div class="mini-field">
                 <label>Cantidad</label>
-                <input type="number" min="0" class="small" v-model.number="it.qty" />
+                <input type="number" min="0" class="small" v-model.number="form.cantidad" />
               </div>
               <div class="mini-field">
                 <label>Valor</label>
-                <input type="number" min="0" class="medium" v-model.number="it.unitValue" />
+                <input type="number" min="0" class="medium" v-model.number="form.valor" />
               </div>
               <div class="mini-field">
                 <label>Descuento</label>
                 <div class="discount-input">
-                  <input type="number" min="0" max="100" class="tiny" v-model.number="it.discountPct" />
+                  <input type="number" min="0" max="100" class="tiny" v-model.number="form.descuento" />
                   <span>%</span>
                 </div>
               </div>
-              <button class="remove" @click="removeItem(it.id)" type="button">✕</button>
             </div>
           </div>
         </div>
@@ -170,35 +239,27 @@ watch(form, () => {
       <div class="section">
         <div class="section-head">
           <h4>Condiciones adicionales</h4>
-          <button class="btn-add circle" type="button">+</button>
+          <button class="btn-add circle">
+            <img src="/icon_add.png" alt="Agregar" class="icon-add">
+          </button>
         </div>
         <div class="field">
-          <input v-model="form.observaciones" placeholder="Ej: capacitación: costo $0" />
+          <input v-model="form.condiciones" placeholder="Ej: capacitación: costo $0" />
         </div>
       </div>
     </div>
-
-    <div class="card-footer">
-      <div class="right-actions">
-        <div class="totals">
-          <div>Subtotal: <strong>{{ formatMoney(subtotal) }}</strong></div>
-          <div>IVA (19%): <strong>{{ formatMoney(iva) }}</strong></div>
-        </div>
-    </div>
-    </div>
   </section>
+    
 </template>
 
 <style scoped>
 .cotizador-card {
   background: white;
   border-radius: 12px;
-  border: 1px solid rgba(15, 21, 64, 0.08);
-  padding: 22px 24px;
+  border: 1px solid rgba(0, 0, 0, 0.37);
   box-shadow: 0 10px 30px rgba(12, 38, 70, 0.04);
-  max-width: 450px;
-  display: flex;
-  flex-direction: column;   
+  flex-direction: column;  
+  padding: 10px;
 }
 
 /* header */
@@ -206,7 +267,7 @@ watch(form, () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 1px;
 }
 .card-header h3 { margin: 0; color: #1f2b3a; font-size: 18px }
 .muted { color: #6b747a; font-size: 12px }
@@ -224,36 +285,37 @@ watch(form, () => {
 .mode-pill .pill.active { background: #00a3f0; color: white }
 
 /* body */
-.card-body { display: flex; flex-direction: column; gap: 14px }
+.card-body {  gap: 7px }
 
 /* sections */
-.section { border: 1px solid rgba(15, 21, 64, 0.06); border-radius: 10px; padding: 14px 16px; background: #fff }
+.section { border: 1px solid rgba(15, 21, 64, 0.06); border-radius: 10px; padding:5px; background: #fff }
 .section h4 { margin: 0 0 8px 0; color: #3e4b58; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase }
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px }
 
-.form-grid { display: grid; grid-template-columns: 1fr; gap: 14px }
+.form-grid { display: grid; grid-template-columns: 1fr; }
 
 .row.two { display: flex; gap: 12px }
 .field { display: flex; flex-direction: column; gap: 6px }
 .field label { font-size: 12px; color: #6b747a }
-.field input { padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.08); font-size: 14px; background: #fbfdff;color: black; }
+.field input { padding: 10px 12px; border-radius: 8px;border: 2px solid rgba(0, 30, 255, 0.473); font-size: 14px; background: #fbfdff;color: black; }
 
 /* items list */
-.item { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: flex-end; border: 1px solid rgba(15, 21, 64, 0.06); border-radius: 10px; padding: 10px 12px; background: #f8fbff }
-.svc-main { flex: 1; display: flex; flex-direction: column; gap: 6px }
+.item {align-items: center;justify-items: center; border: 1px solid rgba(15, 21, 64, 0.06); border-radius: 10px;  background: #f8fbff }
+.svc-main { flex: 1; display: flex; flex-direction: column;}
 .svc-main label { font-size: 11px; color: #6b747a }
-.svc-name { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.08); background: white;color: black }
-.svc-controls { display: flex; gap: 10px; flex-direction: column;}
-.mini-field { display: flex; flex-direction: column; gap: 6px }
+.svc-name {  width: 100%; padding: 8px 80px;margin: 0px 0px 10px 0px ; border-radius: 8px; border: 2px solid rgba(0, 30, 255, 0.473); background: white;color: black;}
+.svc-controls { display: flex; gap: 12px; }
+.mini-field { display: flex; flex-direction: column; gap: 6px; }
 .mini-field label { font-size: 11px; color: #6b747a }
-.small { width: 72px; padding: 8px; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.08) }
-.medium { width: 120px; padding: 8px; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.08) }
-.tiny { width: 56px; padding: 8px; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.08); text-align: center }
-.discount-input { display: flex; align-items: center; gap: 6px }
+.small { width: 72px; padding: 8px; border-radius: 8px; border: 2px solid rgba(0, 30, 255, 0.473);background-color: transparent;color: black; }
+.medium { width: 120px; padding: 8px; border-radius: 8px; border:2px solid rgba(0, 30, 255, 0.473);background-color: transparent;color: black; }
+.tiny { width: 56px; padding: 8px; border-radius: 8px; border:2px solid rgba(0, 30, 255, 0.473); text-align: center ;background-color: transparent;color: black;}
+.discount-input { display: flex; align-items: center; gap: 6px;color: black; }
 .remove { background: white; border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 8px; padding: 7px 9px; cursor: pointer }
 
 /* actions */
 .btn-add { background: #00c853; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px }
+.icon-add { width: 16px; height: 16px }
 .btn-add.circle { width: 28px; height: 28px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center }
 
 /* footer */
@@ -264,12 +326,21 @@ watch(form, () => {
 .totals { text-align: right; margin-right: 12px }
 .totals .total { margin-top: 6px; font-size: 16px; color: #0073ff }
 
-/*@media (max-width: 980px) {
-  .cotizador-card { max-width: 100% }
-  .form-grid { grid-template-columns: 1fr }
-  .item { flex-direction: column; align-items: stretch }
-  .svc-controls { flex-wrap: wrap }
-  .card-footer { flex-direction: column; align-items: flex-start }
-  .totals { text-align: left; margin-right: 0 }
-}*/
+/* Preview */
+.right-panel {
+  width: 50%;
+  background: #f6f9fc;
+  border-left: 1px solid rgba(0,0,0,0.06);
+  padding: 20px;
+}
+
+.preview-header {
+  margin-bottom: 12px;
+}
+
+.preview-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1f2b3a;
+}
 </style>
