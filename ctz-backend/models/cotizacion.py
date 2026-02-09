@@ -14,8 +14,6 @@ class Cotizacion(Base):
 
     id_cliente = Column(Integer, ForeignKey("clientes.id_cliente"))
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"))
-    id_plan = Column(Integer, ForeignKey("planes.id_plan"), nullable=True)
-
     meses = Column(Integer)
     conexiones = Column(Integer)
 
