@@ -14,16 +14,20 @@
   </div>
 </template>
 
-<style>
+<style scoped>
 .app-wrapper {
   width: 100%;
-  min-height: 100vh;   /* 🔥 CLAVE */
-  display: flex;
-  flex-direction: row;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr);
+  gap: clamp(20px, 3vw, 40px);
+  padding: clamp(20px, 4vw, 48px);
+  align-items: center;
 }
+
 .logo-section,
 .login-section {
-  flex: 1;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -47,19 +51,33 @@
   filter: blur(10px);
   opacity: 0.9;
   pointer-events: none;
-  /* smoother, continuous animation */
   animation: sweep 4s linear infinite;
 }
 
 .logo {
-  height: 300px;
-  width: auto;
+  width: min(100%, 460px);
+  max-height: clamp(120px, 26vw, 300px);
   object-fit: contain;
-  display: block;
 }
 
 @keyframes sweep {
   0% { transform: translateX(-150%); }
   100% { transform: translateX(250%); }
+}
+
+@media (max-width: 900px) {
+  .app-wrapper {
+    grid-template-columns: 1fr;
+    place-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    max-height: 170px;
+  }
+
+  .logo-section {
+    padding-top: 10px;
+  }
 }
 </style>

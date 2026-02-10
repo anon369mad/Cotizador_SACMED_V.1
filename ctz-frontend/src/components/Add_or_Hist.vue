@@ -34,10 +34,10 @@ watch(() => props.initial, (v) => {
 <style scoped>
 .fab {
   position: fixed;
-  right: 28px;
-  bottom: 28px;
-  width: 70px;
-  height: 70px;
+  right: 24px;
+  bottom: 24px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: linear-gradient(180deg, #1ca4ff, #0073ff);
   color: white;
@@ -80,8 +80,9 @@ watch(() => props.initial, (v) => {
 
 /* small responsive tweak */
 @media (max-width: 480px) {
-  .fab { width: 76px; height: 76px; right: 18px; bottom: 18px; font-size: 32px; }
-  .icon { width: 40px; height: 40px; }
-  .icon-add { width: 28px; height: 28px; }
+  .fab { width: 58px; height: 58px; right: 14px; bottom: 14px; font-size: 26px; }
+  .fab.left { left: 14px; }
+  .icon { width: 34px; height: 34px; }
+  .icon-add { width: 22px; height: 22px; }
 }
 </style>

@@ -266,23 +266,23 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f500;
+  width: 100%;
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0);
-  padding: 50px;
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: clamp(20px, 3vw, 40px);
+  border-radius: 12px;
   border: 1px solid #4aa4ff;
-  width: 100%;
-  max-width: 500px;
+  width: min(100%, 560px);
+  box-shadow: 0 12px 30px rgba(0, 58, 136, 0.08);
 }
 
 .title {
-  font-size: 28px;
-  font-weight: bold;
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+  font-weight: 700;
   color: #0073ff;
-  margin: 0 0 10px 0;
+  margin: 0 0 8px;
   text-align: center;
 }
 
@@ -290,35 +290,34 @@ export default {
   font-size: 14px;
   color: #666;
   text-align: center;
-  margin: 0 0 30px 0;
+  margin: 0 0 20px;
 }
 
 form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color:#333;
+  color: #333;
 }
 
-.field-error {
+.field-error,
+.form-error,
+.success-message {
   font-size: 12px;
-  color: #d93025;
 }
 
 .form-error {
-  font-size: 13px;
   color: #d93025;
   text-align: center;
 }
 
 .success-message {
-  font-size: 13px;
   color: #0f7e2a;
   text-align: center;
 }
@@ -330,13 +329,14 @@ label {
 }
 
 input {
-  padding: 12px;
+  padding: 11px 12px;
   border: 1px solid #1ca4ff;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 14px;
   transition: border-color 0.3s ease;
-  background-color: rgba(255, 255, 255, 0);
+  background-color: rgba(255, 255, 255, 0.75);
   color: #000;
+  width: 100%;
 }
 
 input::placeholder {
@@ -346,8 +346,8 @@ input::placeholder {
 
 input:focus {
   outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.18);
 }
 
 .btn-login {
@@ -355,7 +355,7 @@ input:focus {
   background: #1ca4ff;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -368,8 +368,9 @@ input:focus {
   background: #8ccfff;
 }
 
-.btn-login:hover {
-  background: #2bf8ff;
+.btn-login:hover,
+.btn-secondary:hover {
+  background: #1592e3;
 }
 
 .btn-login:active {
@@ -384,11 +385,12 @@ input:focus {
   align-self: flex-end;
   font-size: 13px;
   text-decoration: underline;
+  padding: 0;
 }
 
 .recovery-panel {
   border: 1px solid #7ec3ff;
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -406,7 +408,7 @@ input:focus {
   background: #1ca4ff;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
 }
@@ -414,7 +416,7 @@ input:focus {
 .token-box {
   background: rgba(28, 164, 255, 0.1);
   border: 1px dashed #1ca4ff;
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 10px;
   color: #004f9f;
 }
@@ -422,5 +424,16 @@ input:focus {
 .token-help {
   margin: 6px 0 0;
   font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  .login-card {
+    padding: 18px;
+    border-radius: 10px;
+  }
+
+  .btn-link {
+    align-self: flex-start;
+  }
 }
 </style>
