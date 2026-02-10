@@ -104,7 +104,7 @@ async function confirmQuote() {
       conexiones: props.baseData.conexiones ?? 0,
       condiciones_adicionales: props.baseData.condiciones || null
     }
-
+console.log('Payload a enviar:', payload)
     const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones`, {
       method: 'POST',
       headers: {
