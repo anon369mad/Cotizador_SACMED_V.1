@@ -20,6 +20,10 @@ const conditionsList = computed(() => {
 
 const editIndex = ref(-1)
 const editText = ref('')
+const editItemId = ref(null)
+const editQty = ref(1)
+const editDiscount = ref(0)
+const editUnitValue = ref(0)
 
 function ensureConditionsArray() {
   if (!props.baseData.condiciones) {
@@ -81,9 +85,33 @@ function rowTotal(it) {
   return it.qty * it.unitValue * (1 - it.discountPct / 100)
 }
 
-function editItem(it) {
-  // luego lo conectas con modal o evento
-  console.log('editar', it)
+function isDbItem(it) {
+  return it?.source === 'db' || it?.autoPlan || it?.id_prestacion || it?.id_plan
+}
+
+function startEditItem(it) {
+  editItemId.value = it.id
+  editQty.value = Number(it.qty || 1)
+  editDiscount.value = Number(it.discountPct || 0)
+  editUnitValue.value = Number(it.unitValue || 0)
+}
+
+function saveItemChanges(it) {
+  it.qty = Math.max(1, Number(editQty.value || 1))
+  it.discountPct = Math.min(100, Math.max(0, Number(editDiscount.value || 0)))
+
+  if (!isDbItem(it)) {
+    it.unitValue = Math.max(0, Number(editUnitValue.value || 0))
+  }
+
+  cancelItemEdit()
+}
+
+function cancelItemEdit() {
+  editItemId.value = null
+  editQty.value = 1
+  editDiscount.value = 0
+  editUnitValue.value = 0
 }
 
 function removeItem(id) {
@@ -208,15 +236,41 @@ function discardQuote() {
 
   <!-- ITEMS -->
   <tr v-for="it in items" :key="it.id">
-    <td>{{ it.qty }}</td>
-    <td>{{ it.name }}</td>
-    <td>${{ it.unitValue }}</td>
-    <td>{{ it.discountPct }}%</td>
-    <td class="bold">${{ rowTotal(it).toFixed(0) }}</td>
-    <td class="actions">
-      <button @click="editItem(it)">✏️</button>
-      <button @click="removeItem(it.id)">🗑️</button>
-    </td>
+    <template v-if="editItemId === it.id">
+      <td>
+        <input v-model.number="editQty" type="number" min="1" class="edit-input" />
+      </td>
+      <td>{{ it.name }}</td>
+      <td>
+        <template v-if="isDbItem(it)">${{ it.unitValue }}</template>
+        <input
+          v-else
+          v-model.number="editUnitValue"
+          type="number"
+          min="0"
+          class="edit-input"
+        />
+      </td>
+      <td>
+        <input v-model.number="editDiscount" type="number" min="0" max="100" class="edit-input" />%
+      </td>
+      <td class="bold">${{ (editQty * (isDbItem(it) ? it.unitValue : editUnitValue) * (1 - editDiscount / 100)).toFixed(0) }}</td>
+      <td class="actions">
+        <button @click="saveItemChanges(it)">💾</button>
+        <button @click="cancelItemEdit">✖️</button>
+      </td>
+    </template>
+    <template v-else>
+      <td>{{ it.qty }}</td>
+      <td>{{ it.name }}</td>
+      <td>${{ it.unitValue }}</td>
+      <td>{{ it.discountPct }}%</td>
+      <td class="bold">${{ rowTotal(it).toFixed(0) }}</td>
+      <td class="actions">
+        <button @click="startEditItem(it)">✏️</button>
+        <button @click="removeItem(it.id)">🗑️</button>
+      </td>
+    </template>
   </tr>
 
   <tr v-if="!items.length">
@@ -306,6 +360,11 @@ function discardQuote() {
   border-bottom: 1px solid rgba(0,0,0,0.06);
   text-align: left;
   vertical-align: middle;
+}
+
+ .edit-input {
+  width: 80px;
+  padding: 4px 6px;
 }
 
 /* === FILA CONFIGURACIÓN === */
