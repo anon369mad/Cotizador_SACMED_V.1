@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, computed, watch, ref } from 'vue'
+import { reactive, computed, watch, ref, onMounted } from 'vue'
 
 const emit = defineEmits(['back', 'update-preview', 'add-service'])
 
@@ -27,7 +27,7 @@ const defaultForm = {
   cantidad: 1,
   valor: 0,
   descuento: 0,
-  seleccionado: '',
+  seleccionado: null,
   items: []
 }
 
@@ -55,11 +55,10 @@ const initialForm = {
 const form = reactive(initialForm)
 
 
-const items = ref([
-  { name: 'CotizadorX' },
-  { name: 'Servicio Y' },
-  { name: 'Servicio Z' }
-])
+const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const prestaciones = ref([])
+const prestacionesLoading = ref(false)
+const prestacionesError = ref('')
 
 function formatMoney(v) {
   return '$' + Number(v || 0).toLocaleString('es-CL')
@@ -90,27 +89,74 @@ function formatRut(e) {
 function addService() {
   if (!form.seleccionado) return
 
+  const prestacionSeleccionada = prestaciones.value.find(
+    (it) => it.id_prestacion === form.seleccionado
+  )
+
+  if (!prestacionSeleccionada) return
+
   form.items.push({
     id: Date.now(),
-    name: form.seleccionado,
+    id_prestacion: prestacionSeleccionada.id_prestacion,
+    name: prestacionSeleccionada.nombre,
     qty: form.cantidad,
     unitValue: form.valor,
-    discountPct: form.descuento
+    discountPct: form.descuento,
+    condiciones: prestacionSeleccionada.condiciones || null
   })
 
   // Limpiar inputs
-  form.seleccionado = ''
+  form.seleccionado = null
   form.cantidad = 1
   form.valor = 0
   form.descuento = 0
 
 }
 function addCondicion() {
-  if (!form.condiciones) return
-  form.condiciones.push(form.condicion)
+  const condicion = String(form.condicion || '').trim()
+  if (!condicion) return
+  form.condiciones.push(condicion)
   form.condicion = ''
 
 }
+
+async function cargarPrestaciones() {
+  prestacionesLoading.value = true
+  prestacionesError.value = ''
+  try {
+    const response = await fetch(`${apiBaseUrl}/prestaciones`)
+    if (!response.ok) {
+      throw new Error('No fue posible cargar las prestaciones')
+    }
+
+    const data = await response.json()
+    prestaciones.value = (Array.isArray(data) ? data : []).filter((it) => it.activo)
+  } catch (error) {
+    prestacionesError.value = error instanceof Error
+      ? error.message
+      : 'Error inesperado al cargar prestaciones'
+  } finally {
+    prestacionesLoading.value = false
+  }
+}
+
+function onSelectPrestacion() {
+  const prestacionSeleccionada = prestaciones.value.find(
+    (it) => it.id_prestacion === form.seleccionado
+  )
+
+  if (!prestacionSeleccionada) return
+
+  form.valor = Number(prestacionSeleccionada.valor_unitario || 0)
+  const condicionServicio = String(prestacionSeleccionada.condiciones || '').trim()
+  if (condicionServicio && !form.condiciones.includes(condicionServicio)) {
+    form.condiciones.push(condicionServicio)
+  }
+}
+
+onMounted(() => {
+  cargarPrestaciones()
+})
 
 const subtotal = computed(() =>
   form.items.reduce((sum, it) => {
@@ -230,16 +276,18 @@ watch(
         <div class="items-list">
           <div class="item">
             <div class="svc-main">
-                <select v-model="form.seleccionado" class="svc-name">
+                <select v-model.number="form.seleccionado" class="svc-name" @change="onSelectPrestacion">
                   <option disabled value="">Selecciona un servicio</option>
                     <option
-                        v-for="(it, i) in items"
-                        :key="i"
-                         :value="it.name"
+                        v-for="prestacion in prestaciones"
+                        :key="prestacion.id_prestacion"
+                         :value="prestacion.id_prestacion"
                       >
-                        {{ it.name }}
+                        {{ prestacion.nombre }}
                   </option>
                 </select>
+                <small v-if="prestacionesLoading">Cargando prestaciones...</small>
+                <small v-else-if="prestacionesError" class="error">{{ prestacionesError }}</small>
             </div>
             <div class="svc-controls">
               <div class="mini-field">
