@@ -98,11 +98,17 @@ async function confirmQuote() {
     const payload = {
       tipo: props.baseData.planType === 'Única' ? 'UNICA' : 'PERIODO',
       id_cliente: Number(props.baseData.idCliente ?? 1),
+      nombre_cliente: props.baseData.cliente ?? null,
+      rut_cliente: props.baseData.rut ?? null,
       id_usuario: Number(props.baseData.idUsuario ?? 1),
       id_iva: Number(props.baseData.idIva ?? 1),
       meses: props.baseData.planType === 'Única' ? null : props.baseData.periodMonths,
       conexiones: props.baseData.conexiones ?? 0,
-      condiciones_adicionales: props.baseData.condiciones || null
+      subtotal: subtotal.value,
+      descuento_total: items.value.reduce((s, it) => s + it.qty * it.unitValue * (it.discountPct / 100), 0),
+      iva_monto: iva.value,
+      total: total.value,
+      condiciones_adicionales: props.baseData.condiciones?.join('\n') || null
     }
 console.log('Payload a enviar:', payload)
     const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones`, {

@@ -6,12 +6,19 @@ from datetime import date
 class CotizacionBase(BaseModel):
     tipo: Optional[str] = None
     id_cliente: Optional[int] = None
+    nombre_cliente: Optional[str] = None
+    rut_cliente: Optional[str] = None
     id_usuario: Optional[int] = None
     id_iva: Optional[int] = None
     meses: Optional[int] = None
     conexiones: Optional[int] = None
-    condiciones_adicionales: Optional[str] = None
 
+    subtotal: Optional[float] = None
+    descuento_total: Optional[float] = None
+    iva_monto: Optional[float] = None
+    total: Optional[float] = None
+
+    condiciones_adicionales: Optional[str] = None
 
 class CotizacionCreate(CotizacionBase):
     pass
@@ -21,6 +28,7 @@ class CotizacionUpdate(BaseModel):
     condiciones_adicionales: Optional[str]
 
 class CotizacionResponse(CotizacionBase):
+    id_cotizacion: int
     subtotal: Optional[float] = None
     descuento_total: Optional[float] = None
     iva_monto: Optional[float] = None

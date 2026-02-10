@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.session import get_db
@@ -9,6 +10,8 @@ router = APIRouter(tags=["Cotizaciones"])
 @router.post("/cotizaciones", response_model=CotizacionResponse)
 def crear_cotizacion(data: CotizacionCreate, db: Session = Depends(get_db)):
     cotizacion = Cotizacion(**data.dict())
+    cotizacion.fecha_emision = date.today()
+    cotizacion.fecha_vencimiento = date.today() + timedelta(days=30)
     db.add(cotizacion)
     db.commit()
     db.refresh(cotizacion)

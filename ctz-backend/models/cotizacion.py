@@ -9,10 +9,11 @@ from models.base import Base
 #La esencia es mapear las tablas de la base de datos a clases de Python.
 class Cotizacion(Base):
     __tablename__ = "cotizaciones"
-
     id_cotizacion = Column(Integer, primary_key=True)
-
+    tipo = Column(String)
     id_cliente = Column(Integer, ForeignKey("clientes.id_cliente"))
+    nombre_cliente = Column(String(255))
+    rut_cliente = Column(String(20))
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"))
     meses = Column(Integer)
     conexiones = Column(Integer)
@@ -27,7 +28,8 @@ class Cotizacion(Base):
 
     fecha_emision = Column(Date)
     fecha_vencimiento = Column(Date)
-
+    id_iva = Column(Integer, ForeignKey("iva.id_iva"))
+    iva_monto = Column(DECIMAL(12,2))
     firma_cliente = Column(String(255))
 
     created_at = Column(TIMESTAMP)
