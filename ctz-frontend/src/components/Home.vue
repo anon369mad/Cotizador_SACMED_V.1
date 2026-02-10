@@ -291,165 +291,202 @@ onMounted(() => {
   </div>
 </template>
 
-<style>
+<style scoped>
 .page {
-  background: white; /* plain white background */
+  background: white;
+  min-height: 100vh;
+  display: flex;
   flex-direction: column;
 }
 
-/* topbar is white with a subtle divider line */
 .topbar {
   background: white;
   color: #0f2140;
-  padding: 8px 28px; /* moved up with smaller padding */
+  padding: 10px clamp(14px, 3vw, 28px);
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(15, 21, 64, 0.146);
+  gap: 12px;
+  position: sticky;
   top: 0;
   z-index: 20;
 }
 
-.brand { margin: 0; font-size: 18px; color: #003366 }
+.brand { margin: 0; font-size: clamp(16px, 2vw, 18px); color: #003366; }
 .subtitle { font-size: 12px; color: rgba(15,21,64,0.5); }
-.topbar-left { display:flex; flex-direction:column;padding-left: 10px; }
-.topbar-right { display:flex; align-items:center; gap:10px; padding-bottom:8px; padding-right: 10px; }
-.topbar-right .user { background: rgba(2,22,66,0.04); padding:6px 10px; border-radius:16px; color:#0f2140 }
-.btn-exit { background: transparent; border: 1px solid rgba(15,21,64,0.08); padding:6px 10px; border-radius:6px; color:#0f2140; cursor:pointer }
-.btn-exit:hover { background: rgba(2,22,66,0.04) }
+.topbar-left { display: flex; flex-direction: column; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.topbar-right .user {
+  background: rgba(2,22,66,0.04);
+  padding: 6px 10px;
+  border-radius: 16px;
+  color: #0f2140;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.btn-exit {
+  background: transparent;
+  border: 1px solid rgba(15,21,64,0.15);
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #0f2140;
+  cursor: pointer;
+}
+.btn-exit:hover { background: rgba(2,22,66,0.04); }
 
 .container-home {
-  display: grid;
-  padding: 16px 86px; /* reduce padding so content fits without scroll */
-  align-items: center; /* center columns vertically */
-  flex: 0.1; /* make it fill remaining vertical space */
+  display: flex;
+  flex: 1;
+  width: 100%;
+  padding: clamp(12px, 2.5vw, 24px) clamp(12px, 4vw, 86px);
 }
-.container-parent { }
-.main-area { display:grid; grid-template-columns: 1fr 1fr; align-items:center; }
+
+.main-area {
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) minmax(320px, 1fr);
+  align-items: start;
+  gap: clamp(16px, 2vw, 24px);
+  width: 100%;
+}
 
 .hist-card {
-  width: 420px; /* slightly narrower to feel more centered */
-  margin: 0; /* ensure centering inside column */
-  background: white; /* always white */
-  border-radius: 8px;
+  width: 100%;
+  background: white;
+  border-radius: 10px;
   padding: 18px;
-  border: 1px solid rgba(15, 21, 64, 0.146); /* soft border */
+  border: 1px solid rgba(15, 21, 64, 0.146);
   box-shadow: 0 2px 8px rgba(2, 22, 66, 0.03);
 }
 
-.hist-card h4 { text-align: left;margin: 0 0 12px 0; color:#003366; font-weight:600 }
-.search { width:90%; padding:10px 12px; border-radius:6px; border:1px solid rgba(15, 21, 64, 0.146); margin-bottom:14px; background:white; }
+.hist-card h4 { text-align: left; margin: 0 0 12px; color: #003366; font-weight: 600; }
+.search {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 21, 64, 0.146);
+  margin-bottom: 14px;
+  background: white;
+}
 
-.list { list-style:none; padding: 0; margin:0; display:flex; flex-direction:column; gap:10px; }
-.list-item { display:flex; justify-content:space-between; align-items:center; padding:14px; background:rgba(114, 226, 243, 0.372); border-radius:6px; border:1px solid rgba(15,21,64,0.03); gap:12px; }
-.company { font-size:12px; font-weight:600; color:#155a52; }
-.meta { color:#6b747a; font-size:10px }
-.list-actions { display:flex; gap:8px; margin-top:8px; }
-.action-btn { border:1px solid rgba(15,21,64,0.12); background:white; color:#0f2140; padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; }
-.action-btn.secondary { background:transparent; color:#0f2140; }
-.list-empty { font-size:12px; color:#6b747a; padding:12px 4px; }
-.list-empty.error { color:#c0392b; }
-.status { padding:4px 8px; border-radius:12px; font-size:12px; }
-.status.confirmed { background:#1fb800; color:#ffffff; }
-.status.draft { background:#ffb300; color:#ffffff; }
-.price { color:#0073ff; font-weight:700 }
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  background: rgba(114, 226, 243, 0.372);
+  border-radius: 8px;
+  border: 1px solid rgba(15,21,64,0.03);
+  gap: 12px;
+}
+.company { font-size: 12px; font-weight: 600; color: #155a52; }
+.meta { color: #6b747a; font-size: 11px; }
+.list-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.action-btn {
+  border: 1px solid rgba(15,21,64,0.12);
+  background: white;
+  color: #0f2140;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.action-btn.secondary { background: transparent; color: #0f2140; }
+.list-empty { font-size: 12px; color: #6b747a; padding: 12px 4px; }
+.list-empty.error { color: #c0392b; }
+.status { padding: 4px 8px; border-radius: 12px; font-size: 12px; white-space: nowrap; }
+.status.confirmed { background: #1fb800; color: #ffffff; }
+.status.draft { background: #ffb300; color: #ffffff; }
+.price { color: #0073ff; font-weight: 700; text-align: right; }
 
-.preview-card { background:white; border-radius:8px; box-shadow: 0 2px 8px rgba(2,22,66,0.04); }
-.tag { font-size:12px; display:inline-block; padding:6px 8px; border-radius:12px; color:white }
-.tag.confirmed { background:#00d18a }
-.preview-body { margin-top:12px }
-.row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0f3f5 }
-.row.total { font-weight:700; color:#0073ff }
-.service-box { background:#f7f9fb; padding:8px; margin:12px 0; border-radius:6px }
-.service-row { display:flex; justify-content:space-between; padding:6px 0 }
+.sidebar {
+  width: 100%;
+  min-width: 0;
+}
 
-/* ------------------------
-   TABS - diseño estilo imagen
-   ------------------------ */
 .tabs-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px 0;
-  border-bottom: 1px solid #e6eef7; /* línea tenue bajo toda la barra */
+  gap: 8px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid #e6eef7;
   overflow-x: auto;
   white-space: nowrap;
 }
 
-/* Tab individual (estilo limpio: texto, sin background pesado) */
 .tab {
-  padding: 10px 16px;
+  padding: 10px 14px;
   background: transparent;
   border-radius: 6px 6px 0 0;
   cursor: pointer;
   font-size: 14px;
-  color: #6b7280; /* gris para inactivo */
+  color: #6b7280;
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   user-select: none;
-  border: none;
-  margin-bottom: -1px; /* evita salto con border-bottom */
 }
-
-/* estilo del texto cuando está activo */
-.tab.active {
-  color: #0f2140;
-  font-weight: 600;
-}
-
-/* línea azul en la pestaña activa (no altera layout) */
+.tab.active { color: #0f2140; font-weight: 600; }
 .tab.active::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: -1px; /* sobresale apenas sobre el borde de la barra */
+  bottom: -1px;
   height: 3px;
-  background: #1aa3ff; /* azul claro brillante */
+  background: #1aa3ff;
   border-radius: 4px;
 }
-
-/* boton "+" como pestaña */
 .add-tab {
-  background: transparent;
-  border: 1px solid transparent;
   font-weight: 700;
   color: #93a0ab;
   min-width: 36px;
   text-align: center;
   padding: 8px 10px;
-  border-radius: 6px;
-  margin-left: 6px;
 }
-
-/* pequeño hover para añadir claridad */
-.tab:hover {
-  background: rgba(2, 22, 66, 0.02);
-}
-
-/* close (cruz) más discreta y alineada */
-.close {
-  margin-left: 8px;
-  cursor: pointer;
-  opacity: 0.6;
-  font-size: 12px;
-  line-height: 1;
-  display: inline-block;
-  vertical-align: middle;
-}
-.close:hover { opacity: 1 }
-
-/* cuando hay muchas tabs permitir scroll horizontal limpio */
+.tab:hover { background: rgba(2, 22, 66, 0.02); }
+.close { margin-left: 8px; cursor: pointer; opacity: 0.6; font-size: 12px; line-height: 1; }
+.close:hover { opacity: 1; }
 .tabs-bar::-webkit-scrollbar { height: 6px; }
 .tabs-bar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.06); border-radius: 4px; }
 
-/* responsive: adaptar padding y tamaño */
-@media (max-width: 960px) {
-  .container-home { padding: 12px 18px; }
-  .hist-card { width: 100%; }
-  .topbar { padding: 12px 18px }
+@media (max-width: 1024px) {
+  .main-area {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    order: -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .topbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .list-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .list-right {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .tab { padding: 8px 12px; font-size: 13px; }
   .add-tab { min-width: 30px; padding: 6px 8px; }
 }

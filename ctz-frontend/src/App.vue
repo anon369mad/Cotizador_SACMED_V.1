@@ -29,18 +29,8 @@ onMounted(() => {
 </template>
 
 <style>
-* {
-  margin: 0;
-  padding: 0; 
-}
-
-body,
-html,
 #app {
-  background: white;
-  height: 100%;
-  margin: 0;
-  padding: 0;
+  min-height: 100vh;
   width: 100%;
 }
 </style>
