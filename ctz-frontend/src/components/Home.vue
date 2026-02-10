@@ -273,7 +273,7 @@ onMounted(() => {
       </template>
 
       <template v-if="currentView === 'tabs'">
-  <section class="main-area">
+  <section class="main-area main-area--tabs">
     <Parent_Add
   :key="activeTabId"
   :quote="tabs.find(t => t.id === activeTabId)?.data"
