@@ -341,7 +341,8 @@ onMounted(() => {
   display: flex;
   flex: 1;
   width: 100%;
-  padding: clamp(12px, 2.5vw, 24px) clamp(12px, 4vw, 86px);
+  justify-content: center;
+  padding: clamp(12px, 2.5vw, 24px) clamp(12px, 4vw, 72px);
 }
 
 .main-area {
@@ -349,7 +350,7 @@ onMounted(() => {
   grid-template-columns: minmax(320px, 520px) minmax(320px, 1fr);
   align-items: start;
   gap: clamp(16px, 2vw, 24px);
-  width: 100%;
+  width: min(1440px, 100%);
 }
 
 .hist-card {

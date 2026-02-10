@@ -213,10 +213,11 @@ function discardQuote() {
 <template>
 <section class="preview">
 
-  <header >
-    <h4 class="tipo">Cotización Tipo {{ baseData.planType }}</h4>
+  <header class="preview-header">
+    <div class="doc-mark">Documento de cotización</div>
+    <h4 class="tipo">Cotización tipo {{ baseData.planType }}</h4>
     <h4 class="client">{{ baseData.cliente || '—' }}</h4>
-    <small class="client">{{ baseData.rut }}</small>
+    <small class="client">RUT: {{ baseData.rut || '—' }}</small>
   </header>
 
   <!-- TABLA -->
@@ -294,7 +295,7 @@ function discardQuote() {
       <strong>${{ iva.toFixed(0) }}</strong>
     </div>
     <div class="grand-total">
-      <span>Total mensual</span>
+      <span>Total</span>
       <strong>${{ total.toFixed(0) }}</strong>
     </div>
   </div>
@@ -335,19 +336,43 @@ function discardQuote() {
 </template>
 
 <style scoped>
+.preview {
+  margin: 0 auto;
+  width: min(760px, 100%);
+  background: #fff;
+  border: 1px solid #d6dde7;
+  box-shadow: 0 10px 25px rgba(15, 21, 64, 0.08);
+  border-radius: 4px;
+  padding: 24px 24px 18px;
+}
+
+.preview-header {
+  border-bottom: 1px solid #dbe2ec;
+  padding-bottom: 12px;
+}
+
+.doc-mark {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
 /* === TABLA GENERAL === */
 .services-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   background: white;
+  margin-top: 14px;
   overflow: hidden;
   color: black;
 }
 
 .services-table th {
   font-weight: 600;
-  background: #f1f5f9;
+  background: #edf2f7;
   color: #0f172a;
   text-transform: uppercase;
   font-size: 12px;
@@ -437,11 +462,12 @@ function discardQuote() {
 }
 
 /* === TOTALES === */
-.totals {
+ .totals {
   margin-top: 18px;
   padding: 14px;
   background: #f8fafc;
-  border-radius: 10px;
+  border: 1px solid #d9e1eb;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -466,8 +492,8 @@ function discardQuote() {
   margin-top: 14px;
   padding: 12px;
   background: #ffffff;
-  border: 1px solid rgba(15,23,42,0.04);
-  border-radius: 10px;
+  border: 1px solid #d9e1eb;
+  border-radius: 4px;
 }
 .conditions-title {
   margin: 0 0 8px 0;
@@ -518,14 +544,16 @@ function discardQuote() {
   margin-left: 6px;
 }
 .tipo {
-  font-size: 11px;
-  color: #64748b;
+  font-size: 12px;
+  color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  margin: 0 0 6px;
 }
 .client{
-    color: #000000;
+    color: #0f172a;
     font-weight: 600;
+    margin: 0;
 }
 /* === BOTONES FINALES === */
 .final-actions {
@@ -557,12 +585,18 @@ function discardQuote() {
 
 /* CONFIRMAR */
 .btn-confirm {
-  background: #38bdf8;
+  background: #0f4c81;
   color: white;
 }
 
 .btn-confirm:hover {
-  background: #0ea5e9;
+  background: #0c3c67;
 }
 
+
+@media (max-width: 780px) {
+  .preview { padding: 14px; }
+  .services-table th, .services-table td { padding: 8px; font-size: 12px; }
+  .final-actions { justify-content: stretch; }
+}
 </style>
