@@ -206,25 +206,6 @@ function discardQuote() {
 
    <tbody>
 
-  <!-- FILA CONFIGURACIÓN DEL SERVICIO -->
-  <tr class="config-row">
-    <td>1</td>
-    <td>
-      <strong></strong>
-        <span v-if="baseData.planType !== 'Única'">
-          {{ baseData.periodMonths }} meses,
-          {{ baseData.conexiones }} conexiones
-        </span>
-    </td>
-    <td>—</td>
-    <td>—</td>
-    <td class="bold">—</td>
-    <td class="actions">
-      <button @click="editItem(baseData)">✏️</button>
-      <button @click="removeItem(null)">🗑️</button>
-    </td>
-  </tr>
-
   <!-- ITEMS -->
   <tr v-for="it in items" :key="it.id">
     <td>{{ it.qty }}</td>
