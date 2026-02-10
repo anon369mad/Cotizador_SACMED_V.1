@@ -105,7 +105,8 @@ function addService() {
       qty: form.cantidad,
       unitValue: form.valor,
       discountPct: form.descuento,
-      condiciones: null
+      condiciones: null,
+      source: 'manual'
     })
 
     form.seleccionado = ''
@@ -129,7 +130,8 @@ function addService() {
     qty: form.cantidad,
     unitValue: form.valor,
     discountPct: form.descuento,
-    condiciones: prestacionSeleccionada.condiciones || null
+    condiciones: prestacionSeleccionada.condiciones || null,
+    source: 'db'
   })
 
   // Limpiar inputs
@@ -219,7 +221,8 @@ function syncPlanItems() {
     unitValue: Number(planBase.valor_plan_mensual || 0),
     discountPct: 0,
     condiciones: planBase.condiciones || null,
-    autoPlan: true
+    autoPlan: true,
+    source: 'db'
   }]
 
   if (conexionesExtra > 0) {
@@ -229,7 +232,8 @@ function syncPlanItems() {
       qty: conexionesExtra,
       unitValue: Number(planBase.valor_conexion_adicional || 0),
       discountPct: 0,
-      autoPlan: true
+      autoPlan: true,
+      source: 'db'
     })
   }
 
