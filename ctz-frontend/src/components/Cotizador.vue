@@ -28,8 +28,11 @@ const defaultForm = {
   valor: 0,
   descuento: 0,
   seleccionado: '',
+  manualServiceName: '',
   items: []
 }
+
+const MANUAL_SERVICE_OPTION = '__manual_service__'
 
 function normalizeInitialData(data) {
   if (!data) return {}
@@ -92,8 +95,29 @@ function formatRut(e) {
 function addService() {
   if (!form.seleccionado) return
 
+  if (form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION) {
+    const manualName = String(form.manualServiceName || '').trim()
+    if (!manualName) return
+
+    form.items.push({
+      id: Date.now(),
+      name: manualName,
+      qty: form.cantidad,
+      unitValue: form.valor,
+      discountPct: form.descuento,
+      condiciones: null
+    })
+
+    form.seleccionado = ''
+    form.manualServiceName = ''
+    form.cantidad = 1
+    form.valor = 0
+    form.descuento = 0
+    return
+  }
+
   const prestacionSeleccionada = prestaciones.value.find(
-    (it) => it.id_prestacion === form.seleccionado
+    (it) => it.id_prestacion === Number(form.seleccionado)
   )
 
   if (!prestacionSeleccionada) return
@@ -109,7 +133,8 @@ function addService() {
   })
 
   // Limpiar inputs
-  form.seleccionado = null
+  form.seleccionado = ''
+  form.manualServiceName = ''
   form.cantidad = 1
   form.valor = 0
   form.descuento = 0
@@ -212,8 +237,13 @@ function syncPlanItems() {
 }
 
 function onSelectPrestacion() {
+  if (form.seleccionado === MANUAL_SERVICE_OPTION) {
+    form.valor = 0
+    return
+  }
+
   const prestacionSeleccionada = prestaciones.value.find(
-    (it) => it.id_prestacion === form.seleccionado
+    (it) => it.id_prestacion === Number(form.seleccionado)
   )
 
   if (!prestacionSeleccionada) return
@@ -358,8 +388,9 @@ watch(
         <div class="items-list">
           <div class="item">
             <div class="svc-main">
-                <select v-model.number="form.seleccionado" class="svc-name" @change="onSelectPrestacion">
+                <select v-model="form.seleccionado" class="svc-name" @change="onSelectPrestacion">
                   <option disabled value="">Selecciona un servicio</option>
+                  <option v-if="form.planType === 'Única'" :value="MANUAL_SERVICE_OPTION">Crear servicio</option>
                     <option
                         v-for="prestacion in prestaciones"
                         :key="prestacion.id_prestacion"
@@ -368,6 +399,13 @@ watch(
                         {{ prestacion.nombre }}
                   </option>
                 </select>
+                <input
+                  v-if="form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION"
+                  v-model="form.manualServiceName"
+                  class="manual-service-input"
+                  type="text"
+                  placeholder="Nombre del servicio manual"
+                />
                 <small v-if="prestacionesLoading">Cargando prestaciones...</small>
                 <small v-else-if="prestacionesError" class="error">{{ prestacionesError }}</small>
             </div>
@@ -460,6 +498,7 @@ watch(
 .svc-main { flex: 1; display: flex; flex-direction: column;}
 .svc-main label { font-size: 11px; color: #6b747a }
 .svc-name {  width: 100%; padding: 8px 80px;margin: 0px 0px 10px 0px ; border-radius: 8px; border: 2px solid rgba(0, 30, 255, 0.473); background: white;color: black;}
+.manual-service-input { width: 100%; padding: 8px 12px; margin: 0 0 10px 0; border-radius: 8px; border: 2px solid rgba(0, 30, 255, 0.473); background: white; color: black; }
 .svc-controls { display: flex; gap: 12px; }
 .mini-field { display: flex; flex-direction: column; gap: 6px; }
 .mini-field label { font-size: 11px; color: #6b747a }
