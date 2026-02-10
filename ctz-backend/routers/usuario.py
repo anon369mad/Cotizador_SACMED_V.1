@@ -1,10 +1,26 @@
+from datetime import datetime, timedelta
+from uuid import uuid4
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.usuario import Usuario
-from schemas.usuario import UsuarioCreate, UsuarioLogin, UsuarioResponse, UsuarioUpdate
+from schemas.usuario import (
+    PasswordRecoveryRequest,
+    PasswordRecoveryTokenResponse,
+    PasswordResetConfirm,
+    UsuarioCreate,
+    UsuarioLogin,
+    UsuarioResponse,
+    UsuarioUpdate,
+)
+
 
 router = APIRouter(tags=["Usuarios"])
+
+# Almacenamiento temporal en memoria para tokens de recuperación.
+# Estructura: {token: {"email": str, "expires_at": datetime}}
+recovery_tokens: dict[str, dict[str, datetime | str]] = {}
 
 @router.post("/usuarios", response_model=UsuarioResponse)
 def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
@@ -66,3 +82,47 @@ def eliminar_usuario(id_usuario: int, db: Session = Depends(get_db)):
     db.delete(usuario)
     db.commit()
     return {"ok": True}
+
+
+@router.post("/password-recovery", response_model=PasswordRecoveryTokenResponse)
+def request_password_recovery(data: PasswordRecoveryRequest, db: Session = Depends(get_db)):
+    usuario = db.query(Usuario).filter(Usuario.email == data.email, Usuario.activo.is_(True)).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="No existe un usuario activo con ese correo")
+
+    token = str(uuid4())
+    recovery_tokens[token] = {
+        "email": usuario.email,
+        "expires_at": datetime.utcnow() + timedelta(minutes=30),
+    }
+
+    return PasswordRecoveryTokenResponse(
+        message="Token de recuperación generado correctamente",
+        recovery_token=token,
+    )
+
+
+@router.post("/password-reset")
+def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get_db)):
+    token_data = recovery_tokens.get(data.token)
+    if not token_data:
+        raise HTTPException(status_code=400, detail="Token inválido")
+
+    expires_at = token_data["expires_at"]
+    if datetime.utcnow() > expires_at:
+        recovery_tokens.pop(data.token, None)
+        raise HTTPException(status_code=400, detail="Token expirado")
+
+    usuario = db.query(Usuario).filter(Usuario.email == token_data["email"]).first()
+    if not usuario:
+        recovery_tokens.pop(data.token, None)
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    if len(data.new_password.strip()) < 6:
+        raise HTTPException(status_code=400, detail="La nueva contraseña debe tener al menos 6 caracteres")
+
+    usuario.password_hash = data.new_password.strip()
+    db.commit()
+    recovery_tokens.pop(data.token, None)
+
+    return {"message": "Contraseña actualizada correctamente"}

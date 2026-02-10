@@ -30,6 +30,55 @@
           />
           <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
         </div>
+
+        <button type="button" class="btn-link" @click="toggleRecoveryForm">
+          ¿Olvidaste tu contraseña?
+        </button>
+
+        <div v-if="showRecovery" class="recovery-panel">
+          <p class="recovery-title">Recuperar contraseña</p>
+          <div class="form-group">
+            <label for="recovery-email">Correo de recuperación</label>
+            <input
+              id="recovery-email"
+              v-model="recoveryEmail"
+              type="email"
+              placeholder="tu@sacmed.cl"
+            />
+          </div>
+
+          <button class="btn-secondary" type="button" :disabled="recoveryLoading" @click="requestRecoveryToken">
+            {{ recoveryLoading ? 'Generando token...' : 'Generar token' }}
+          </button>
+
+          <div v-if="recoveryToken" class="token-box">
+            <p><strong>Token generado:</strong> {{ recoveryToken }}</p>
+            <p class="token-help">Cópialo y úsalo para establecer la nueva contraseña.</p>
+          </div>
+
+          <div class="form-group">
+            <label for="reset-token">Token</label>
+            <input id="reset-token" v-model="resetToken" type="text" placeholder="Pega aquí tu token" />
+          </div>
+
+          <div class="form-group">
+            <label for="new-password">Nueva contraseña</label>
+            <input
+              id="new-password"
+              v-model="newPassword"
+              type="password"
+              placeholder="Mínimo 6 caracteres"
+            />
+          </div>
+
+          <button class="btn-secondary" type="button" :disabled="resetLoading" @click="resetPassword">
+            {{ resetLoading ? 'Actualizando...' : 'Actualizar contraseña' }}
+          </button>
+
+          <p v-if="recoveryMessage" class="success-message">{{ recoveryMessage }}</p>
+          <p v-if="recoveryError" class="form-error">{{ recoveryError }}</p>
+        </div>
+
         <p v-if="formError" class="form-error">{{ formError }}</p>
         <button class="btn-login" type="submit" :disabled="loading">
           {{ loading ? 'Ingresando...' : 'Iniciar Sesión' }}
@@ -47,7 +96,16 @@ export default {
       password: '',
       errors: {},
       formError: '',
-      loading: false
+      loading: false,
+      showRecovery: false,
+      recoveryEmail: '',
+      recoveryToken: '',
+      resetToken: '',
+      newPassword: '',
+      recoveryLoading: false,
+      resetLoading: false,
+      recoveryError: '',
+      recoveryMessage: ''
     }
   },
   methods: {
@@ -55,6 +113,11 @@ export default {
       if (this.errors[field]) {
         this.errors = { ...this.errors, [field]: '' }
       }
+    },
+    toggleRecoveryForm() {
+      this.showRecovery = !this.showRecovery
+      this.recoveryError = ''
+      this.recoveryMessage = ''
     },
     validateForm() {
       const errors = {}
@@ -75,6 +138,84 @@ export default {
 
       this.errors = errors
       return Object.keys(errors).length === 0
+    },
+    async requestRecoveryToken() {
+      this.recoveryError = ''
+      this.recoveryMessage = ''
+      this.recoveryToken = ''
+
+      if (!this.recoveryEmail.trim()) {
+        this.recoveryError = 'Debes ingresar un correo para recuperar la contraseña.'
+        return
+      }
+
+      this.recoveryLoading = true
+      try {
+        const res = await fetch('http://localhost:8000/password-recovery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email: this.recoveryEmail.trim() })
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          this.recoveryError = data?.detail || 'No fue posible generar el token de recuperación.'
+          return
+        }
+
+        this.recoveryToken = data.recovery_token
+        this.resetToken = data.recovery_token
+        this.recoveryMessage = data.message
+      } catch (error) {
+        this.recoveryError = 'No fue posible conectar con el servicio de recuperación.'
+      } finally {
+        this.recoveryLoading = false
+      }
+    },
+    async resetPassword() {
+      this.recoveryError = ''
+      this.recoveryMessage = ''
+
+      if (!this.resetToken.trim()) {
+        this.recoveryError = 'Debes ingresar el token de recuperación.'
+        return
+      }
+
+      if (this.newPassword.trim().length < 6) {
+        this.recoveryError = 'La nueva contraseña debe tener al menos 6 caracteres.'
+        return
+      }
+
+      this.resetLoading = true
+      try {
+        const res = await fetch('http://localhost:8000/password-reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            token: this.resetToken.trim(),
+            new_password: this.newPassword.trim()
+          })
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          this.recoveryError = data?.detail || 'No fue posible actualizar la contraseña.'
+          return
+        }
+
+        this.recoveryMessage = data.message
+        this.password = ''
+      } catch (error) {
+        this.recoveryError = 'No fue posible conectar con el servicio de recuperación.'
+      } finally {
+        this.resetLoading = false
+      }
     },
     async login() {
       this.formError = ''
@@ -176,6 +317,12 @@ form {
   text-align: center;
 }
 
+.success-message {
+  font-size: 13px;
+  color: #0f7e2a;
+  text-align: center;
+}
+
 label {
   font-size: 14px;
   font-weight: 600;
@@ -189,11 +336,11 @@ input {
   font-size: 14px;
   transition: border-color 0.3s ease;
   background-color: rgba(255, 255, 255, 0);
-  color: #000; /* texto en negro */
+  color: #000;
 }
 
 input::placeholder {
-  color: #888; /* placeholder legible */
+  color: #888;
   opacity: 1;
 }
 
@@ -215,7 +362,8 @@ input:focus {
   transition: background 0.3s ease;
 }
 
-.btn-login:disabled {
+.btn-login:disabled,
+.btn-secondary:disabled {
   cursor: not-allowed;
   background: #8ccfff;
 }
@@ -226,5 +374,53 @@ input:focus {
 
 .btn-login:active {
   transform: scale(0.98);
+}
+
+.btn-link {
+  background: transparent;
+  border: none;
+  color: #0073ff;
+  cursor: pointer;
+  align-self: flex-end;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.recovery-panel {
+  border: 1px solid #7ec3ff;
+  border-radius: 4px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recovery-title {
+  color: #0073ff;
+  font-weight: 700;
+  margin: 0;
+}
+
+.btn-secondary {
+  padding: 10px;
+  background: #1ca4ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.token-box {
+  background: rgba(28, 164, 255, 0.1);
+  border: 1px dashed #1ca4ff;
+  border-radius: 4px;
+  padding: 10px;
+  color: #004f9f;
+}
+
+.token-help {
+  margin: 6px 0 0;
+  font-size: 12px;
 }
 </style>
