@@ -59,6 +59,9 @@ const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const prestaciones = ref([])
 const prestacionesLoading = ref(false)
 const prestacionesError = ref('')
+const planes = ref([])
+const planesLoading = ref(false)
+const planesError = ref('')
 
 function formatMoney(v) {
   return '$' + Number(v || 0).toLocaleString('es-CL')
@@ -140,6 +143,74 @@ async function cargarPrestaciones() {
   }
 }
 
+async function cargarPlanes() {
+  planesLoading.value = true
+  planesError.value = ''
+  try {
+    const response = await fetch(`${apiBaseUrl}/planes`)
+    if (!response.ok) {
+      throw new Error('No fue posible cargar los planes')
+    }
+
+    const data = await response.json()
+    planes.value = (Array.isArray(data) ? data : [])
+      .filter((it) => it.activo)
+      .sort((a, b) => Number(a.conexiones_incluidas || 0) - Number(b.conexiones_incluidas || 0))
+  } catch (error) {
+    planesError.value = error instanceof Error
+      ? error.message
+      : 'Error inesperado al cargar planes'
+  } finally {
+    planesLoading.value = false
+  }
+}
+
+function syncPlanItems() {
+  const manualItems = form.items.filter((it) => !it.autoPlan)
+  if (form.planType === 'Única' || !planes.value.length) {
+    form.items = manualItems
+    return
+  }
+
+  const conexionesSolicitadas = Math.max(0, Number(form.conexiones || 0))
+  const planBase = [...planes.value]
+    .reverse()
+    .find((it) => Number(it.conexiones_incluidas || 0) <= conexionesSolicitadas)
+    ?? planes.value[0]
+
+  if (!planBase) {
+    form.items = manualItems
+    return
+  }
+
+  const conexionesIncluidas = Number(planBase.conexiones_incluidas || 0)
+  const conexionesExtra = Math.max(0, conexionesSolicitadas - conexionesIncluidas)
+
+  const planItems = [{
+    id: `auto-plan-${planBase.id_plan}`,
+    id_plan: planBase.id_plan,
+    name: `${planBase.nombre} (${conexionesIncluidas} conexiones)`,
+    qty: 1,
+    unitValue: Number(planBase.valor_plan_mensual || 0),
+    discountPct: 0,
+    condiciones: planBase.condiciones || null,
+    autoPlan: true
+  }]
+
+  if (conexionesExtra > 0) {
+    planItems.push({
+      id: `auto-plan-extra-${planBase.id_plan}`,
+      name: `Conexiones extra (${planBase.nombre})`,
+      qty: conexionesExtra,
+      unitValue: Number(planBase.valor_conexion_adicional || 0),
+      discountPct: 0,
+      autoPlan: true
+    })
+  }
+
+  form.items = [...planItems, ...manualItems]
+}
+
 function onSelectPrestacion() {
   const prestacionSeleccionada = prestaciones.value.find(
     (it) => it.id_prestacion === form.seleccionado
@@ -156,6 +227,7 @@ function onSelectPrestacion() {
 
 onMounted(() => {
   cargarPrestaciones()
+  cargarPlanes()
 })
 
 const subtotal = computed(() =>
@@ -185,6 +257,14 @@ function buildPreview() {
 watch(form, () => {
   emit('update-preview', buildPreview())
 }, { deep: true, immediate: true })
+
+watch(
+  [() => form.conexiones, () => form.planType, planes],
+  () => {
+    syncPlanItems()
+  },
+  { immediate: true }
+)
 watch(
   form,
   (v) => {
@@ -256,6 +336,8 @@ watch(
             <div class="field">
               <label>Cantidad de Conexiones</label>
               <input type="number" min="0" v-model.number="form.conexiones" />
+              <small v-if="planesLoading">Cargando planes...</small>
+              <small v-else-if="planesError" class="error">{{ planesError }}</small>
             </div>
             <div class="field">
               <label>Período de Contratación (meses)</label>
