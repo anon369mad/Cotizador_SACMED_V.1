@@ -8,7 +8,18 @@ router = APIRouter(tags=["Detalles de Cotización"])
 
 @router.post("/cotizacion_detalles", response_model=CotizacionDetalleResponse)
 def crear_detalle(data: CotizacionDetalleCreate, db: Session = Depends(get_db)):
-    detalle = CotizacionDetalle(**data.dict())
+    subtotal = data.cantidad * data.valor_unitario
+    total = subtotal - data.descuento
+
+    detalle = CotizacionDetalle(
+        id_cotizacion=data.id_cotizacion,
+        id_prestacion=data.id_prestacion,
+        cantidad=data.cantidad,
+        valor_unitario=data.valor_unitario,
+        descuento=data.descuento,
+        subtotal=subtotal,
+        total=total,
+    )
     db.add(detalle)
     db.commit()
     db.refresh(detalle)
