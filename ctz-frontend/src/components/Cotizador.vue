@@ -452,12 +452,15 @@ watch(
 
 <style scoped>
 .cotizador-card {
-  background: white;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.37);
-  box-shadow: 0 10px 30px rgba(12, 38, 70, 0.04);
-  flex-direction: column;  
-  padding: 10px;
+  width: min(760px, 100%);
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 21, 64, 0.14);
+  box-shadow: 0 12px 28px rgba(15, 21, 64, 0.07);
+  display: flex;
+  flex-direction: column;
+  padding: clamp(14px, 1.8vw, 20px);
 }
 
 /* header */
@@ -465,9 +468,10 @@ watch(
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1px;
+  margin-bottom: 14px;
+  gap: 12px;
 }
-.card-header h3 { margin: 0; color: #1f2b3a; font-size: 18px }
+.card-header h3 { margin: 0; color: #1f2b3a; font-size: 20px; font-weight: 700 }
 .muted { color: #6b747a; font-size: 12px }
 
 .mode-pill .pill {
@@ -480,13 +484,13 @@ watch(
   color: #4b5b68;
   font-size: 12px;
 }
-.mode-pill .pill.active { background: #00a3f0; color: white }
+.mode-pill .pill.active { background: #0f4c81; color: white; border-color: #0f4c81 }
 
 /* body */
-.card-body {  gap: 7px }
+.card-body { display: flex; flex-direction: column; gap: 12px }
 
 /* sections */
-.section { border: 1px solid rgba(15, 21, 64, 0.06); border-radius: 10px; padding:5px; background: #fff }
+.section { border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px; padding: 12px; background: #fff }
 .section h4 { margin: 0 0 8px 0; color: #3e4b58; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase }
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px }
 
@@ -495,25 +499,25 @@ watch(
 .row.two { display: flex; gap: 12px }
 .field { display: flex; flex-direction: column; gap: 6px }
 .field label { font-size: 12px; color: #6b747a }
-.field input { padding: 10px 12px; border-radius: 8px;border: 2px solid rgba(0, 30, 255, 0.473); font-size: 14px; background: #fbfdff;color: black; }
+.field input { padding: 10px 12px; border-radius: 8px;border: 1px solid rgba(15, 21, 64, 0.24); font-size: 14px; background: #fbfdff;color: black; }
 
 /* items list */
-.item {align-items: center;justify-items: center; border: 1px solid rgba(15, 21, 64, 0.06); border-radius: 10px;  background: #f8fbff }
+.item {align-items: center;justify-items: center; border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px;  background: #f8fbff; padding: 12px }
 .svc-main { flex: 1; display: flex; flex-direction: column;}
 .svc-main label { font-size: 11px; color: #6b747a }
-.svc-name {  width: 100%; padding: 8px 80px;margin: 0px 0px 10px 0px ; border-radius: 8px; border: 2px solid rgba(0, 30, 255, 0.473); background: white;color: black;}
-.manual-service-input { width: 100%; padding: 8px 12px; margin: 0 0 10px 0; border-radius: 8px; border: 2px solid rgba(0, 30, 255, 0.473); background: white; color: black; }
+.svc-name {  width: 100%; padding: 10px 12px;margin: 0 0 10px 0 ; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.24); background: white;color: black;}
+.manual-service-input { width: 100%; padding: 10px 12px; margin: 0 0 10px 0; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.24); background: white; color: black; }
 .svc-controls { display: flex; gap: 12px; }
 .mini-field { display: flex; flex-direction: column; gap: 6px; }
 .mini-field label { font-size: 11px; color: #6b747a }
-.small { width: 72px; padding: 8px; border-radius: 8px; border: 2px solid rgba(0, 30, 255, 0.473);background-color: transparent;color: black; }
-.medium { width: 120px; padding: 8px; border-radius: 8px; border:2px solid rgba(0, 30, 255, 0.473);background-color: transparent;color: black; }
-.tiny { width: 56px; padding: 8px; border-radius: 8px; border:2px solid rgba(0, 30, 255, 0.473); text-align: center ;background-color: transparent;color: black;}
+.small { width: 90px; padding: 8px; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.24);background-color: transparent;color: black; }
+.medium { width: 130px; padding: 8px; border-radius: 8px; border:1px solid rgba(15, 21, 64, 0.24);background-color: transparent;color: black; }
+.tiny { width: 68px; padding: 8px; border-radius: 8px; border:1px solid rgba(15, 21, 64, 0.24); text-align: center ;background-color: transparent;color: black;}
 .discount-input { display: flex; align-items: center; gap: 6px;color: black; }
 .remove { background: white; border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 8px; padding: 7px 9px; cursor: pointer }
 
 /* actions */
-.btn-add { background: #00c853; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px }
+.btn-add { background: #0f4c81; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px }
 .icon-add { width: 16px; height: 16px }
 .btn-add.circle { width: 28px; height: 28px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center }
 
@@ -541,5 +545,10 @@ watch(
   margin: 0;
   font-size: 16px;
   color: #1f2b3a;
+}
+
+@media (max-width: 720px) {
+  .row.two { flex-direction: column; }
+  .svc-controls { flex-wrap: wrap; }
 }
 </style>

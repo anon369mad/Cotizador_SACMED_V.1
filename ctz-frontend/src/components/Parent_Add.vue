@@ -82,67 +82,104 @@ function resetAll() {
 </script>
 
 <template>
+  <section class="quote-workspace">
     <div class="form-cotizador">
-  <!-- IZQUIERDA -->
-  <Cotizador
-  :key="`${tabId}-${resetKey}`"
-  :tab-id="tabId"
-  :initial-data="initialData"
-  @update-preview="updatePreview"
-  />
+      <Cotizador
+        :key="`${tabId}-${resetKey}`"
+        :tab-id="tabId"
+        :initial-data="initialData"
+        @update-preview="updatePreview"
+      />
     </div>
 
-  <!-- DERECHA -->
     <div class="right-panel">
-         <div class="card-header">
-           <h4>Resumen</h4>
-         </div>
+      <div class="card-header">
+        <h4>Previsualización</h4>
+        <small>Formato de documento formal</small>
+      </div>
       <div class="preview-card">
         <Editable_Preview
-        :baseData="previewData"
-        @discard="resetAll"
+          :baseData="previewData"
+          @discard="resetAll"
         />
       </div>
     </div>
+  </section>
 </template>
 
 <style scoped>
 
+.quote-workspace {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
+  gap: clamp(20px, 2.2vw, 34px);
+  align-items: start;
+}
+
 .card-header {
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-bottom: 1px solid rgba(15, 21, 64, 0.08);
-  color: black;
+  color: #1f2b3a;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .card-header h4 {
   font-weight: 600;
+  margin: 0;
+}
+
+.card-header small {
+  color: #6b747a;
 }
 
 .form-cotizador {
   display: flex;
   justify-content: center;
-  align-items: start;
+  align-items: flex-start;
 }
 
-/* Card derecha */
 .right-panel {
-  border: rgba(0, 0, 0, 0.26) solid 1px;
+  border: 1px solid rgba(15, 21, 64, 0.12);
   display: flex;
   flex-direction: column;
-  align-items: start;
-  padding: 12px;
-  background: #0000000a;
+  align-items: stretch;
+  padding: 0;
+  background: #ffffff;
   width: 100%;
-  height: 100%;
-  border-radius: 0px;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(15, 21, 64, 0.05);
 }
 
 .preview-card {
   background: white;
-  border: rgba(0, 0, 0, 0.26) solid 1px;
-  box-shadow: 0 8px 20px rgba(12, 38, 70, 0.05);
+  border-top: 1px solid rgba(15, 21, 64, 0.06);
   width: 100%;
-  height: 100%;
-  border-radius: 10px;
+  border-radius: 0 0 14px 14px;
+  padding: 18px;
+}
+
+@media (max-width: 1180px) {
+  .quote-workspace {
+    grid-template-columns: 1fr;
+    max-width: 980px;
+  }
+
+  .preview-card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .quote-workspace {
+    max-width: 680px;
+  }
+
+  .preview-card {
+    padding: 12px;
+  }
 }
 
 </style>
