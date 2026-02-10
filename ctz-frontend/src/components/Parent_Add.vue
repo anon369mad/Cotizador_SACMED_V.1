@@ -110,11 +110,11 @@ function resetAll() {
 <style scoped>
 
 .quote-workspace {
-  width: min(1280px, 100%);
+  width: min(1440px, 100%);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
-  gap: clamp(20px, 2.2vw, 34px);
+  grid-template-columns: minmax(430px, 1.1fr) minmax(430px, 1fr);
+  gap: clamp(18px, 2vw, 30px);
   align-items: start;
 }
 
@@ -147,10 +147,10 @@ function resetAll() {
   flex-direction: column;
   align-items: stretch;
   padding: 0;
-  background: #ffffff;
+  background: #f5f7fb;
   width: 100%;
   border-radius: 14px;
-  box-shadow: 0 8px 20px rgba(15, 21, 64, 0.05);
+  box-shadow: 0 10px 24px rgba(15, 21, 64, 0.06);
 }
 
 .preview-card {
@@ -164,21 +164,7 @@ function resetAll() {
 @media (max-width: 1180px) {
   .quote-workspace {
     grid-template-columns: 1fr;
-    max-width: 980px;
-  }
-
-  .preview-card {
-    padding: 14px;
-  }
-}
-
-@media (max-width: 900px) {
-  .quote-workspace {
-    max-width: 680px;
-  }
-
-  .preview-card {
-    padding: 12px;
+    max-width: 920px;
   }
 }
 

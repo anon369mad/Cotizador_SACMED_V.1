@@ -353,13 +353,6 @@ onMounted(() => {
   width: min(1440px, 100%);
 }
 
-
-.main-area--tabs {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
 .hist-card {
   width: 100%;
   background: white;
