@@ -4,7 +4,7 @@ from typing import Optional
 class CotizacionDetalleBase(BaseModel):
     id_cotizacion: int
     id_prestacion: Optional[int] = None
-    descripcion: Optional[str] = Field(default=None, validation_alias="descripcion_manual")
+    descripcion: Optional[str] = Field(default=None, max_length=255)
     cantidad: int
     valor_unitario: float
     descuento: float = 0

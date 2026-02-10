@@ -133,7 +133,7 @@ console.log('Payload a enviar:', payload)
       const detailPayload = {
         id_cotizacion: idCotizacion,
         id_prestacion: item.id_prestacion ?? null,
-        descripcion_manual: item.name ?? null,
+        descripcion: item.name ?? null,
         cantidad: item.qty,
         valor_unitario: item.unitValue,
         descuento: item.discountPct ?? 0
