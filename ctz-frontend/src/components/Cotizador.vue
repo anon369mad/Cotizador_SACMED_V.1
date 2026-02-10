@@ -27,7 +27,7 @@ const defaultForm = {
   cantidad: 1,
   valor: 0,
   descuento: 0,
-  seleccionado: null,
+  seleccionado: '',
   items: []
 }
 

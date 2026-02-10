@@ -3,7 +3,7 @@ from typing import Optional
 
 class PrestacionBase(BaseModel):
     nombre: str
-    valor_unitario: float
+    valor_unitario: Optional[float]= None
     condiciones: Optional[str]
     activo: bool = True
 
