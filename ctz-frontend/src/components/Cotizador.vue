@@ -93,8 +93,15 @@ function formatRut(e) {
   form.rut = result
 }
 function addService() {
+  const Seleccionada = prestaciones.value.find(
+    (it) => it.id_prestacion === Number(form.seleccionado)
+  )
+  const condicionServicio = String(Seleccionada.condiciones || '').trim()
+  if (condicionServicio && !form.condiciones.includes(condicionServicio)) {
+    form.condiciones.push(condicionServicio)
+  }
   if (!form.seleccionado) return
-
+  
   if (form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION) {
     const manualName = String(form.manualServiceName || '').trim()
     if (!manualName) return
@@ -204,7 +211,6 @@ function syncPlanItems() {
     .reverse()
     .find((it) => Number(it.conexiones_incluidas || 0) <= conexionesSolicitadas)
     ?? planes.value[0]
-
   if (!planBase) {
     form.items = manualItems
     return
@@ -253,10 +259,6 @@ function onSelectPrestacion() {
   if (!prestacionSeleccionada) return
 
   form.valor = Number(prestacionSeleccionada.valor_unitario || 0)
-  const condicionServicio = String(prestacionSeleccionada.condiciones || '').trim()
-  if (condicionServicio && !form.condiciones.includes(condicionServicio)) {
-    form.condiciones.push(condicionServicio)
-  }
 }
 
 onMounted(() => {

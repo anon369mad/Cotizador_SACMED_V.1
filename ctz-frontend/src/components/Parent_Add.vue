@@ -111,11 +111,11 @@ function resetAll() {
 
 .quote-workspace {
   width: min(1440px, 100%);
-  margin: 0 auto;
+  margin-left: 200px;
   display: grid;
   grid-template-columns: minmax(430px, 1.1fr) minmax(430px, 1fr);
   gap: clamp(18px, 2vw, 30px);
-  align-items: start;
+  align-items: center;
 }
 
 .card-header {
@@ -146,9 +146,9 @@ function resetAll() {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 0;
+  padding: 10px;
   background: #f5f7fb;
-  width: 100%;
+  width: max-content;
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(15, 21, 64, 0.06);
 }
