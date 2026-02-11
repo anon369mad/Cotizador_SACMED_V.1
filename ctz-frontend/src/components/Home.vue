@@ -1,13 +1,17 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import AddOrHist from './Add_or_Hist.vue'
 import Preview from './Preview.vue' 
 import Parent_Add from './Parent_Add.vue'
 
-defineProps({
+const props = defineProps({
   userName: {
     type: String,
     default: 'Usuario'
+  },
+  userId: {
+    type: [String, Number],
+    default: null
   }
 })
 
@@ -70,7 +74,8 @@ function closeTab(id) {
 
 function createEmptyQuote() {
   return {
-    ejecutivo: 'Carolina',
+    idUsuario: props.userId != null ? Number(props.userId) : null,
+    ejecutivo: props.userName || 'Usuario',
     rut: '',
     name: '',
     connections: 0,
@@ -98,7 +103,8 @@ const historyError = ref('')
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const previewQuote = reactive({
-  ejecutivo: 'Usuario',
+  idUsuario: props.userId != null ? Number(props.userId) : null,
+  ejecutivo: props.userName || 'Usuario',
   rut: '',
   name: '—',
   connections: 0,
@@ -108,8 +114,10 @@ const previewQuote = reactive({
 })
 
 function selectHistory(h){
+  previewQuote.idUsuario = h.idUsuario ?? null
+  previewQuote.ejecutivo = h.user || 'Usuario'
   previewQuote.name = h.company
-  previewQuote.rut = ''
+  previewQuote.rut = h.rut || ''
   previewQuote.connections = h.connections || 0
   previewQuote.periodMonths = h.periods || 6
   previewQuote.items = JSON.parse(JSON.stringify(h.items || []))
@@ -117,6 +125,20 @@ function selectHistory(h){
 }
 
 function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
+
+watch(
+  () => [props.userId, props.userName],
+  ([newUserId, newUserName]) => {
+    const normalizedUserId = newUserId != null ? Number(newUserId) : null
+    if (!previewQuote.idUsuario) {
+      previewQuote.idUsuario = normalizedUserId
+    }
+    if (!previewQuote.ejecutivo || previewQuote.ejecutivo === 'Usuario') {
+      previewQuote.ejecutivo = newUserName || 'Usuario'
+    }
+  },
+  { immediate: true }
+)
 
 function statusLabel(status){
   if (!status) return 'Borrador'
@@ -143,8 +165,9 @@ function formatDate(value){
 function mapHistoryItem(item){
   return {
     id: item.id_cotizacion,
-    company: `Cliente #${item.nombre_cliente}`,
-    user: `Usuario #${item.id_usuario}`,
+    company: item.nombre_cliente || 'Cliente sin nombre',
+    idUsuario: item.id_usuario ?? null,
+    user: item.nombre_usuario || `Usuario #${item.id_usuario}`,
     rut: item.rut_cliente || '',
     date: formatDate(item.fecha_emision),
     plan: item.tipo || '—',
@@ -165,8 +188,9 @@ function duplicateQuote(h){
     id,
     title: `Cotización ${tabs.value.length + 1}`,
     data: {
+      idUsuario: h.idUsuario ?? null,
       ejecutivo: h.user,
-      rut: '',
+      rut: h.rut || '',
       name: h.company,
       connections: h.connections || 0,
       periodMonths: h.periods || 6,
@@ -199,6 +223,8 @@ async function loadHistory(){
 }
 
 onMounted(() => {
+  previewQuote.idUsuario = props.userId != null ? Number(props.userId) : null
+  previewQuote.ejecutivo = props.userName || 'Usuario'
   loadHistory()
 })
 </script>

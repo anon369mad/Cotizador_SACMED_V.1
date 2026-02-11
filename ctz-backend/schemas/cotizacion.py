@@ -29,6 +29,7 @@ class CotizacionUpdate(BaseModel):
 
 class CotizacionResponse(CotizacionBase):
     id_cotizacion: int
+    nombre_usuario: Optional[str] = None
     subtotal: Optional[float] = None
     descuento_total: Optional[float] = None
     iva_monto: Optional[float] = None

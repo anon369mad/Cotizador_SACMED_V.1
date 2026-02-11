@@ -49,7 +49,9 @@
         </ul>
       </section>
 
-      <footer class="paper-footer">Documento generado (vista preliminar)</footer>
+      <footer class="paper-footer">
+        Documento generado por: <strong>{{ quote.ejecutivo || 'Usuario' }}</strong>
+      </footer>
     </div>
   </div>
 </template>

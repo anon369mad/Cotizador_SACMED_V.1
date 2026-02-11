@@ -3,9 +3,29 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion import Cotizacion
+from models.usuario import Usuario
 from schemas.cotizacion import CotizacionCreate, CotizacionResponse, CotizacionUpdate
 
 router = APIRouter(tags=["Cotizaciones"])
+
+
+def attach_user_names(cotizaciones: list[Cotizacion], db: Session):
+    user_ids = {cot.id_usuario for cot in cotizaciones if cot.id_usuario is not None}
+    if not user_ids:
+        return cotizaciones
+
+    usuarios = (
+        db.query(Usuario.id_usuario, Usuario.nombre)
+        .filter(Usuario.id_usuario.in_(user_ids))
+        .all()
+    )
+    nombres_por_id = {id_usuario: nombre for id_usuario, nombre in usuarios}
+
+    for cot in cotizaciones:
+        cot.nombre_usuario = nombres_por_id.get(cot.id_usuario)
+
+    return cotizaciones
+
 
 @router.post("/cotizaciones", response_model=CotizacionResponse)
 def crear_cotizacion(data: CotizacionCreate, db: Session = Depends(get_db)):
@@ -19,13 +39,16 @@ def crear_cotizacion(data: CotizacionCreate, db: Session = Depends(get_db)):
 
 @router.get("/cotizaciones", response_model=list[CotizacionResponse])
 def listar_cotizaciones(db: Session = Depends(get_db)):
-    return db.query(Cotizacion).all()
+    cotizaciones = db.query(Cotizacion).all()
+    return attach_user_names(cotizaciones, db)
 
 @router.get("/cotizaciones/{id_cotizacion}", response_model=CotizacionResponse)
 def obtener_cotizacion(id_cotizacion: int, db: Session = Depends(get_db)):
     cotizacion = db.query(Cotizacion).get(id_cotizacion)
     if not cotizacion:
         raise HTTPException(status_code=404, detail="Cotización no encontrada")
+
+    attach_user_names([cotizacion], db)
     return cotizacion
 
 @router.put("/cotizaciones/{id_cotizacion}", response_model=CotizacionResponse)
