@@ -34,6 +34,58 @@ const defaultForm = {
 
 const MANUAL_SERVICE_OPTION = '__manual_service__'
 
+function normalizeConditionEntry(entry) {
+  if (entry && typeof entry === 'object') {
+    const text = String(entry.text ?? entry.condicion ?? '').trim()
+    if (!text) return null
+    return {
+      text,
+      source: entry.source === 'service' ? 'service' : 'manual',
+      itemId: entry.itemId ?? null
+    }
+  }
+
+  const text = String(entry || '').trim()
+  if (!text) return null
+  return {
+    text,
+    source: 'manual',
+    itemId: null
+  }
+}
+
+function ensureConditionsArray() {
+  if (!Array.isArray(form.condiciones)) {
+    form.condiciones = String(form.condiciones || '')
+      .split(/\r?\n/)
+      .map((entry) => normalizeConditionEntry(entry))
+      .filter(Boolean)
+    return
+  }
+
+  form.condiciones = form.condiciones
+    .map((entry) => normalizeConditionEntry(entry))
+    .filter(Boolean)
+}
+
+function addServiceCondition(itemId, conditionText) {
+  ensureConditionsArray()
+  const text = String(conditionText || '').trim()
+  if (!text) return
+
+  const existing = form.condiciones.find(
+    (entry) => entry.source === 'service' && entry.itemId === itemId && entry.text === text
+  )
+
+  if (!existing) {
+    form.condiciones.push({
+      text,
+      source: 'service',
+      itemId
+    })
+  }
+}
+
 function normalizeInitialData(data) {
   if (!data) return {}
   return {
@@ -93,21 +145,16 @@ function formatRut(e) {
   form.rut = result
 }
 function addService() {
-  const Seleccionada = prestaciones.value.find(
-    (it) => it.id_prestacion === Number(form.seleccionado)
-  )
-  const condicionServicio = String(Seleccionada.condiciones || '').trim()
-  if (condicionServicio && !form.condiciones.includes(condicionServicio)) {
-    form.condiciones.push(condicionServicio)
-  }
   if (!form.seleccionado) return
   
   if (form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION) {
     const manualName = String(form.manualServiceName || '').trim()
     if (!manualName) return
 
+    const manualItemId = Date.now()
+
     form.items.push({
-      id: Date.now(),
+      id: manualItemId,
       name: manualName,
       qty: form.cantidad,
       unitValue: form.valor,
@@ -130,8 +177,9 @@ function addService() {
 
   if (!prestacionSeleccionada) return
 
+  const itemId = Date.now()
   form.items.push({
-    id: Date.now(),
+    id: itemId,
     id_prestacion: prestacionSeleccionada.id_prestacion,
     name: prestacionSeleccionada.nombre,
     qty: form.cantidad,
@@ -140,6 +188,8 @@ function addService() {
     condiciones: prestacionSeleccionada.condiciones || null,
     source: 'db'
   })
+
+  addServiceCondition(itemId, prestacionSeleccionada.condiciones)
 
   // Limpiar inputs
   form.seleccionado = ''
@@ -150,9 +200,14 @@ function addService() {
 
 }
 function addCondicion() {
+  ensureConditionsArray()
   const condicion = String(form.condicion || '').trim()
   if (!condicion) return
-  form.condiciones.push(condicion)
+  form.condiciones.push({
+    text: condicion,
+    source: 'manual',
+    itemId: null
+  })
   form.condicion = ''
 
 }
@@ -262,6 +317,7 @@ function onSelectPrestacion() {
 }
 
 onMounted(() => {
+  ensureConditionsArray()
   cargarPrestaciones()
   cargarPlanes()
 })

@@ -11,11 +11,38 @@ const props = defineProps({
 
 const items = computed(() => props.baseData.items || [])
 
+function normalizeConditionEntry(entry) {
+  if (entry && typeof entry === 'object') {
+    const text = String(entry.text ?? entry.condicion ?? '').trim()
+    if (!text) return null
+    return {
+      text,
+      source: entry.source === 'service' ? 'service' : 'manual',
+      itemId: entry.itemId ?? null
+    }
+  }
+
+  const text = String(entry || '').trim()
+  if (!text) return null
+  return {
+    text,
+    source: 'manual',
+    itemId: null
+  }
+}
+
 const conditionsList = computed(() => {
   const c = props.baseData.condiciones ?? props.baseData.condiciones_adicionales ?? null
   if (!c) return []
-  if (Array.isArray(c)) return c
-  return String(c).split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+  if (Array.isArray(c)) {
+    return c
+      .map((entry) => normalizeConditionEntry(entry))
+      .filter(Boolean)
+  }
+  return String(c)
+    .split(/\r?\n/)
+    .map((entry) => normalizeConditionEntry(entry))
+    .filter(Boolean)
 })
 
 const editIndex = ref(-1)
@@ -33,24 +60,34 @@ function ensureConditionsArray() {
   if (!Array.isArray(props.baseData.condiciones)) {
     props.baseData.condiciones = String(props.baseData.condiciones)
       .split(/\r?\n/)
-      .map(s => s.trim())
+      .map((entry) => normalizeConditionEntry(entry))
       .filter(Boolean)
+    return
   }
+
+  props.baseData.condiciones = props.baseData.condiciones
+    .map((entry) => normalizeConditionEntry(entry))
+    .filter(Boolean)
 }
 
 function startEditCondition(i) {
   ensureConditionsArray()
+  if (isServiceCondition(i)) return
   editIndex.value = i
-  editText.value = props.baseData.condiciones[i] || ''
+  editText.value = props.baseData.condiciones[i]?.text || ''
 }
 
 function saveCondition(i) {
   ensureConditionsArray()
+  if (isServiceCondition(i)) return
   const v = String(editText.value || '').trim()
   if (!v) {
     props.baseData.condiciones.splice(i, 1)
   } else {
-    props.baseData.condiciones.splice(i, 1, v)
+    props.baseData.condiciones.splice(i, 1, {
+      ...props.baseData.condiciones[i],
+      text: v
+    })
   }
   editIndex.value = -1
   editText.value = ''
@@ -63,9 +100,14 @@ function cancelEditCondition() {
 
 function removeCondition(i) {
   ensureConditionsArray()
+  if (isServiceCondition(i)) return
   if (i >= 0 && i < props.baseData.condiciones.length) {
     props.baseData.condiciones.splice(i, 1)
   }
+}
+
+function isServiceCondition(i) {
+  return props.baseData.condiciones?.[i]?.source === 'service'
 }
 const subtotal = computed(() =>
   items.value.reduce(
@@ -117,6 +159,11 @@ function cancelItemEdit() {
 function removeItem(id) {
   const idx = props.baseData.items.findIndex(i => i.id === id)
   if (idx !== -1) props.baseData.items.splice(idx, 1)
+  ensureConditionsArray()
+  props.baseData.condiciones = props.baseData.condiciones.filter((condition) => {
+    if (condition.source !== 'service') return true
+    return condition.itemId !== id
+  })
 }
 async function confirmQuote() {
   isSaving.value = true
@@ -136,7 +183,7 @@ async function confirmQuote() {
       descuento_total: items.value.reduce((s, it) => s + it.qty * it.unitValue * (it.discountPct / 100), 0),
       iva_monto: iva.value,
       total: total.value,
-      condiciones_adicionales: props.baseData.condiciones?.join('\n') || null
+      condiciones_adicionales: props.baseData.condiciones?.map((c) => c.text).join('\n') || null
     }
 console.log('Payload a enviar:', payload)
     const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones`, {
@@ -313,10 +360,18 @@ function discardQuote() {
           <button class="cond-action" @click="cancelEditCondition">Cancelar</button>
         </template>
         <template v-else>
-          <span class="cond-text">{{ c }}</span>
+          <span class="cond-text">{{ c.text }}</span>
           <span class="conditions-item-actions">
-            <button @click="startEditCondition(i)" title="Editar">✏️</button>
-            <button @click="removeCondition(i)" title="Eliminar">🗑️</button>
+            <button
+              v-if="!isServiceCondition(i)"
+              @click="startEditCondition(i)"
+              title="Editar"
+            >✏️</button>
+            <button
+              v-if="!isServiceCondition(i)"
+              @click="removeCondition(i)"
+              title="Eliminar"
+            >🗑️</button>
           </span>
         </template>
       </li>
