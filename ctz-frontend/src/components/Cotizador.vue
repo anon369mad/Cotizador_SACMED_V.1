@@ -486,7 +486,7 @@ watch(
   color: #4b5b68;
   font-size: 12px;
 }
-.mode-pill .pill.active { background: #0f4c81; color: white; border-color: #0f4c81 }
+.mode-pill .pill.active { background: #00b3ff; color: white; border-color: #00b3ff }
 
 /* body */
 .card-body { display: flex; flex-direction: column; gap: 12px }
@@ -519,7 +519,7 @@ watch(
 .remove { background: white; border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 8px; padding: 7px 9px; cursor: pointer }
 
 /* actions */
-.btn-add { background: #0f4c81; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px }
+.btn-add { background: #08d308; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px }
 .icon-add { width: 16px; height: 16px }
 .btn-add.circle { width: 28px; height: 28px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center }
 

@@ -585,7 +585,7 @@ function discardQuote() {
 
 /* CONFIRMAR */
 .btn-confirm {
-  background: #0f4c81;
+  background: #00b3ff;
   color: white;
 }
 

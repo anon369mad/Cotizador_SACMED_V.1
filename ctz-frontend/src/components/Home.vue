@@ -143,8 +143,9 @@ function formatDate(value){
 function mapHistoryItem(item){
   return {
     id: item.id_cotizacion,
-    company: `Cliente #${item.id_cliente}`,
+    company: `Cliente #${item.nombre_cliente}`,
     user: `Usuario #${item.id_usuario}`,
+    rut: item.rut_cliente || '',
     date: formatDate(item.fecha_emision),
     plan: item.tipo || '—',
     connections: item.conexiones || 0,
@@ -187,6 +188,7 @@ async function loadHistory(){
     }
     const data = await response.json()
     history.value = (Array.isArray(data) ? data : []).map(mapHistoryItem)
+    console.log('Historial cargado:', history.value)
   } catch (error) {
     historyError.value = error instanceof Error
       ? error.message
