@@ -343,6 +343,11 @@ const subtotal = computed(() =>
 
 const iva = computed(() => Math.round(subtotal.value * 0.19))
 const total = computed(() => subtotal.value + iva.value)
+const minPeriodMonths = computed(() => {
+  if (form.planType !== 'Período') return 1
+  const conexiones = Number(form.conexiones || 0)
+  return conexiones === 1 || conexiones === 2 ? 6 : 1
+})
 
 function buildPreview() {
   return {
@@ -368,6 +373,17 @@ watch(
   [() => form.conexiones, () => form.planType, planes],
   () => {
     syncPlanItems()
+  },
+  { immediate: true }
+)
+
+watch(
+  [() => form.conexiones, () => form.planType],
+  () => {
+    if (form.planType !== 'Período') return
+    if (Number(form.periodMonths || 0) < minPeriodMonths.value) {
+      form.periodMonths = minPeriodMonths.value
+    }
   },
   { immediate: true }
 )
@@ -447,7 +463,8 @@ watch(
             </div>
             <div class="field">
               <label>Período de Contratación (meses)</label>
-              <input type="number" min="1" v-model.number="form.periodMonths" />
+              <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
+              <small v-if="minPeriodMonths === 6">Para 1 o 2 conexiones, el mínimo es de 6 meses.</small>
             </div>
           </div>
         </div>
