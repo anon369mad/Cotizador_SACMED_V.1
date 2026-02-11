@@ -18,7 +18,8 @@ function normalizeConditionEntry(entry) {
     return {
       text,
       source: entry.source === 'service' ? 'service' : 'manual',
-      itemId: entry.itemId ?? null
+      itemId: entry.itemId ?? null,
+      serviceName: entry.serviceName ?? null
     }
   }
 
@@ -27,7 +28,8 @@ function normalizeConditionEntry(entry) {
   return {
     text,
     source: 'manual',
-    itemId: null
+    itemId: null,
+    serviceName: null
   }
 }
 
@@ -107,7 +109,14 @@ function removeCondition(i) {
 }
 
 function isServiceCondition(i) {
-  return props.baseData.condiciones?.[i]?.source === 'service'
+  return conditionsList.value?.[i]?.source === 'service'
+}
+
+function conditionSourceLabel(condition) {
+  if (condition?.source !== 'service') return 'Manual'
+  return condition?.serviceName
+    ? `Servicio: ${condition.serviceName}`
+    : 'Servicio asociado'
 }
 const subtotal = computed(() =>
   items.value.reduce(
@@ -156,29 +165,54 @@ function cancelItemEdit() {
   editUnitValue.value = 0
 }
 
+function splitConditionText(conditionText) {
+  return String(conditionText || '')
+    .split(/\r?\n/)
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)
+}
+
+function getServiceConditionsFromItems() {
+  const serviceConditions = []
+  const seen = new Set()
+
+  for (const item of props.baseData.items || []) {
+    const itemId = item?.id ?? null
+    if (itemId == null) continue
+
+    const serviceName = String(item?.name || '').trim() || 'Servicio'
+    const itemConditions = splitConditionText(item?.condiciones)
+
+    for (const conditionText of itemConditions) {
+      const dedupeKey = `${String(itemId)}::${conditionText}`
+      if (seen.has(dedupeKey)) continue
+
+      seen.add(dedupeKey)
+      serviceConditions.push({
+        text: conditionText,
+        source: 'service',
+        itemId,
+        serviceName
+      })
+    }
+  }
+
+  return serviceConditions
+}
+
+function syncConditionsWithItems() {
+  ensureConditionsArray()
+  const manualConditions = props.baseData.condiciones.filter((condition) => condition.source !== 'service')
+  props.baseData.condiciones = [...manualConditions, ...getServiceConditionsFromItems()]
+}
+
 function removeItem(id) {
   const idx = props.baseData.items.findIndex((i) => String(i.id) === String(id))
-  const removedItem = idx !== -1 ? props.baseData.items[idx] : null
-
   if (idx !== -1) {
     props.baseData.items.splice(idx, 1)
   }
 
-  ensureConditionsArray()
-
-  const removedConditionText = String(removedItem?.condiciones || '').trim()
-  props.baseData.condiciones = props.baseData.condiciones.filter((condition) => {
-    if (condition.source !== 'service') return true
-
-    const sameItemId = condition.itemId != null && String(condition.itemId) === String(id)
-    if (sameItemId) return false
-
-    if (condition.itemId == null && removedConditionText) {
-      return String(condition.text || '').trim() !== removedConditionText
-    }
-
-    return true
-  })
+  syncConditionsWithItems()
 }
 async function confirmQuote() {
   isSaving.value = true
@@ -380,6 +414,12 @@ function discardQuote() {
         </template>
         <template v-else>
           <span class="cond-text">{{ c.text }}</span>
+          <span
+            class="cond-source"
+            :class="{ 'cond-source-service': c.source === 'service', 'cond-source-manual': c.source !== 'service' }"
+          >
+            {{ conditionSourceLabel(c) }}
+          </span>
           <span class="conditions-item-actions">
             <button
               v-if="!isServiceCondition(i)"
@@ -588,6 +628,26 @@ function discardQuote() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.cond-source {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cond-source-service {
+  background: rgba(37, 99, 235, 0.14);
+  color: #1e40af;
+}
+
+.cond-source-manual {
+  background: rgba(22, 163, 74, 0.14);
+  color: #166534;
 }
 .conditions-item .cond-text {
   flex: 1 1 auto;
