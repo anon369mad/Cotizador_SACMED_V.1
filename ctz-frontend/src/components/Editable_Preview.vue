@@ -157,12 +157,27 @@ function cancelItemEdit() {
 }
 
 function removeItem(id) {
-  const idx = props.baseData.items.findIndex(i => i.id === id)
-  if (idx !== -1) props.baseData.items.splice(idx, 1)
+  const idx = props.baseData.items.findIndex((i) => String(i.id) === String(id))
+  const removedItem = idx !== -1 ? props.baseData.items[idx] : null
+
+  if (idx !== -1) {
+    props.baseData.items.splice(idx, 1)
+  }
+
   ensureConditionsArray()
+
+  const removedConditionText = String(removedItem?.condiciones || '').trim()
   props.baseData.condiciones = props.baseData.condiciones.filter((condition) => {
     if (condition.source !== 'service') return true
-    return condition.itemId !== id
+
+    const sameItemId = condition.itemId != null && String(condition.itemId) === String(id)
+    if (sameItemId) return false
+
+    if (condition.itemId == null && removedConditionText) {
+      return String(condition.text || '').trim() !== removedConditionText
+    }
+
+    return true
   })
 }
 async function confirmQuote() {
