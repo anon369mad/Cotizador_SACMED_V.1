@@ -22,8 +22,8 @@ const previewData = reactive({
   cliente: '',
   rut: '',
   planType: 'Período',
-  conexiones: 0,
-  periodMonths: 0,
+  conexiones: 1,
+  periodMonths: 3,
   condiciones: '',
   items: []
 })
@@ -33,8 +33,8 @@ const defaultPreview = () => ({
   cliente: '',
   rut: '',
   planType: 'Período',
-  conexiones: 0,
-  periodMonths: 0,
+  conexiones: 1,
+  periodMonths: 3,
   condiciones: '',
   items: []
 })

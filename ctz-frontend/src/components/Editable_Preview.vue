@@ -133,6 +133,16 @@ const subtotal = computed(() =>
 
 const iva = computed(() => Math.round(subtotal.value * 0.19))
 const total = computed(() => subtotal.value + iva.value)
+const totalPeriod = computed(() => {
+  const months = Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1)
+  return total.value * Math.max(1, months)
+})
+
+const periodDescriptor = computed(() => {
+  const months = Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1)
+  if (months === 3) return 'Trimestral'
+  return `${months} mes${months === 1 ? '' : 'es'}`
+})
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const isSaving = ref(false)
 const errorMessage = ref('')
@@ -398,16 +408,16 @@ function discardQuote() {
   <!-- TOTALES -->
   <div class="totals">
     <div>
-      <span>Subtotal</span>
+      <span>Subtotal mensual</span>
       <strong>${{ subtotal.toFixed(0) }}</strong>
     </div>
     <div>
-      <span>IVA (19%)</span>
+      <span>IVA mensual (19%)</span>
       <strong>${{ iva.toFixed(0) }}</strong>
     </div>
     <div class="grand-total">
-      <span>Total</span>
-      <strong>${{ total.toFixed(0) }}</strong>
+      <span>Total ({{ periodDescriptor }})</span>
+      <strong>${{ totalPeriod.toFixed(0) }}</strong>
     </div>
   </div>
 

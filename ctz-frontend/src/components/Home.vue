@@ -78,8 +78,8 @@ function createEmptyQuote() {
     ejecutivo: props.userName || 'Usuario',
     rut: '',
     name: '',
-    connections: 0,
-    periodMonths: 6,
+    connections: 1,
+    periodMonths: 3,
     items: [],
     conditions: []
   }
@@ -107,8 +107,8 @@ const previewQuote = reactive({
   ejecutivo: props.userName || 'Usuario',
   rut: '',
   name: '—',
-  connections: 0,
-  periodMonths: 6,
+  connections: 1,
+  periodMonths: 3,
   items: [],
   conditions: []
 })
