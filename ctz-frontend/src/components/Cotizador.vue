@@ -53,7 +53,8 @@ function normalizeConditionEntry(entry) {
     return {
       text,
       source: entry.source === 'service' ? 'service' : 'manual',
-      itemId: entry.itemId ?? null
+      itemId: entry.itemId ?? null,
+      serviceName: entry.serviceName ?? null
     }
   }
 
@@ -62,7 +63,8 @@ function normalizeConditionEntry(entry) {
   return {
     text,
     source: 'manual',
-    itemId: null
+    itemId: null,
+    serviceName: null
   }
 }
 
@@ -80,22 +82,45 @@ function ensureConditionsArray() {
     .filter(Boolean)
 }
 
-function addServiceCondition(itemId, conditionText) {
-  ensureConditionsArray()
-  const text = String(conditionText || '').trim()
-  if (!text) return
+function splitConditionText(conditionText) {
+  return String(conditionText || '')
+    .split(/\r?\n/)
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)
+}
 
-  const existing = form.condiciones.find(
-    (entry) => entry.source === 'service' && entry.itemId === itemId && entry.text === text
-  )
+function getServiceConditionsFromItems() {
+  const serviceConditions = []
+  const seen = new Set()
 
-  if (!existing) {
-    form.condiciones.push({
-      text,
-      source: 'service',
-      itemId
-    })
+  for (const item of form.items) {
+    const itemId = item?.id ?? null
+    if (itemId == null) continue
+
+    const serviceName = String(item?.name || '').trim() || 'Servicio'
+    const itemConditions = splitConditionText(item?.condiciones)
+
+    for (const text of itemConditions) {
+      const dedupeKey = `${String(itemId)}::${text}`
+      if (seen.has(dedupeKey)) continue
+
+      seen.add(dedupeKey)
+      serviceConditions.push({
+        text,
+        source: 'service',
+        itemId,
+        serviceName
+      })
+    }
   }
+
+  return serviceConditions
+}
+
+function syncConditionsWithItems() {
+  ensureConditionsArray()
+  const manualConditions = form.condiciones.filter((entry) => entry.source !== 'service')
+  form.condiciones = [...manualConditions, ...getServiceConditionsFromItems()]
 }
 
 function normalizeInitialData(data) {
@@ -202,7 +227,7 @@ function addService() {
     source: 'db'
   })
 
-  addServiceCondition(itemId, prestacionSeleccionada.condiciones)
+  syncConditionsWithItems()
 
   // Limpiar inputs
   form.seleccionado = ''
@@ -219,7 +244,8 @@ function addCondicion() {
   form.condiciones.push({
     text: condicion,
     source: 'manual',
-    itemId: null
+    itemId: null,
+    serviceName: null
   })
   form.condicion = ''
 
@@ -271,6 +297,7 @@ function syncPlanItems() {
   const manualItems = form.items.filter((it) => !it.autoPlan)
   if (form.planType === 'Única' || !planes.value.length) {
     form.items = manualItems
+    syncConditionsWithItems()
     return
   }
 
@@ -281,6 +308,7 @@ function syncPlanItems() {
     ?? planes.value[0]
   if (!planBase) {
     form.items = manualItems
+    syncConditionsWithItems()
     return
   }
 
@@ -312,6 +340,7 @@ function syncPlanItems() {
   }
 
   form.items = [...planItems, ...manualItems]
+  syncConditionsWithItems()
 }
 
 function onSelectPrestacion() {
@@ -331,9 +360,18 @@ function onSelectPrestacion() {
 
 onMounted(() => {
   ensureConditionsArray()
+  syncConditionsWithItems()
   cargarPrestaciones()
   cargarPlanes()
 })
+
+watch(
+  () => form.items,
+  () => {
+    syncConditionsWithItems()
+  },
+  { deep: true }
+)
 
 const subtotal = computed(() =>
   form.items.reduce((sum, it) => {
