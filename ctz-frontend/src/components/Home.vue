@@ -208,11 +208,17 @@ onMounted(() => {
     <header class="topbar">
       <div class="topbar-left">
         <h2 class="brand">Sistema de Cotizaciones</h2>
-        <div class="subtitle">Panel</div>
+        <div class="subtitle">Panel De</div>
       </div>
       <div class="topbar-right">
-        <div class="user">{{ userName }}</div>
-        <button class="btn-exit" @click="logout">Salir</button>
+        <div class="user">
+          <span class="user-icon">👤</span>
+          <span class="user-name">{{ userName }}</span>
+        </div>
+        <button class="btn-exit" @click="logout">
+          <span class="exit-icon">🚪</span>
+          <span class="exit-text">Salir</span>
+        </button>
       </div>
     </header>
      <div v-if="currentView === 'tabs'" class="tabs-bar">
@@ -320,24 +326,58 @@ onMounted(() => {
 .topbar-left { display: flex; flex-direction: column; }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 .topbar-right .user {
-  background: rgba(2,22,66,0.04);
-  padding: 6px 10px;
-  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(26,163,255,0.08), rgba(2,22,66,0.04));
+  padding: 8px 12px;
+  border-radius: 20px;
   color: #0f2140;
-  max-width: 190px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 200px;
+  border: 1px solid rgba(26,163,255,0.15);
+  transition: all 0.2s ease;
+}
+.topbar-right .user:hover {
+  background: linear-gradient(135deg, rgba(26,163,255,0.12), rgba(2,22,66,0.06));
+  border-color: rgba(26,163,255,0.25);
+}
+.user-icon {
+  font-size: 16px;
+  min-width: 16px;
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .btn-exit {
-  background: transparent;
-  border: 1px solid rgba(15,21,64,0.15);
-  padding: 6px 10px;
-  border-radius: 6px;
-  color: #0f2140;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  color: white;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(255,107,107,0.2);
 }
-.btn-exit:hover { background: rgba(2,22,66,0.04); }
+.btn-exit:hover {
+  background: linear-gradient(135deg, #ff5252, #dd4e63);
+  box-shadow: 0 4px 12px rgba(255,107,107,0.3);
+  transform: translateY(-1px);
+}
+.exit-icon {
+  font-size: 16px;
+}
+.exit-text {
+  line-height: 1;
+}
 
 .container-home {
   display: flex;
