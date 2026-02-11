@@ -5,15 +5,18 @@ import Home from './components/Home.vue'
 
 const loggedIn = ref(false)
 const userName = ref('')
+const userId = ref(null)
 
 function handleLogin(usuario) {
   userName.value = usuario.nombre || usuario.email || 'Usuario'
+  userId.value = usuario.id_usuario ?? null
   loggedIn.value = true
 }
 
 function handleLogout() {
   loggedIn.value = false
   userName.value = ''
+  userId.value = null
   localStorage.clear()
 }
 
@@ -25,7 +28,7 @@ onMounted(() => {
 
 <template>
   <Logo v-if="!loggedIn" @login-ok="handleLogin" />
-  <Home v-else :userName="userName" @logout="handleLogout" />
+  <Home v-else :userName="userName" :userId="userId" @logout="handleLogout" />
 </template>
 
 <style>

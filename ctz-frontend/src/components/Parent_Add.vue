@@ -17,6 +17,7 @@ const props = defineProps({
 const resetKey = ref(0)
 
 const previewData = reactive({
+  idUsuario: null,
   ejecutivo: '',
   cliente: '',
   rut: '',
@@ -28,6 +29,7 @@ const previewData = reactive({
 })
 
 const defaultPreview = () => ({
+  idUsuario: null,
   ejecutivo: '',
   cliente: '',
   rut: '',
@@ -44,6 +46,7 @@ function normalizeQuote(quote) {
 
   const mapped = {
     ...quote,
+    idUsuario: quote.idUsuario ?? quote.id_usuario ?? base.idUsuario ?? null,
     ejecutivo: quote.ejecutivo ?? quote.user ?? base.ejecutivo,
     cliente: quote.cliente ?? quote.name ?? base.cliente,
     conexiones: quote.conexiones ?? quote.connections ?? base.conexiones,

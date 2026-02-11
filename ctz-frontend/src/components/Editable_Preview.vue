@@ -362,6 +362,10 @@ function discardQuote() {
     </div>
   </div>
 
+  <footer class="preview-footer">
+    Documento generado por: <strong>{{ baseData.ejecutivo || 'Usuario' }}</strong>
+  </footer>
+
 </section>
   
   <!-- CONDICIONES ADICIONALES -->
@@ -624,6 +628,14 @@ function discardQuote() {
     color: #0f172a;
     font-weight: 600;
     margin: 0;
+}
+
+.preview-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #dbe2ec;
+  color: #475569;
+  font-size: 12px;
 }
 /* === BOTONES FINALES === */
 .final-actions {

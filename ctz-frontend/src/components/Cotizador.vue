@@ -15,8 +15,20 @@ const props = defineProps({
 })
 
 const STORAGE_KEY = computed(() => `cotizador_form_${props.tabId}`)
+
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem('cotizador_user')
+    return raw ? JSON.parse(raw) : null
+  } catch (error) {
+    return null
+  }
+}
+
+const storedUser = getStoredUser()
 const defaultForm = {
-  ejecutivo: '',
+  idUsuario: storedUser?.id_usuario ?? null,
+  ejecutivo: storedUser?.nombre || storedUser?.email || '',
   cliente: '',
   rut: '',
   planType: 'Período',
@@ -90,6 +102,7 @@ function normalizeInitialData(data) {
   if (!data) return {}
   return {
     ...data,
+    idUsuario: data.idUsuario ?? data.id_usuario ?? null,
     ejecutivo: data.ejecutivo ?? data.user ?? '',
     cliente: data.cliente ?? data.name ?? '',
     conexiones: data.conexiones ?? data.connections ?? 1,
@@ -333,6 +346,7 @@ const total = computed(() => subtotal.value + iva.value)
 
 function buildPreview() {
   return {
+    idUsuario: form.idUsuario ?? null,
     ejecutivo: form.ejecutivo,
     cliente: form.cliente,
     rut: form.rut,
