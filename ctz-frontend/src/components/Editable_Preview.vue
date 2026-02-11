@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-const emit = defineEmits(['discard'])
+const emit = defineEmits(['discard', 'sync-form'])
 
 const props = defineProps({
   baseData: {
@@ -91,6 +91,9 @@ function saveCondition(i) {
       text: v
     })
   }
+  emit('sync-form', {
+    condiciones: props.baseData.condiciones
+  })
   editIndex.value = -1
   editText.value = ''
 }
@@ -105,6 +108,9 @@ function removeCondition(i) {
   if (isServiceCondition(i)) return
   if (i >= 0 && i < props.baseData.condiciones.length) {
     props.baseData.condiciones.splice(i, 1)
+    emit('sync-form', {
+      condiciones: props.baseData.condiciones
+    })
   }
 }
 
@@ -154,6 +160,11 @@ function saveItemChanges(it) {
   if (!isDbItem(it)) {
     it.unitValue = Math.max(0, Number(editUnitValue.value || 0))
   }
+
+  emit('sync-form', {
+    items: props.baseData.items,
+    condiciones: props.baseData.condiciones
+  })
 
   cancelItemEdit()
 }
@@ -213,6 +224,10 @@ function removeItem(id) {
   }
 
   syncConditionsWithItems()
+  emit('sync-form', {
+    items: props.baseData.items,
+    condiciones: props.baseData.condiciones
+  })
 }
 async function confirmQuote() {
   isSaving.value = true
