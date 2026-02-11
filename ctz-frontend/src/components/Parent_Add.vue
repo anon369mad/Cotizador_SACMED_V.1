@@ -17,7 +17,6 @@ const props = defineProps({
 const resetKey = ref(0)
 
 const previewData = reactive({
-  idUsuario: null,
   ejecutivo: '',
   cliente: '',
   rut: '',
@@ -29,7 +28,6 @@ const previewData = reactive({
 })
 
 const defaultPreview = () => ({
-  idUsuario: null,
   ejecutivo: '',
   cliente: '',
   rut: '',
@@ -46,7 +44,6 @@ function normalizeQuote(quote) {
 
   const mapped = {
     ...quote,
-    idUsuario: quote.idUsuario ?? quote.id_usuario ?? base.idUsuario ?? null,
     ejecutivo: quote.ejecutivo ?? quote.user ?? base.ejecutivo,
     cliente: quote.cliente ?? quote.name ?? base.cliente,
     conexiones: quote.conexiones ?? quote.connections ?? base.conexiones,
@@ -113,15 +110,12 @@ function resetAll() {
 <style scoped>
 
 .quote-workspace {
+  width: min(1000px, 100%);
+  margin-left: auto;
   display: grid;
   grid-template-columns: minmax(430px, 1.1fr) minmax(430px, 1fr);
   gap: clamp(18px, 2vw, 30px);
-  align-items: start;
-  justify-items: stretch;
-  width: auto;
-  max-width: min(1440px, calc(100% - clamp(24px, 4vw, 48px)));
-  margin: 0 auto;
-  padding: 0 clamp(12px, 2vw, 24px);
+  align-items: center;
 }
 
 .card-header {
@@ -170,7 +164,7 @@ function resetAll() {
 @media (max-width: 1180px) {
   .quote-workspace {
     grid-template-columns: 1fr;
-    max-width: min(920px, calc(100% - clamp(24px, 4vw, 48px)));
+    max-width: 920px;
   }
 }
 

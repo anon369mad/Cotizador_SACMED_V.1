@@ -32,7 +32,7 @@ const defaultForm = {
   cliente: '',
   rut: '',
   planType: 'Período',
-  periodMonths: 6,
+  periodMonths: 3,
   conexiones: 1,
   condicion:'',
   condiciones: [],
@@ -346,7 +346,7 @@ const total = computed(() => subtotal.value + iva.value)
 const minPeriodMonths = computed(() => {
   if (form.planType !== 'Período') return 1
   const conexiones = Number(form.conexiones || 0)
-  return conexiones === 1 || conexiones === 2 ? 6 : 1
+  return conexiones === 1 || conexiones === 2 ? 3 : 1
 })
 
 function buildPreview() {
@@ -464,7 +464,7 @@ watch(
             <div class="field">
               <label>Período de Contratación (meses)</label>
               <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
-              <small v-if="minPeriodMonths === 6">Para 1 o 2 conexiones, el mínimo es de 6 meses.</small>
+              <small v-if="minPeriodMonths === 3">Para 1 o 2 conexiones, el mínimo es de 3 meses.</small>
             </div>
           </div>
         </div>
