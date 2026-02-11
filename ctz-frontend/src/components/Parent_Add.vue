@@ -15,6 +15,7 @@ const props = defineProps({
 })
 
 const resetKey = ref(0)
+const cotizadorRef = ref(null)
 
 const previewData = reactive({
   ejecutivo: '',
@@ -70,6 +71,11 @@ watch(
 function updatePreview(data) {
   Object.assign(previewData, data)
 }
+
+function syncFormFromPreview(payload) {
+  cotizadorRef.value?.syncFromPreview?.(payload)
+}
+
 function resetAll() {
   // Reset preview
   Object.assign(previewData, defaultPreview())
@@ -85,6 +91,7 @@ function resetAll() {
   <section class="quote-workspace">
     <div class="form-cotizador">
       <Cotizador
+        ref="cotizadorRef"
         :key="`${tabId}-${resetKey}`"
         :tab-id="tabId"
         :initial-data="initialData"
@@ -100,6 +107,7 @@ function resetAll() {
       <div class="preview-card">
         <Editable_Preview
           :baseData="previewData"
+          @sync-form="syncFormFromPreview"
           @discard="resetAll"
         />
       </div>

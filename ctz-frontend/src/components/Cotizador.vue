@@ -147,6 +147,29 @@ const initialForm = {
 
 const form = reactive(initialForm)
 
+function syncFromPreview(payload = {}) {
+  if (Object.prototype.hasOwnProperty.call(payload, 'items') && Array.isArray(payload.items)) {
+    form.items = JSON.parse(JSON.stringify(payload.items))
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'condiciones')) {
+    const incomingConditions = Array.isArray(payload.condiciones)
+      ? payload.condiciones
+      : String(payload.condiciones || '')
+        .split(/\r?\n/)
+
+    form.condiciones = incomingConditions
+      .map((entry) => normalizeConditionEntry(entry))
+      .filter(Boolean)
+  }
+
+  syncConditionsWithItems()
+}
+
+defineExpose({
+  syncFromPreview
+})
+
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const prestaciones = ref([])
