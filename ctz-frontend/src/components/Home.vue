@@ -392,7 +392,7 @@ onMounted(() => {
   grid-template-columns: minmax(320px, 520px) minmax(320px, 1fr);
   align-items: start;
   gap: clamp(16px, 2vw, 24px);
-  width: min(1440px, 100%);
+  width: min(140px, 50%);
 }
 
 .hist-card {

@@ -110,12 +110,15 @@ function resetAll() {
 <style scoped>
 
 .quote-workspace {
-  width: min(1440px, 100%);
-  margin-left: 200px;
   display: grid;
   grid-template-columns: minmax(430px, 1.1fr) minmax(430px, 1fr);
   gap: clamp(18px, 2vw, 30px);
-  align-items: center;
+  align-items: start;
+  justify-items: stretch;
+  width: auto;
+  max-width: min(1440px, calc(100% - clamp(24px, 4vw, 48px)));
+  margin: 0 auto;
+  padding: 0 clamp(12px, 2vw, 24px);
 }
 
 .card-header {
@@ -164,7 +167,7 @@ function resetAll() {
 @media (max-width: 1180px) {
   .quote-workspace {
     grid-template-columns: 1fr;
-    max-width: 920px;
+    max-width: min(920px, calc(100% - clamp(24px, 4vw, 48px)));
   }
 }
 
