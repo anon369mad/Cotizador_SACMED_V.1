@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { computed, ref, reactive, onMounted, watch } from 'vue'
 import AddOrHist from './Add_or_Hist.vue'
 import Preview from './Preview.vue' 
 import Parent_Add from './Parent_Add.vue'
@@ -104,7 +104,28 @@ function logout() {
 const history = ref([])
 const isLoadingHistory = ref(false)
 const historyError = ref('')
+const historySearch = ref('')
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+const filteredHistory = computed(() => {
+  const term = historySearch.value.trim().toLowerCase()
+  if (!term) return history.value
+
+  return history.value.filter((item) => {
+    const searchableFields = [
+      item.company,
+      item.user,
+      item.rut,
+      item.plan,
+      item.date,
+      item.status
+    ]
+
+    return searchableFields.some((field) =>
+      String(field || '').toLowerCase().includes(term)
+    )
+  })
+})
 
 const previewQuote = reactive({
   idUsuario: props.userId != null ? Number(props.userId) : null,
@@ -282,13 +303,19 @@ onMounted(() => {
         <section class="main-area">
           <div class="hist-card">
             <h4>Historial de Cotizaciones</h4>
-            <input class="search" placeholder="Buscar por cliente o ejecutivo..." />
+            <input
+              v-model="historySearch"
+              class="search"
+              placeholder="Buscar por cliente o ejecutivo..."
+            />
 
             <div v-if="isLoadingHistory" class="list-empty">Cargando historial...</div>
             <div v-else-if="historyError" class="list-empty error">{{ historyError }}</div>
-            <div v-else-if="!history.length" class="list-empty">No hay cotizaciones registradas.</div>
+            <div v-else-if="!filteredHistory.length" class="list-empty">
+              {{ history.length ? 'No se encontraron resultados para la búsqueda.' : 'No hay cotizaciones registradas.' }}
+            </div>
             <ul v-else class="list">
-              <li class="list-item" v-for="h in history" :key="h.id">
+              <li class="list-item" v-for="h in filteredHistory" :key="h.id">
                 <div class="list-left">
                   <div class="company">{{ h.company }}</div>
                   <div class="meta">{{ h.user }} · {{ h.date }}<br/><small>{{ h.plan }} · {{ h.connections }} conexiones</small></div>
