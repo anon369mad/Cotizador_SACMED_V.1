@@ -5,6 +5,7 @@ from database.session import get_db
 from models.cotizacion import Cotizacion
 from models.usuario import Usuario
 from schemas.cotizacion import CotizacionCreate, CotizacionResponse, CotizacionUpdate
+from models.cotizacion_detalle import CotizacionDetalle
 
 router = APIRouter(tags=["Cotizaciones"])
 
@@ -65,12 +66,20 @@ def actualizar_cotizacion(id_cotizacion: int, data: CotizacionUpdate, db: Sessio
 @router.delete("/cotizaciones/{id_cotizacion}")
 def eliminar_cotizacion(id_cotizacion: int, db: Session = Depends(get_db)):
     cotizacion = db.query(Cotizacion).get(id_cotizacion)
+
     if not cotizacion:
         raise HTTPException(status_code=404, detail="Cotización no encontrada")
 
     if cotizacion.estado == "CONFIRMADA":
         raise HTTPException(status_code=400, detail="Las cotizaciones confirmadas no se pueden eliminar")
 
+    # 🔥 borrar detalles primero
+    db.query(CotizacionDetalle)\
+        .filter(CotizacionDetalle.id_cotizacion == id_cotizacion)\
+        .delete()
+
+    # luego borrar la cotización
     db.delete(cotizacion)
+
     db.commit()
     return {"ok": True}

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion_detalle import CotizacionDetalle
-from schemas.cotizacion_detalle import CotizacionDetalleCreate, CotizacionDetalleResponse
+from schemas.cotizacion_detalle import CotizacionDetalleCreate, CotizacionDetalleResponse, CotizacionDetalleUpdate
 
 router = APIRouter(tags=["Detalles de Cotización"])
 
@@ -35,6 +35,17 @@ def obtener_detalle(id_detalle: int, db: Session = Depends(get_db)):
     detalle = db.query(CotizacionDetalle).get(id_detalle)
     if not detalle:
         raise HTTPException(status_code=404, detail="Detalle no encontrado")
+    return detalle
+
+@router.put("/cotizacion_detalles/{id_detalle}", response_model=CotizacionDetalleResponse)
+def actualizar_detalle(id_detalle: int, data: CotizacionDetalleUpdate, db: Session = Depends(get_db)):
+    detalle = db.query(CotizacionDetalle).get(id_detalle)
+    if not detalle:
+        raise HTTPException(status_code=404, detail="Detalle no encontrado")
+    for campo, valor in data.dict(exclude_unset=True).items():
+        setattr(detalle, campo, valor)
+    db.commit()
+    db.refresh(detalle)
     return detalle
 
 @router.delete("/cotizacion_detalles/{id_detalle}")

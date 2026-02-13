@@ -350,11 +350,12 @@ async function updatePersistedDraft() {
   const payload = {
     condiciones_adicionales: props.baseData.condiciones?.map((c) => c.text).join('\n') || null
   }
-
+console.log('Updating quote header with payload:', payload)
   const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
+
   })
 
   if (!headerResponse.ok) {

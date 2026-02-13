@@ -24,8 +24,7 @@ class CotizacionCreate(CotizacionBase):
     pass
 
 class CotizacionUpdate(BaseModel):
-    estado: Optional[str]
-    condiciones_adicionales: Optional[str]
+    estado: Optional[str]= None
 
 class CotizacionResponse(CotizacionBase):
     id_cotizacion: int
