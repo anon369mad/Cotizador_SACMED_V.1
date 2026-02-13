@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-const emit = defineEmits(['discard', 'sync-form'])
+const emit = defineEmits(['discard', 'sync-form', 'quote-saved', 'history-changed'])
 
 const props = defineProps({
   baseData: {
@@ -239,82 +239,110 @@ function removeItem(id) {
     condiciones: props.baseData.condiciones
   })
 }
+async function buildAndPersistQuote() {
+  const payload = {
+    tipo: props.baseData.planType === 'Única' ? 'UNICA' : 'PERIODO',
+    id_cliente: Number(props.baseData.idCliente ?? 1),
+    nombre_cliente: props.baseData.cliente ?? null,
+    rut_cliente: props.baseData.rut ?? null,
+    id_usuario: Number(props.baseData.idUsuario ?? 1),
+    id_iva: Number(props.baseData.idIva ?? 1),
+    meses: props.baseData.planType === 'Única' ? null : props.baseData.periodMonths,
+    conexiones: props.baseData.conexiones ?? 0,
+    subtotal: subtotal.value,
+    descuento_total: items.value.reduce((s, it) => s + it.qty * it.unitValue * (it.discountPct / 100), 0),
+    iva_monto: iva.value,
+    total: total.value,
+    condiciones_adicionales: props.baseData.condiciones?.map((c) => c.text).join('\n') || null
+  }
+
+  const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!headerResponse.ok) {
+    throw new Error('No se pudo crear la cotización')
+  }
+
+  const headerData = await headerResponse.json()
+  const idCotizacion = headerData?.id_cotizacion
+  if (!idCotizacion) {
+    throw new Error('La respuesta no incluyó el id de cotización')
+  }
+
+  for (const item of props.baseData.items || []) {
+    const detailPayload = {
+      id_cotizacion: idCotizacion,
+      id_prestacion: item.id_prestacion ?? null,
+      descripcion: item.name ?? null,
+      cantidad: item.qty,
+      valor_unitario: item.unitValue,
+      descuento: item.discountPct ?? 0
+    }
+
+    const detailResponse = await fetch(`${apiBaseUrl}/cotizacion_detalles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(detailPayload)
+    })
+
+    if (!detailResponse.ok) {
+      throw new Error(`No se pudo crear el detalle ${item.name || ''}`.trim())
+    }
+  }
+
+  props.baseData.idCotizacion = idCotizacion
+  props.baseData.estado = 'BORRADOR'
+  emit('quote-saved', { idCotizacion, estado: 'BORRADOR' })
+  emit('history-changed')
+  return idCotizacion
+}
+
+async function saveDraft() {
+  isSaving.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    if (props.baseData.idCotizacion) {
+      successMessage.value = 'La cotización ya está guardada como borrador.'
+      return
+    }
+
+    await buildAndPersistQuote()
+    successMessage.value = 'Borrador guardado en el historial.'
+  } catch (error) {
+    errorMessage.value = error instanceof Error
+      ? error.message
+      : 'Ocurrió un error inesperado al guardar el borrador'
+  } finally {
+    isSaving.value = false
+  }
+}
+
 async function confirmQuote() {
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
+
   try {
-    const payload = {
-      tipo: props.baseData.planType === 'Única' ? 'UNICA' : 'PERIODO',
-      id_cliente: Number(props.baseData.idCliente ?? 1),
-      nombre_cliente: props.baseData.cliente ?? null,
-      rut_cliente: props.baseData.rut ?? null,
-      id_usuario: Number(props.baseData.idUsuario ?? 1),
-      id_iva: Number(props.baseData.idIva ?? 1),
-      meses: props.baseData.planType === 'Única' ? null : props.baseData.periodMonths,
-      conexiones: props.baseData.conexiones ?? 0,
-      subtotal: subtotal.value,
-      descuento_total: items.value.reduce((s, it) => s + it.qty * it.unitValue * (it.discountPct / 100), 0),
-      iva_monto: iva.value,
-      total: total.value,
-      condiciones_adicionales: props.baseData.condiciones?.map((c) => c.text).join('\n') || null
-    }
-console.log('Payload a enviar:', payload)
-    const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
+    const idCotizacion = props.baseData.idCotizacion ?? await buildAndPersistQuote()
+
+    const statusResponse = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado: 'CONFIRMADA' })
     })
 
-    if (!headerResponse.ok) {
-      throw new Error('No se pudo crear la cotización')
+    if (!statusResponse.ok) {
+      throw new Error('No se pudo confirmar el estado de la cotización')
     }
 
-    const headerData = await headerResponse.json()
-    const idCotizacion = headerData?.id_cotizacion
-    if (!idCotizacion) {
-      throw new Error('La respuesta no incluyó el id de cotización')
-    }
-
-    for (const item of props.baseData.items || []) {
-      const detailPayload = {
-        id_cotizacion: idCotizacion,
-        id_prestacion: item.id_prestacion ?? null,
-        descripcion: item.name ?? null,
-        cantidad: item.qty,
-        valor_unitario: item.unitValue,
-        descuento: item.discountPct ?? 0
-      }
-
-      const detailResponse = await fetch(`${apiBaseUrl}/cotizacion_detalles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(detailPayload)
-      })
-
-      if (!detailResponse.ok) {
-        throw new Error(`No se pudo crear el detalle ${item.name || ''}`.trim())
-      }
-    }
-
-    if (props.baseData.confirmOnSave) {
-      const statusResponse = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ estado: 'CONFIRMADA' })
-      })
-
-      if (!statusResponse.ok) {
-        throw new Error('No se pudo confirmar el estado de la cotización')
-      }
-    }
-
+    props.baseData.estado = 'CONFIRMADA'
+    emit('quote-saved', { idCotizacion, estado: 'CONFIRMADA' })
+    emit('history-changed')
     successMessage.value = 'Cotización confirmada y guardada correctamente.'
   } catch (error) {
     errorMessage.value = error instanceof Error
@@ -325,8 +353,31 @@ console.log('Payload a enviar:', payload)
   }
 }
 
-function discardQuote() {
-  emit('discard')
+async function discardQuote() {
+  isSaving.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    if (props.baseData.idCotizacion && props.baseData.estado !== 'CONFIRMADA') {
+      const response = await fetch(`${apiBaseUrl}/cotizaciones/${props.baseData.idCotizacion}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('No se pudo descartar la cotización guardada en borrador')
+      }
+      emit('history-changed')
+    }
+
+    emit('discard')
+  } catch (error) {
+    errorMessage.value = error instanceof Error
+      ? error.message
+      : 'Ocurrió un error inesperado al descartar la cotización'
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>
 
@@ -462,8 +513,12 @@ function discardQuote() {
     </ul>
   </div>
 <div class="final-actions">
-  <button class="btn-discard" @click="discardQuote">
+  <button class="btn-discard" :disabled="isSaving" @click="discardQuote">
     Descartar
+  </button>
+
+  <button class="btn-draft" :disabled="isSaving" @click="saveDraft">
+    {{ isSaving ? 'Guardando...' : 'Guardar borrador' }}
   </button>
 
   <button class="btn-confirm" :disabled="isSaving" @click="confirmQuote">
@@ -748,6 +803,16 @@ function discardQuote() {
 
 .btn-discard:hover {
   background: #cbd5e1;
+}
+
+/* BORRADOR */
+.btn-draft {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-draft:hover {
+  background: #1d4ed8;
 }
 
 /* CONFIRMAR */
