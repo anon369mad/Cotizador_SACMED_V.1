@@ -298,6 +298,7 @@ function duplicateQuote(h){
       periodMonths: h.periods || 6,
       items: JSON.parse(JSON.stringify(h.items || [])),
       conditions: JSON.parse(JSON.stringify(h.conditions || [])),
+      lockConditionActions: true,
       idCotizacion: null,
       estado: null
     }

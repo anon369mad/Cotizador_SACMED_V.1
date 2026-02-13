@@ -74,14 +74,14 @@ function ensureConditionsArray() {
 
 function startEditCondition(i) {
   ensureConditionsArray()
-  if (isServiceCondition(i)) return
+  if (!canManageCondition(i)) return
   editIndex.value = i
   editText.value = props.baseData.condiciones[i]?.text || ''
 }
 
 function saveCondition(i) {
   ensureConditionsArray()
-  if (isServiceCondition(i)) return
+  if (!canManageCondition(i)) return
   const v = String(editText.value || '').trim()
   if (!v) {
     props.baseData.condiciones.splice(i, 1)
@@ -105,7 +105,7 @@ function cancelEditCondition() {
 
 function removeCondition(i) {
   ensureConditionsArray()
-  if (isServiceCondition(i)) return
+  if (!canManageCondition(i)) return
   if (i >= 0 && i < props.baseData.condiciones.length) {
     props.baseData.condiciones.splice(i, 1)
     emit('sync-form', {
@@ -117,6 +117,12 @@ function removeCondition(i) {
 function isServiceCondition(i) {
   return conditionsList.value?.[i]?.source === 'service'
 }
+
+function canManageCondition(i) {
+  if (props.baseData?.lockConditionActions) return false
+  return !isServiceCondition(i)
+}
+
 
 function conditionSourceLabel(condition) {
   if (condition?.source !== 'service') return 'Manual'
@@ -569,12 +575,12 @@ async function discardQuote() {
           </span>
           <span class="conditions-item-actions">
             <button
-              v-if="!isServiceCondition(i)"
+              v-if="canManageCondition(i)"
               @click="startEditCondition(i)"
               title="Editar"
             >✏️</button>
             <button
-              v-if="!isServiceCondition(i)"
+              v-if="canManageCondition(i)"
               @click="removeCondition(i)"
               title="Eliminar"
             >🗑️</button>
