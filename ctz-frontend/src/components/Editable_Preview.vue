@@ -239,6 +239,47 @@ function removeItem(id) {
     condiciones: props.baseData.condiciones
   })
 }
+
+async function replaceQuoteDetails(idCotizacion) {
+  const detailResponse = await fetch(`${apiBaseUrl}/cotizacion_detalles`)
+  if (!detailResponse.ok) {
+    throw new Error('No se pudieron cargar los detalles para actualizar el borrador')
+  }
+
+  const allDetails = await detailResponse.json()
+  const detailsToDelete = (Array.isArray(allDetails) ? allDetails : [])
+    .filter((detail) => Number(detail.id_cotizacion) === Number(idCotizacion))
+
+  for (const detail of detailsToDelete) {
+    const deleteResponse = await fetch(`${apiBaseUrl}/cotizacion_detalles/${detail.id_detalle}`, {
+      method: 'DELETE'
+    })
+
+    if (!deleteResponse.ok) {
+      throw new Error('No se pudo limpiar el detalle anterior del borrador')
+    }
+  }
+
+  for (const item of props.baseData.items || []) {
+    const createResponse = await fetch(`${apiBaseUrl}/cotizacion_detalles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_cotizacion: idCotizacion,
+        id_prestacion: item.id_prestacion ?? null,
+        descripcion: item.name ?? null,
+        cantidad: item.qty,
+        valor_unitario: item.unitValue,
+        descuento: item.discountPct ?? 0
+      })
+    })
+
+    if (!createResponse.ok) {
+      throw new Error(`No se pudo guardar el detalle ${item.name || ''}`.trim())
+    }
+  }
+}
+
 async function buildAndPersistQuote() {
   const payload = {
     tipo: props.baseData.planType === 'Única' ? 'UNICA' : 'PERIODO',
@@ -300,6 +341,34 @@ async function buildAndPersistQuote() {
   return idCotizacion
 }
 
+async function updatePersistedDraft() {
+  const idCotizacion = props.baseData.idCotizacion
+  if (!idCotizacion) {
+    throw new Error('No se encontró el borrador a actualizar')
+  }
+
+  const payload = {
+    condiciones_adicionales: props.baseData.condiciones?.map((c) => c.text).join('\n') || null
+  }
+
+  const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!headerResponse.ok) {
+    throw new Error('No se pudo actualizar el encabezado del borrador')
+  }
+
+  await replaceQuoteDetails(idCotizacion)
+
+  props.baseData.estado = 'BORRADOR'
+  emit('quote-saved', { idCotizacion, estado: 'BORRADOR' })
+  emit('history-changed')
+  return idCotizacion
+}
+
 async function saveDraft() {
   isSaving.value = true
   errorMessage.value = ''
@@ -307,7 +376,8 @@ async function saveDraft() {
 
   try {
     if (props.baseData.idCotizacion) {
-      successMessage.value = 'La cotización ya está guardada como borrador.'
+      await updatePersistedDraft()
+      successMessage.value = 'Borrador actualizado correctamente.'
       return
     }
 
