@@ -139,6 +139,32 @@ function syncConditionsWithItems() {
   form.condiciones = [...manualConditions, ...getServiceConditionsFromItems()]
 }
 
+function hydrateItemConditionsFromPrestaciones() {
+  if (!Array.isArray(form.items) || !prestaciones.value.length) return
+
+  const conditionsByPrestacionId = new Map(
+    prestaciones.value.map((prestacion) => [
+      Number(prestacion.id_prestacion),
+      prestacion.condiciones || null
+    ])
+  )
+
+  let updated = false
+  for (const item of form.items) {
+    if (!item || item.condiciones || item.id_prestacion == null) continue
+
+    const serviceConditions = conditionsByPrestacionId.get(Number(item.id_prestacion))
+    if (!serviceConditions) continue
+
+    item.condiciones = serviceConditions
+    updated = true
+  }
+
+  if (updated) {
+    syncConditionsWithItems()
+  }
+}
+
 function normalizeInitialData(data) {
   if (!data) return {}
   return {
@@ -299,6 +325,7 @@ async function cargarPrestaciones() {
 
     const data = await response.json()
     prestaciones.value = (Array.isArray(data) ? data : []).filter((it) => it.activo)
+    hydrateItemConditionsFromPrestaciones()
   } catch (error) {
     prestacionesError.value = error instanceof Error
       ? error.message
