@@ -140,17 +140,60 @@ const previewQuote = reactive({
   estado: null
 })
 
-function selectHistory(h){
+function normalizeDetailItem(detail) {
+  return {
+    id: detail.id_detalle,
+    id_prestacion: detail.id_prestacion ?? null,
+    name: detail.descripcion || 'Servicio',
+    qty: Number(detail.cantidad || 0),
+    quantity: Number(detail.cantidad || 0),
+    unitValue: Number(detail.valor_unitario || 0),
+    value: Number(detail.valor_unitario || 0),
+    discountPct: Number(detail.descuento || 0),
+    discount: Number(detail.descuento || 0)
+  }
+}
+
+function parseConditionLines(rawConditions) {
+  if (!rawConditions) return []
+  return String(rawConditions)
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+}
+
+async function fetchQuoteDetails(idCotizacion) {
+  const response = await fetch(`${apiBaseUrl}/cotizacion_detalles`)
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar los detalles de la cotización')
+  }
+
+  const detalles = await response.json()
+  return (Array.isArray(detalles) ? detalles : [])
+    .filter((detail) => Number(detail.id_cotizacion) === Number(idCotizacion))
+    .map(normalizeDetailItem)
+}
+
+async function selectHistory(h){
+  historyError.value = ''
   previewQuote.idUsuario = h.idUsuario ?? null
   previewQuote.ejecutivo = h.user || 'Usuario'
   previewQuote.name = h.company
   previewQuote.rut = h.rut || ''
   previewQuote.connections = h.connections || 0
   previewQuote.periodMonths = h.periods || 6
-  previewQuote.items = JSON.parse(JSON.stringify(h.items || []))
-  previewQuote.conditions = JSON.parse(JSON.stringify(h.conditions || []))
+  previewQuote.items = []
+  previewQuote.conditions = parseConditionLines(h.rawConditions)
   previewQuote.idCotizacion = h.id
   previewQuote.estado = h.status
+
+  try {
+    previewQuote.items = await fetchQuoteDetails(h.id)
+  } catch (error) {
+    historyError.value = error instanceof Error
+      ? error.message
+      : 'Error inesperado al cargar detalles del historial'
+  }
 }
 
 function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
@@ -204,9 +247,8 @@ function mapHistoryItem(item){
     periods: item.meses || 6,
     price: item.total || 0,
     items: [],
-    conditions: item.condiciones_adicionales
-      ? [item.condiciones_adicionales]
-      : [],
+    conditions: parseConditionLines(item.condiciones_adicionales),
+    rawConditions: item.condiciones_adicionales || '',
     status: item.estado
   }
 }
@@ -262,6 +304,44 @@ function duplicateQuote(h){
   })
   activeTabId.value = id
   currentView.value = 'tabs'
+}
+
+async function editDraftQuote(h) {
+  if (statusLabel(h.status) === 'Confirmada') return
+
+  historyError.value = ''
+  try {
+    const detailItems = await fetchQuoteDetails(h.id)
+    const id = Date.now() + Math.random()
+
+    tabs.value.push({
+      id,
+      title: `Borrador ${h.company}`,
+      data: {
+        idCotizacion: h.id,
+        estado: h.status,
+        idUsuario: h.idUsuario ?? null,
+        ejecutivo: h.user,
+        rut: h.rut || '',
+        name: h.company,
+        cliente: h.company,
+        planType: String(h.plan || '').toUpperCase().includes('UNICA') ? 'Única' : 'Período',
+        connections: h.connections || 0,
+        conexiones: h.connections || 0,
+        periodMonths: h.periods || 6,
+        items: detailItems,
+        conditions: parseConditionLines(h.rawConditions),
+        condiciones: parseConditionLines(h.rawConditions)
+      }
+    })
+
+    activeTabId.value = id
+    currentView.value = 'tabs'
+  } catch (error) {
+    historyError.value = error instanceof Error
+      ? error.message
+      : 'Error inesperado al preparar la edición del borrador'
+  }
 }
 
 async function loadHistory(){
@@ -358,6 +438,12 @@ onMounted(() => {
                   <div class="meta">{{ h.user }} · {{ h.date }}<br/><small>{{ h.plan }} · {{ h.connections }} conexiones</small></div>
                   <div class="list-actions">
                     <button class="action-btn" type="button" @click="selectHistory(h)">Visualizar</button>
+                    <button
+                      v-if="statusLabel(h.status) !== 'Confirmada'"
+                      class="action-btn"
+                      type="button"
+                      @click="editDraftQuote(h)"
+                    >Editar borrador</button>
                     <button class="action-btn secondary" type="button" @click="duplicateQuote(h)">Duplicar</button>
                     <button
                       v-if="statusLabel(h.status) !== 'Confirmada'"
@@ -637,4 +723,3 @@ onMounted(() => {
   .add-tab { min-width: 30px; padding: 6px 8px; }
 }
 </style>
-
