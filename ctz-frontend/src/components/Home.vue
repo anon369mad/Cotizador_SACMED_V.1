@@ -135,7 +135,9 @@ const previewQuote = reactive({
   connections: 1,
   periodMonths: 3,
   items: [],
-  conditions: []
+  conditions: [],
+  idCotizacion: null,
+  estado: null
 })
 
 function selectHistory(h){
@@ -147,6 +149,8 @@ function selectHistory(h){
   previewQuote.periodMonths = h.periods || 6
   previewQuote.items = JSON.parse(JSON.stringify(h.items || []))
   previewQuote.conditions = JSON.parse(JSON.stringify(h.conditions || []))
+  previewQuote.idCotizacion = h.id
+  previewQuote.estado = h.status
 }
 
 function formatMoney(v){ return '$' + Number(v).toLocaleString('es-CL') }
@@ -207,6 +211,37 @@ function mapHistoryItem(item){
   }
 }
 
+async function deleteDraftQuote(h) {
+  if (statusLabel(h.status) === 'Confirmada') return
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/cotizaciones/${h.id}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      throw new Error('No se pudo eliminar el borrador del historial')
+    }
+
+    await loadHistory()
+
+    if (previewQuote.idCotizacion === h.id) {
+      Object.assign(previewQuote, {
+        idCotizacion: null,
+        estado: null,
+        name: '—',
+        rut: '',
+        items: [],
+        conditions: []
+      })
+    }
+  } catch (error) {
+    historyError.value = error instanceof Error
+      ? error.message
+      : 'Error inesperado al eliminar borrador'
+  }
+}
+
 function duplicateQuote(h){
   const id = Date.now() + Math.random()
   tabs.value.push({
@@ -220,7 +255,9 @@ function duplicateQuote(h){
       connections: h.connections || 0,
       periodMonths: h.periods || 6,
       items: JSON.parse(JSON.stringify(h.items || [])),
-      conditions: JSON.parse(JSON.stringify(h.conditions || []))
+      conditions: JSON.parse(JSON.stringify(h.conditions || [])),
+      idCotizacion: null,
+      estado: null
     }
   })
   activeTabId.value = id
@@ -322,6 +359,12 @@ onMounted(() => {
                   <div class="list-actions">
                     <button class="action-btn" type="button" @click="selectHistory(h)">Visualizar</button>
                     <button class="action-btn secondary" type="button" @click="duplicateQuote(h)">Duplicar</button>
+                    <button
+                      v-if="statusLabel(h.status) !== 'Confirmada'"
+                      class="action-btn danger"
+                      type="button"
+                      @click="deleteDraftQuote(h)"
+                    >Eliminar borrador</button>
                   </div>
                 </div>
                 <div class="list-right">
@@ -344,6 +387,7 @@ onMounted(() => {
   :quote="tabs.find(t => t.id === activeTabId)?.data"
   :tab-id="activeTabId"
   @back="currentView = 'home'"
+  @history-changed="loadHistory"
 />
 
 
@@ -495,6 +539,8 @@ onMounted(() => {
   cursor: pointer;
 }
 .action-btn.secondary { background: transparent; color: #0f2140; }
+.action-btn.danger { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.action-btn.danger:hover { background: #fecaca; }
 .list-empty { font-size: 12px; color: #6b747a; padding: 12px 4px; }
 .list-empty.error { color: #c0392b; }
 .status { padding: 4px 8px; border-radius: 12px; font-size: 12px; white-space: nowrap; }
@@ -591,3 +637,4 @@ onMounted(() => {
   .add-tab { min-width: 30px; padding: 6px 8px; }
 }
 </style>
+

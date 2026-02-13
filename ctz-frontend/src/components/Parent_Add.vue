@@ -3,6 +3,8 @@ import { reactive, ref, watch, computed } from 'vue'
 import Cotizador from './Cotizador.vue'
 import Editable_Preview from './Editable_Preview.vue'
 
+const emit = defineEmits(['history-changed'])
+
 const props = defineProps({
   tabId: {
     type: [String, Number],
@@ -76,6 +78,10 @@ function syncFormFromPreview(payload) {
   cotizadorRef.value?.syncFromPreview?.(payload)
 }
 
+function notifyHistoryChanged() {
+  emit('history-changed')
+}
+
 function resetAll() {
   // Reset preview
   Object.assign(previewData, defaultPreview())
@@ -109,6 +115,7 @@ function resetAll() {
           :baseData="previewData"
           @sync-form="syncFormFromPreview"
           @discard="resetAll"
+          @history-changed="notifyHistoryChanged"
         />
       </div>
     </div>
