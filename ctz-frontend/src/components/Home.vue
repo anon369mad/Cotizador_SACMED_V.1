@@ -284,27 +284,38 @@ async function deleteDraftQuote(h) {
   }
 }
 
-function duplicateQuote(h){
-  const id = Date.now() + Math.random()
-  tabs.value.push({
-    id,
-    title: `Cotización ${tabs.value.length + 1}`,
-    data: {
-      idUsuario: h.idUsuario ?? null,
-      ejecutivo: h.user,
-      rut: h.rut || '',
-      name: h.company,
-      connections: h.connections || 0,
-      periodMonths: h.periods || 6,
-      items: JSON.parse(JSON.stringify(h.items || [])),
-      conditions: JSON.parse(JSON.stringify(h.conditions || [])),
-      lockConditionActions: true,
-      idCotizacion: null,
-      estado: null
-    }
-  })
-  activeTabId.value = id
-  currentView.value = 'tabs'
+async function duplicateQuote(h){
+  historyError.value = ''
+
+  try {
+    const detailItems = await fetchQuoteDetails(h.id)
+    const id = Date.now() + Math.random()
+
+    tabs.value.push({
+      id,
+      title: `Cotización ${tabs.value.length + 1}`,
+      data: {
+        idUsuario: h.idUsuario ?? null,
+        ejecutivo: h.user,
+        rut: h.rut || '',
+        name: h.company,
+        connections: h.connections || 0,
+        periodMonths: h.periods || 6,
+        items: detailItems,
+        conditions: parseConditionLines(h.rawConditions),
+        lockConditionActions: true,
+        idCotizacion: null,
+        estado: null
+      }
+    })
+
+    activeTabId.value = id
+    currentView.value = 'tabs'
+  } catch (error) {
+    historyError.value = error instanceof Error
+      ? error.message
+      : 'Error inesperado al duplicar la cotización'
+  }
 }
 
 async function editDraftQuote(h) {
