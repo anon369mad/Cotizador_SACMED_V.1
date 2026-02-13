@@ -1,5 +1,6 @@
 <script setup>
 import { reactive, computed, watch, ref, onMounted } from 'vue'
+import axios from 'axios'; // O usar fetch nativo
 
 const emit = defineEmits(['back', 'update-preview', 'add-service'])
 
@@ -14,6 +15,19 @@ const props = defineProps({
   }
 })
 
+const valorUf = ref(null);
+const loading = ref(true);
+const obtenerUf = async () => {
+  try {
+    const response = await axios.get('https://mindicador.cl/api/uf');
+    // El valor actual es el primero en la serie 'serie'
+    valorUf.value = response.data.serie[0].valor;
+  } catch (error) {
+    console.error('Error al obtener la UF:', error);
+  } finally {
+    loading.value = false;
+  }
+};
 const STORAGE_KEY = computed(() => `cotizador_form_${props.tabId}`)
 
 function getStoredUser() {
@@ -37,7 +51,9 @@ const defaultForm = {
   condicion:'',
   condiciones: [],
   cantidad: 1,
+  moneda: 'CLP',
   valor: 0,
+  valor_original: 0,
   descuento: 0,
   seleccionado: '',
   manualServiceName: '',
@@ -144,6 +160,7 @@ const initialForm = {
   ...normalizeInitialData(props.initialData),
   ...(savedForm ? JSON.parse(savedForm) : {})
 }
+console.log('Initial form data:', initialForm)
 
 const form = reactive(initialForm)
 
@@ -179,9 +196,6 @@ const planes = ref([])
 const planesLoading = ref(false)
 const planesError = ref('')
 
-function formatMoney(v) {
-  return '$' + Number(v || 0).toLocaleString('es-CL')
-}
 function formatRut(e) {
   let v = e.target.value
 
@@ -207,13 +221,13 @@ function formatRut(e) {
 }
 function addService() {
   if (!form.seleccionado) return
-  
+
   if (form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION) {
     const manualName = String(form.manualServiceName || '').trim()
     if (!manualName) return
 
     const manualItemId = Date.now()
-
+    
     form.items.push({
       id: manualItemId,
       name: manualName,
@@ -369,6 +383,7 @@ function syncPlanItems() {
 function onSelectPrestacion() {
   if (form.seleccionado === MANUAL_SERVICE_OPTION) {
     form.valor = 0
+    form.valor_original = 0
     return
   }
 
@@ -378,14 +393,29 @@ function onSelectPrestacion() {
 
   if (!prestacionSeleccionada) return
 
-  form.valor = Number(prestacionSeleccionada.valor_unitario || 0)
+  // guardamos el valor real de BD
+  form.valor_original = Number(prestacionSeleccionada.valor_unitario || 0)
+
+  let valor = form.valor_original
+
+  if (prestacionSeleccionada.clp) {
+    form.moneda = 'CLP'
+  } else {
+    form.moneda = 'UF'
+    valor = form.valor_original * valorUf.value
+  }
+
+  // lo que verá el usuario
+  form.valor = valor
 }
+
 
 onMounted(() => {
   ensureConditionsArray()
   syncConditionsWithItems()
   cargarPrestaciones()
   cargarPlanes()
+  obtenerUf()
 })
 
 watch(
@@ -421,7 +451,7 @@ function buildPreview() {
     periodMonths: form.periodMonths,
     conexiones: form.conexiones,
     condiciones: form.condiciones,
-
+    moneda: form.moneda,
     items: form.items,
   }
 }
@@ -569,8 +599,9 @@ watch(
                 <input type="number" min="0" class="small" v-model.number="form.cantidad" />
               </div>
               <div class="mini-field">
-                <label>Valor</label>
-                <input type="number" min="0" class="medium" v-model.number="form.valor" />
+                <label>Valor ({{ form.moneda }})</label>
+                <input v-if="form.planType === 'Período'" type="number" min="0" class="medium" v-model.number="form.valor_original" />
+                <input v-else type="number" min="0" class="medium" v-model.number="form.valor" />
               </div>
               <div class="mini-field">
                 <label>Descuento</label>
@@ -579,6 +610,21 @@ watch(
                   <span>%</span>
                 </div>
               </div>
+            </div>
+            <div v-if="form.moneda === 'UF'" class="uf-info-box">
+              <div class="uf-loading" v-if="loading">
+                <span class="spinner">⟳</span> Cargando valor UF...
+              </div>
+              <template v-else>
+                <div class="uf-item">
+                  <span class="uf-label">Valor UF</span>
+                  <span class="uf-value">${{ valorUf.toLocaleString('es-CL') }}</span>
+                </div>
+                <div class="uf-item" v-if="valorUf && form.valor > 0">
+                  <span class="uf-label">En CLP</span>
+                  <span class="uf-converted">${{ (form.valor).toLocaleString('es-CL') }}</span>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -665,6 +711,65 @@ watch(
 .tiny { width: 68px; padding: 8px; border-radius: 8px; border:1px solid rgba(15, 21, 64, 0.24); text-align: center ;background-color: transparent;color: black;}
 .discount-input { display: flex; align-items: center; gap: 6px;color: black; }
 .remove { background: white; border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 8px; padding: 7px 9px; cursor: pointer }
+
+/* === UF INFO BOX === */
+.uf-info-box {
+  margin-top: 10px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(59, 130, 246, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.uf-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #4b5b68;
+  font-weight: 500;
+}
+
+.spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.uf-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.uf-label {
+  color: #6b747a;
+  font-weight: 500;
+}
+
+.uf-value {
+  color: #1e40af;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.uf-converted {
+  color: #0f2140;
+  font-weight: 600;
+  font-size: 13px;
+}
 
 /* actions */
 .btn-add { background: #08d308; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px }

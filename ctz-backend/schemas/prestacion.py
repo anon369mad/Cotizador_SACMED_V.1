@@ -6,7 +6,8 @@ class PrestacionBase(BaseModel):
     valor_unitario: Optional[float]= None
     condiciones: Optional[str]
     activo: bool = True
-
+    clp: bool = True
+    
 class PrestacionCreate(PrestacionBase):
     pass
 
@@ -15,6 +16,7 @@ class PrestacionUpdate(BaseModel):
     valor_unitario: Optional[float]
     condiciones: Optional[str]
     activo: Optional[bool]
+    clp: bool = True
 
 class PrestacionResponse(PrestacionBase):
     id_prestacion: int

@@ -11,3 +11,4 @@ class Prestacion(Base):
     activo = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP)
     updated_at = Column(TIMESTAMP)
+    clp = Column(Boolean, default=True)
