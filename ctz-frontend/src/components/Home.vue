@@ -22,6 +22,10 @@ function handleChange(newMode) {
   mode.value = newMode
 }
 
+watch(currentView, (view) => {
+  mode.value = view === 'tabs' ? 'hist' : 'add'
+}, { immediate: true })
+
 function handleAction(action) {
   if (action === 'add') {
     localStorage.removeItem('cotizador_form_v1')
@@ -321,7 +325,7 @@ onMounted(() => {
 
     </main>
 
-    <AddOrHist initial="add" position="left" @change="handleChange" @action="handleAction" />
+    <AddOrHist :initial="mode" position="left" @change="handleChange" @action="handleAction" />
   </div>
 </template>
 
