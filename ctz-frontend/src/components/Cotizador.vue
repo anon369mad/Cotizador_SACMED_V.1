@@ -467,6 +467,12 @@ const minPeriodMonths = computed(() => {
   return conexiones === 1 || conexiones === 2 ? 3 : 1
 })
 
+const shouldLockPeriodMonths = computed(() => {
+  if (form.planType !== 'Período') return false
+  const conexiones = Number(form.conexiones || 0)
+  return conexiones === 1 || conexiones === 2
+})
+
 function buildPreview() {
   return {
     idUsuario: form.idUsuario ?? null,
@@ -499,6 +505,11 @@ watch(
   [() => form.conexiones, () => form.planType],
   () => {
     if (form.planType !== 'Período') return
+    if (shouldLockPeriodMonths.value) {
+      form.periodMonths = 3
+      return
+    }
+
     if (Number(form.periodMonths || 0) < minPeriodMonths.value) {
       form.periodMonths = minPeriodMonths.value
     }
@@ -581,8 +592,13 @@ watch(
             </div>
             <div class="field">
               <label>Período de Contratación (meses)</label>
-              <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
-              <small v-if="minPeriodMonths === 3">Para 1 o 2 conexiones, el mínimo es de 3 meses.</small>
+              <input
+                type="number"
+                :min="minPeriodMonths"
+                :disabled="shouldLockPeriodMonths"
+                v-model.number="form.periodMonths"
+              />
+              <small v-if="shouldLockPeriodMonths">Para 1 o 2 conexiones, el período se fija automáticamente en 3 meses.</small>
             </div>
           </div>
         </div>

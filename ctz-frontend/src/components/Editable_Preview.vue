@@ -157,6 +157,24 @@ function rowTotal(it) {
   return it.qty * it.unitValue * (1 - it.discountPct / 100)
 }
 
+
+function getMonthsValidationError() {
+  if (props.baseData.planType !== 'Período') return ''
+
+  const conexiones = Number(props.baseData.conexiones ?? 0)
+  const meses = Number(props.baseData.periodMonths ?? props.baseData.periods ?? 0)
+
+  if (!Number.isFinite(meses) || meses <= 0) {
+    return 'El período de contratación no puede ser cero ni negativo.'
+  }
+
+  if ((conexiones === 1 || conexiones === 2) && meses < 3) {
+    return 'Para 1 o 2 conexiones, el período mínimo es de 3 meses.'
+  }
+
+  return ''
+}
+
 function isDbItem(it) {
   return it?.source === 'db' || it?.autoPlan || it?.id_prestacion || it?.id_plan
 }
@@ -388,6 +406,13 @@ async function updatePersistedDraft() {
 }
 
 async function saveDraft() {
+  const monthsError = getMonthsValidationError()
+  if (monthsError) {
+    errorMessage.value = monthsError
+    alert(monthsError)
+    return
+  }
+
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -411,6 +436,13 @@ async function saveDraft() {
 }
 
 async function confirmQuote() {
+  const monthsError = getMonthsValidationError()
+  if (monthsError) {
+    errorMessage.value = monthsError
+    alert(monthsError)
+    return
+  }
+
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
