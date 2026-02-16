@@ -168,8 +168,8 @@ function getMonthsValidationError() {
     return 'El período de contratación no puede ser cero ni negativo.'
   }
 
-  if ((conexiones === 1 || conexiones === 2) && meses < 3) {
-    return 'Para 1 o 2 conexiones, el período mínimo es de 3 meses.'
+  if ((conexiones === 1 || conexiones === 2) && meses <= 3) {
+    return 'Para 1 o 2 conexiones, el período debe ser mayor a 3 meses.'
   }
 
   return ''
