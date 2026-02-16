@@ -286,6 +286,14 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => props.userId,
+  () => {
+    loadHistory()
+  }
+)
+
+
 function statusLabel(status){
   if (!status) return 'Borrador'
   const normalized = status.toString().toLowerCase()
@@ -437,7 +445,16 @@ async function loadHistory(){
   isLoadingHistory.value = true
   historyError.value = ''
   try {
-    const response = await fetch(`${apiBaseUrl}/cotizaciones`)
+    const normalizedUserId = props.userId != null ? Number(props.userId) : null
+    if (normalizedUserId == null || Number.isNaN(normalizedUserId)) {
+      history.value = []
+      return
+    }
+
+    const params = new URLSearchParams({
+      id_usuario: String(normalizedUserId)
+    })
+    const response = await fetch(`${apiBaseUrl}/cotizaciones?${params.toString()}`)
     if (!response.ok) {
       throw new Error('No se pudo cargar el historial de cotizaciones')
     }
