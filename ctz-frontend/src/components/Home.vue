@@ -479,6 +479,10 @@ async function editDraftQuote(h) {
   historyError.value = ''
   try {
     const detailItems = await fetchQuoteDetails(h.id)
+    const [prestaciones, planes] = await Promise.all([
+      getPrestaciones(),
+      getPlanes()
+    ])
     const id = Date.now() + Math.random()
 
     tabs.value.push({
@@ -497,8 +501,8 @@ async function editDraftQuote(h) {
         conexiones: h.connections || 0,
         periodMonths: h.periods || 6,
         items: detailItems,
-        conditions: parseConditionLines(h.rawConditions),
-        condiciones: parseConditionLines(h.rawConditions)
+        conditions: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes),
+        condiciones: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes)
       }
     })
 
