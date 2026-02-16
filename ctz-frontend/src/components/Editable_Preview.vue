@@ -799,8 +799,8 @@ async function discardQuote() {
   margin-bottom: 6px;
 }
 .conditions-item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
   gap: 10px;
 }
@@ -824,11 +824,10 @@ async function discardQuote() {
 .conditions-item .cond-text {
   flex: 1 1 auto;
   margin-right: 8px;
-  padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  text-align: right;
+  text-align: center;
 }
 
 .cond-text-linked {
