@@ -363,8 +363,24 @@ async function cargarPlanes() {
 
 function syncPlanItems() {
   const manualItems = form.items.filter((it) => !it.autoPlan)
+
+  const normalizedPlanNames = planes.value
+    .map((plan) => String(plan?.nombre || '').trim().toLowerCase())
+    .filter(Boolean)
+
+  const isManualPlanItem = (item) => {
+    if (!item || item.autoPlan || item.id_plan != null) return true
+    const itemName = String(item.name || '').trim().toLowerCase()
+    if (!itemName) return false
+    return normalizedPlanNames.some((planName) => itemName.includes(planName))
+  }
+
+  const nonPlanManualItems = form.planType === 'Período'
+    ? manualItems.filter((item) => !isManualPlanItem(item))
+    : manualItems
+
   if (form.planType === 'Única' || !planes.value.length) {
-    form.items = manualItems
+    form.items = nonPlanManualItems
     syncConditionsWithItems()
     return
   }
@@ -375,7 +391,7 @@ function syncPlanItems() {
     .find((it) => Number(it.conexiones_incluidas || 0) <= conexionesSolicitadas)
     ?? planes.value[0]
   if (!planBase) {
-    form.items = manualItems
+    form.items = nonPlanManualItems
     syncConditionsWithItems()
     return
   }
@@ -407,7 +423,7 @@ function syncPlanItems() {
     })
   }
 
-  form.items = [...planItems, ...manualItems]
+  form.items = [...planItems, ...nonPlanManualItems]
   syncConditionsWithItems()
 }
 
