@@ -171,6 +171,69 @@ function splitConditionLines(rawConditions) {
     .filter(Boolean)
 }
 
+function getConditionsFromDetailItem(item, prestaciones = [], planes = []) {
+  if (item?.id_prestacion != null) {
+    const prestacion = prestaciones.find(
+      (entry) => Number(entry.id_prestacion) === Number(item.id_prestacion)
+    )
+
+    if (!prestacion) return []
+
+    return splitConditionLines(prestacion.condiciones).map((text) => ({
+      text,
+      source: 'service',
+      itemId: item.id,
+      serviceName: prestacion.nombre || item.name || 'Servicio asociado'
+    }))
+  }
+
+  const itemName = String(item?.name || '').toLowerCase()
+  for (const plan of planes) {
+    const planName = String(plan?.nombre || '').trim()
+    if (!planName) continue
+    if (!itemName.includes(planName.toLowerCase())) continue
+
+    return splitConditionLines(plan.condiciones).map((text) => ({
+      text,
+      source: 'service',
+      itemId: item.id,
+      serviceName: planName
+    }))
+  }
+
+  return []
+}
+
+function buildPreviewConditions(rawConditions, detailItems, prestaciones = [], planes = []) {
+  const serviceConditions = []
+  const serviceTextSet = new Set()
+
+  for (const item of detailItems) {
+    const itemConditions = getConditionsFromDetailItem(item, prestaciones, planes)
+    for (const condition of itemConditions) {
+      const key = `${String(condition.itemId)}::${condition.text.toLowerCase()}`
+      if (serviceTextSet.has(key)) continue
+      serviceTextSet.add(key)
+      serviceConditions.push(condition)
+    }
+  }
+
+  const serviceOnlyText = new Set(
+    serviceConditions.map((condition) => condition.text.toLowerCase())
+  )
+
+  const manualConditions = splitConditionLines(rawConditions)
+    .filter((condition) => !serviceOnlyText.has(condition.toLowerCase()))
+    .map((text) => ({
+      text,
+      source: 'manual',
+      itemId: null,
+      serviceName: null
+    }))
+
+  return [...serviceConditions, ...manualConditions]
+}
+
 async function getPrestaciones() {
   if (Array.isArray(prestacionesCache.value)) {
     return prestacionesCache.value
@@ -257,12 +320,19 @@ async function selectHistory(h){
   previewQuote.connections = h.connections || 0
   previewQuote.periodMonths = h.periods || 6
   previewQuote.items = []
-  previewQuote.conditions = parseConditionLines(h.rawConditions)
+  previewQuote.conditions = []
   previewQuote.idCotizacion = h.id
   previewQuote.estado = h.status
 
   try {
-    previewQuote.items = await fetchQuoteDetails(h.id)
+    const [detailItems, prestaciones, planes] = await Promise.all([
+      fetchQuoteDetails(h.id),
+      getPrestaciones(),
+      getPlanes()
+    ])
+
+    previewQuote.items = detailItems
+    previewQuote.conditions = buildPreviewConditions(h.rawConditions, detailItems, prestaciones, planes)
   } catch (error) {
     historyError.value = error instanceof Error
       ? error.message
