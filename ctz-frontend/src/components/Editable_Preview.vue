@@ -131,17 +131,19 @@ function conditionSourceLabel(condition) {
     : 'Servicio asociado'
 }
 const subtotal = computed(() =>
-  items.value.reduce(
-    (s, it) => s + it.qty * it.unitValue * (1 - it.discountPct / 100),
-    0
+  roundAmount(
+    items.value.reduce(
+      (s, it) => s + roundAmount(it.qty * it.unitValue * (1 - it.discountPct / 100)),
+      0
+    )
   )
 )
 
 const iva = computed(() => Math.round(subtotal.value * 0.19))
-const total = computed(() => subtotal.value + iva.value)
+const total = computed(() => roundAmount(subtotal.value + iva.value))
 const totalPeriod = computed(() => {
   const months = Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1)
-  return total.value * Math.max(1, months)
+  return roundAmount(total.value * Math.max(1, months))
 })
 
 const periodDescriptor = computed(() => {
@@ -153,8 +155,12 @@ const isSaving = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
+function roundAmount(value) {
+  return Math.round(Number(value) || 0)
+}
+
 function rowTotal(it) {
-  return it.qty * it.unitValue * (1 - it.discountPct / 100)
+  return roundAmount(it.qty * it.unitValue * (1 - it.discountPct / 100))
 }
 
 
@@ -474,6 +480,9 @@ async function confirmQuote() {
 }
 
 async function discardQuote() {
+  const shouldDiscard = window.confirm('¿Estás seguro de que deseas descartar esta cotización?')
+  if (!shouldDiscard) return
+
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -535,7 +544,7 @@ async function discardQuote() {
       </td>
       <td>{{ it.name }}</td>
       <td>
-        <template v-if="isDbItem(it)">${{ it.unitValue }}</template>
+        <template v-if="isDbItem(it)">${{ roundAmount(it.unitValue) }}</template>
         <input
           v-else
           v-model.number="editUnitValue"
@@ -547,7 +556,7 @@ async function discardQuote() {
       <td>
         <input v-model.number="editDiscount" type="number" min="0" max="100" class="edit-input" />%
       </td>
-      <td class="bold">${{ (editQty * (isDbItem(it) ? it.unitValue : editUnitValue) * (1 - editDiscount / 100)).toFixed(0) }}</td>
+      <td class="bold">${{ roundAmount(editQty * (isDbItem(it) ? it.unitValue : editUnitValue) * (1 - editDiscount / 100)) }}</td>
       <td class="actions">
         <button @click="saveItemChanges(it)">💾</button>
         <button @click="cancelItemEdit">✖️</button>
@@ -556,7 +565,7 @@ async function discardQuote() {
     <template v-else>
       <td>{{ it.qty }}</td>
       <td>{{ it.name }}</td>
-      <td>${{ it.unitValue }}</td>
+      <td>${{ roundAmount(it.unitValue) }}</td>
       <td>{{ it.discountPct }}%</td>
       <td class="bold">${{ rowTotal(it).toFixed(0) }}</td>
       <td class="actions">
