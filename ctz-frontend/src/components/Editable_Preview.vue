@@ -578,12 +578,17 @@ async function discardQuote() {
           <button class="cond-action" @click="cancelEditCondition">Cancelar</button>
         </template>
         <template v-else>
-          <span class="cond-text">{{ c.text }}</span>
           <span
-            class="cond-source"
-            :class="{ 'cond-source-service': c.source === 'service', 'cond-source-manual': c.source !== 'service' }"
+            class="cond-service"
+            :class="{ 'cond-service-linked': c.source === 'service', 'cond-service-manual': c.source !== 'service' }"
           >
             {{ conditionSourceLabel(c) }}
+          </span>
+          <span
+            class="cond-text"
+            :class="{ 'cond-text-linked': c.source === 'service', 'cond-text-manual': c.source !== 'service' }"
+          >
+            {{ c.text }}
           </span>
           <span class="conditions-item-actions">
             <button
@@ -797,30 +802,43 @@ async function discardQuote() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
 
-.cond-source {
+.cond-service {
   display: inline-flex;
   align-items: center;
-  margin-left: 8px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
+  min-width: 150px;
+  font-size: 12px;
   font-weight: 600;
+  color: #1e293b;
 }
 
-.cond-source-service {
-  background: rgba(37, 99, 235, 0.14);
+.cond-service-linked {
   color: #1e40af;
 }
 
-.cond-source-manual {
-  background: rgba(22, 163, 74, 0.14);
+.cond-service-manual {
   color: #166534;
 }
 .conditions-item .cond-text {
   flex: 1 1 auto;
   margin-right: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.cond-text-linked {
+  background: rgba(37, 99, 235, 0.14);
+  color: #1e40af;
+}
+
+.cond-text-manual {
+  background: rgba(22, 163, 74, 0.14);
+  color: #166534;
 }
 .conditions-item .conditions-item-actions button {
   background: none;
