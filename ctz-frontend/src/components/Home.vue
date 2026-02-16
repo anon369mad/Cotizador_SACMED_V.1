@@ -392,6 +392,18 @@ function formatDate(value){
   })
 }
 
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function getHistoryTotal(item) {
+  const monthlyTotal = toNumber(item.total)
+  const months = Math.max(1, toNumber(item.meses, 1))
+  const isUniquePlan = String(item.tipo || '').toUpperCase().includes('UNICA')
+  return isUniquePlan ? monthlyTotal : monthlyTotal * months
+}
+
 function mapHistoryItem(item){
   return {
     id: item.id_cotizacion,
@@ -402,8 +414,8 @@ function mapHistoryItem(item){
     date: formatDate(item.fecha_emision),
     plan: item.tipo || '—',
     connections: item.conexiones || 0,
-    periods: item.meses || 6,
-    price: item.total || 0,
+    periods: toNumber(item.meses, 6),
+    price: getHistoryTotal(item),
     items: [],
     conditions: parseConditionLines(item.condiciones_adicionales),
     rawConditions: item.condiciones_adicionales || '',
