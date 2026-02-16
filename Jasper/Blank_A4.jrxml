@@ -1,0 +1,64 @@
+<!-- Created with Jaspersoft Studio version 7.0.3.final using JasperReports Library version 7.0.3-41034ca841d452f3305ba55b9042260aaa1ab5dd  -->
+<jasperReport name="cotizacion" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="9c0bbda1-6a86-4656-a9f5-8373fd4480f1">
+	<parameter name="cliente" class="java.lang.String"/>
+	<parameter name="rut" class="java.lang.String"/>
+	<parameter name="tipo" class="java.lang.String"/>
+	<parameter name="ejecutivo" class="java.lang.String"/>
+	<parameter name="subtotal" class="java.lang.Double"/>
+	<parameter name="iva" class="java.lang.Double"/>
+	<parameter name="total" class="java.lang.Double"/>
+	<title height="80">
+		<element kind="staticText" uuid="061836e0-c9a3-40b8-8873-dff6ce3bb564" x="0" y="0" width="300" height="20">
+			<text><![CDATA[DOCUMENTO DE COTIZACIÓN]]></text>
+		</element>
+		<element kind="textField" uuid="c44a8a66-aea5-44d4-a166-5f67c4d5a330" x="0" y="25" width="300" height="20">
+			<expression><![CDATA["Cotización tipo " + $P{tipo}]]></expression>
+		</element>
+		<element kind="textField" uuid="5910c37e-26d3-42d1-b6d7-5d8e46a13005" x="0" y="50" width="300" height="20">
+			<expression><![CDATA["Ejecutivo: " + $P{ejecutivo}]]></expression>
+		</element>
+	</title>
+	<pageHeader height="50">
+		<element kind="textField" uuid="54844ed8-5baf-4170-ae85-efb437d1a0b9" x="0" y="0" width="300" height="20">
+			<expression><![CDATA["Cliente: " + $P{cliente}]]></expression>
+		</element>
+		<element kind="textField" uuid="bbcac7d0-66df-48eb-b161-1cffb328a89b" x="320" y="0" width="200" height="20">
+			<expression><![CDATA["RUT: " + $P{rut}]]></expression>
+		</element>
+	</pageHeader>
+	<columnHeader height="20">
+		<element kind="staticText" uuid="60c7b167-c2d5-4066-9b53-f81384ef06cd" x="0" y="0" width="40" height="20">
+			<text><![CDATA[Cant]]></text>
+		</element>
+		<element kind="staticText" uuid="65f962eb-0757-404b-bc19-6ade12cf7c62" x="45" y="0" width="200" height="20">
+			<text><![CDATA[Servicio]]></text>
+		</element>
+		<element kind="staticText" uuid="7bf135e4-6b13-431e-9e37-66af629a99b1" x="250" y="0" width="80" height="20">
+			<text><![CDATA[Unitario]]></text>
+		</element>
+		<element kind="staticText" uuid="d8e091f3-c295-454f-abaa-79ea205454ca" x="335" y="0" width="50" height="20">
+			<text><![CDATA[Desc]]></text>
+		</element>
+		<element kind="staticText" uuid="d2de7ca3-19f9-408f-b570-1e1f24cd7bee" x="390" y="0" width="80" height="20">
+			<text><![CDATA[Total]]></text>
+		</element>
+	</columnHeader>
+	<detail>
+		<band height="20">
+			<element kind="staticText" uuid="41b06dd2-cfb0-449a-832f-0e53b57973b4" x="0" y="0" width="200" height="20">
+				<text><![CDATA[ITEM]]></text>
+			</element>
+		</band>
+	</detail>
+	<pageFooter height="613">
+		<element kind="textField" uuid="657d0dba-fa54-4a09-b5bd-cdcaae0293b9" x="360" y="70" width="200" height="20">
+			<expression><![CDATA["Subtotal: " + $P{subtotal}]]></expression>
+		</element>
+		<element kind="textField" uuid="27c23e77-79f7-4e7f-a281-d0e9f0ee0976" x="360" y="100" width="200" height="20">
+			<expression><![CDATA["IVA: " + $P{iva}]]></expression>
+		</element>
+		<element kind="textField" uuid="c5ede4a9-4a4d-4c0f-9057-9cb6d78e081d" x="360" y="130" width="200" height="20">
+			<expression><![CDATA["Total: " + $P{total}]]></expression>
+		</element>
+	</pageFooter>
+</jasperReport>
