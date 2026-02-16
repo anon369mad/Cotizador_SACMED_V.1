@@ -22,90 +22,90 @@
 	<field name="total" class="java.lang.String"/>
 
 	<title height="120">
-		<element kind="textField" x="0" y="8" width="300" height="35" forecolor="#0B70C9" uuid="logo-text">
+		<element kind="textField" x="0" y="8" width="300" height="35" forecolor="#0B70C9" uuid="7a853cf7-7ffc-5b80-a7c6-56bb3b93e4fb">
 			<font size="34" isBold="true"/>
 			<expression><![CDATA["SACMED"]]></expression>
 		</element>
-		<element kind="staticText" x="0" y="52" width="180" height="22" forecolor="#636A75" uuid="title-text">
+		<element kind="staticText" x="0" y="52" width="180" height="22" forecolor="#636A75" uuid="c38c6129-b963-5cc1-9724-38dad42a0d3f">
 			<font size="24" isBold="true"/>
 			<text><![CDATA[Presupuesto]]></text>
 		</element>
-		<element kind="rectangle" x="235" y="52" width="280" height="52" radius="4" backcolor="#D4E7F7" mode="Opaque" uuid="box-dates"/>
-		<element kind="staticText" x="243" y="60" width="125" height="15" uuid="fecha-emi-label">
+		<element kind="rectangle" x="235" y="52" width="280" height="52" radius="4" backcolor="#D4E7F7" mode="Opaque" uuid="f2af4793-3ec3-5d4e-952c-f1ba0f4f8778"/>
+		<element kind="staticText" x="243" y="60" width="125" height="15" uuid="6671a162-a0c2-5ac6-b4c3-36a03cfd5911">
 			<font size="10" isBold="true"/>
 			<text><![CDATA[Fecha de emisión]]></text>
 		</element>
-		<element kind="textField" x="372" y="60" width="133" height="15" uuid="fecha-emi-value">
+		<element kind="textField" x="372" y="60" width="133" height="15" uuid="d7837287-1896-59da-b05a-ec73c773fb76">
 			<font size="10"/>
 			<expression><![CDATA[$P{fecha_emision}]]></expression>
 		</element>
-		<element kind="staticText" x="243" y="79" width="125" height="15" uuid="fecha-ven-label">
+		<element kind="staticText" x="243" y="79" width="125" height="15" uuid="780fa7c2-e98c-5d14-934b-6951b386d19c">
 			<font size="10" isBold="true"/>
 			<text><![CDATA[Fecha de vencimiento]]></text>
 		</element>
-		<element kind="textField" x="372" y="79" width="133" height="15" uuid="fecha-ven-value">
+		<element kind="textField" x="372" y="79" width="133" height="15" uuid="874f8027-bfea-5eac-bd3b-1a5b0e168421">
 			<font size="10"/>
 			<expression><![CDATA[$P{fecha_vencimiento}]]></expression>
 		</element>
 	</title>
 
 	<pageHeader height="34">
-		<element kind="staticText" x="0" y="8" width="54" height="14" uuid="cliente-label">
+		<element kind="staticText" x="0" y="8" width="54" height="14" uuid="f07866f7-9aed-5512-93a6-33836706248c">
 			<font size="11" isBold="true"/>
 			<text><![CDATA[Cliente:]]></text>
 		</element>
-		<element kind="textField" x="58" y="8" width="305" height="14" uuid="cliente-value">
+		<element kind="textField" x="58" y="8" width="305" height="14" uuid="1f15bd5f-f115-5a27-ae19-0dd6fe1a3516">
 			<font size="11"/>
 			<expression><![CDATA[$P{cliente}]]></expression>
 		</element>
 	</pageHeader>
 
 	<columnHeader height="22">
-		<element kind="rectangle" x="0" y="0" width="515" height="22" backcolor="#9CC3E6" mode="Opaque" uuid="header-bg"/>
-		<element kind="staticText" x="4" y="4" width="50" height="14" uuid="h-cantidad"><font size="10" isBold="true"/><text><![CDATA[Cantidad]]></text></element>
-		<element kind="staticText" x="58" y="4" width="212" height="14" uuid="h-desc"><font size="10" isBold="true"/><text><![CDATA[Descripción]]></text></element>
-		<element kind="staticText" x="274" y="4" width="80" height="14" uuid="h-unit"><font size="10" isBold="true"/><text><![CDATA[Precio unitario]]></text></element>
-		<element kind="staticText" x="358" y="4" width="72" height="14" uuid="h-descuento"><font size="10" isBold="true"/><text><![CDATA[Descuento]]></text></element>
-		<element kind="staticText" x="434" y="4" width="76" height="14" uuid="h-total"><font size="10" isBold="true"/><text><![CDATA[Total]]></text></element>
+		<element kind="rectangle" x="0" y="0" width="515" height="22" backcolor="#9CC3E6" mode="Opaque" uuid="9508d114-39f5-5e98-abaa-aa3c852bc346"/>
+		<element kind="staticText" x="4" y="4" width="50" height="14" uuid="ef30ba5c-c4cc-5be6-ae11-bf5647169e33"><font size="10" isBold="true"/><text><![CDATA[Cantidad]]></text></element>
+		<element kind="staticText" x="58" y="4" width="212" height="14" uuid="7a500173-d1f1-5fc4-8d98-57c979b8942c"><font size="10" isBold="true"/><text><![CDATA[Descripción]]></text></element>
+		<element kind="staticText" x="274" y="4" width="80" height="14" uuid="4ad8ef57-f04f-5366-a3f2-2545f1d36bb8"><font size="10" isBold="true"/><text><![CDATA[Precio unitario]]></text></element>
+		<element kind="staticText" x="358" y="4" width="72" height="14" uuid="942cce79-bcbd-5e06-a376-b615997b3dfa"><font size="10" isBold="true"/><text><![CDATA[Descuento]]></text></element>
+		<element kind="staticText" x="434" y="4" width="76" height="14" uuid="b7ec9601-f8e8-53f8-9ce2-ebf92e31512d"><font size="10" isBold="true"/><text><![CDATA[Total]]></text></element>
 	</columnHeader>
 
 	<detail>
 		<band height="18">
-			<element kind="textField" x="4" y="2" width="50" height="14" uuid="d-cantidad"><font size="10"/><expression><![CDATA[$F{cantidad}]]></expression></element>
-			<element kind="textField" x="58" y="2" width="212" height="14" uuid="d-desc"><font size="10"/><expression><![CDATA[$F{descripcion}]]></expression></element>
-			<element kind="textField" x="274" y="2" width="80" height="14" uuid="d-unit"><font size="10"/><expression><![CDATA[$F{precio_unitario}]]></expression></element>
-			<element kind="textField" x="358" y="2" width="72" height="14" uuid="d-descuento"><font size="10"/><expression><![CDATA[$F{descuento}]]></expression></element>
-			<element kind="textField" x="434" y="2" width="76" height="14" uuid="d-total"><font size="10" isBold="true"/><expression><![CDATA[$F{total}]]></expression></element>
-			<element kind="line" x="0" y="17" width="515" height="1" uuid="line-row"/>
+			<element kind="textField" x="4" y="2" width="50" height="14" uuid="a7f36d40-8497-5ad8-9405-335eb8796b4b"><font size="10"/><expression><![CDATA[$F{cantidad}]]></expression></element>
+			<element kind="textField" x="58" y="2" width="212" height="14" uuid="eb207600-0dc3-56f6-a94e-1c808f9980f4"><font size="10"/><expression><![CDATA[$F{descripcion}]]></expression></element>
+			<element kind="textField" x="274" y="2" width="80" height="14" uuid="b3ba8635-933c-59a7-a732-ddce0ac25f27"><font size="10"/><expression><![CDATA[$F{precio_unitario}]]></expression></element>
+			<element kind="textField" x="358" y="2" width="72" height="14" uuid="27bfa236-8163-5526-a204-a5d0b1a92226"><font size="10"/><expression><![CDATA[$F{descuento}]]></expression></element>
+			<element kind="textField" x="434" y="2" width="76" height="14" uuid="a8673a9d-e8b7-5dab-bb5f-91feb978c8cf"><font size="10" isBold="true"/><expression><![CDATA[$F{total}]]></expression></element>
+			<element kind="line" x="0" y="17" width="515" height="1" uuid="42de6f6b-63d5-59dc-b814-659758b0ee99"/>
 		</band>
 	</detail>
 
 	<pageFooter height="260">
-		<element kind="staticText" x="0" y="8" width="220" height="14" uuid="conex-label"><font size="10" isBold="true"/><text><![CDATA[Total de conexiones simultáneas:]]></text></element>
-		<element kind="textField" x="224" y="8" width="50" height="14" uuid="conex-value"><font size="10" isBold="true"/><expression><![CDATA[$P{conexiones_simultaneas}]]></expression></element>
-		<element kind="staticText" x="0" y="24" width="60" height="14" uuid="usuarios-label"><font size="10" isBold="true"/><text><![CDATA[Usuarios:]]></text></element>
-		<element kind="textField" x="64" y="24" width="150" height="14" uuid="usuarios-value"><font size="10" isBold="true"/><expression><![CDATA[$P{usuarios}]]></expression></element>
+		<element kind="staticText" x="0" y="8" width="220" height="14" uuid="b84e2966-ee08-5b39-a419-e9533b3e9bf9"><font size="10" isBold="true"/><text><![CDATA[Total de conexiones simultáneas:]]></text></element>
+		<element kind="textField" x="224" y="8" width="50" height="14" uuid="b2b14783-26e3-5533-9d22-42ccb7eeeb8c"><font size="10" isBold="true"/><expression><![CDATA[$P{conexiones_simultaneas}]]></expression></element>
+		<element kind="staticText" x="0" y="24" width="60" height="14" uuid="2b20b733-0f47-5c78-bfbe-a43f94e80c37"><font size="10" isBold="true"/><text><![CDATA[Usuarios:]]></text></element>
+		<element kind="textField" x="64" y="24" width="150" height="14" uuid="e2dcaffa-1f3f-54ab-aabe-d99c6b984c82"><font size="10" isBold="true"/><expression><![CDATA[$P{usuarios}]]></expression></element>
 
-		<element kind="rectangle" x="300" y="0" width="215" height="64" backcolor="#D4E7F7" mode="Opaque" uuid="totals-box"/>
-		<element kind="staticText" x="306" y="8" width="85" height="14" uuid="subtotal-label"><font size="10"/><text><![CDATA[Subtotal]]></text></element>
-		<element kind="textField" x="392" y="8" width="115" height="14" uuid="subtotal-value"><font size="10" isBold="true"/><expression><![CDATA[$P{subtotal}]]></expression></element>
-		<element kind="staticText" x="306" y="24" width="85" height="14" uuid="iva-label"><font size="10"/><text><![CDATA[IVA]]></text></element>
-		<element kind="textField" x="392" y="24" width="115" height="14" uuid="iva-value"><font size="10" isBold="true"/><expression><![CDATA[$P{iva}]]></expression></element>
-		<element kind="staticText" x="306" y="40" width="85" height="14" uuid="mensual-label"><font size="10" isBold="true"/><text><![CDATA[Total Mensual]]></text></element>
-		<element kind="textField" x="392" y="40" width="115" height="14" uuid="mensual-value"><font size="10" isBold="true"/><expression><![CDATA[$P{total_mensual}]]></expression></element>
-		<element kind="staticText" x="306" y="56" width="85" height="14" uuid="periodo-label"><font size="10" isBold="true"/><text><![CDATA[Total Periodo]]></text></element>
-		<element kind="textField" x="392" y="56" width="115" height="14" uuid="periodo-value"><font size="10" isBold="true"/><expression><![CDATA[$P{total_periodo}]]></expression></element>
+		<element kind="rectangle" x="300" y="0" width="215" height="64" backcolor="#D4E7F7" mode="Opaque" uuid="291f8afe-db7b-5da0-880e-b001823e9a50"/>
+		<element kind="staticText" x="306" y="8" width="85" height="14" uuid="0fe1ae72-d7c6-543b-a02f-aabc1d6b6a00"><font size="10"/><text><![CDATA[Subtotal]]></text></element>
+		<element kind="textField" x="392" y="8" width="115" height="14" uuid="2293a852-5a4d-563b-80bd-aba11a187842"><font size="10" isBold="true"/><expression><![CDATA[$P{subtotal}]]></expression></element>
+		<element kind="staticText" x="306" y="24" width="85" height="14" uuid="63486de2-3f18-5ae3-98d2-4761b0324af0"><font size="10"/><text><![CDATA[IVA]]></text></element>
+		<element kind="textField" x="392" y="24" width="115" height="14" uuid="6ab56abb-ebcc-5283-a003-5c0920bbeaf4"><font size="10" isBold="true"/><expression><![CDATA[$P{iva}]]></expression></element>
+		<element kind="staticText" x="306" y="40" width="85" height="14" uuid="38c40e5d-8942-53fa-be64-3655be6e5dec"><font size="10" isBold="true"/><text><![CDATA[Total Mensual]]></text></element>
+		<element kind="textField" x="392" y="40" width="115" height="14" uuid="2fe16376-ddfb-53ca-b3bb-563e34248e0f"><font size="10" isBold="true"/><expression><![CDATA[$P{total_mensual}]]></expression></element>
+		<element kind="staticText" x="306" y="56" width="85" height="14" uuid="41d35a55-191c-5a03-8ad0-6b1cd286c293"><font size="10" isBold="true"/><text><![CDATA[Total Periodo]]></text></element>
+		<element kind="textField" x="392" y="56" width="115" height="14" uuid="b27db0ef-f03c-5451-bf90-0db5e3c11dde"><font size="10" isBold="true"/><expression><![CDATA[$P{total_periodo}]]></expression></element>
 
-		<element kind="staticText" x="0" y="78" width="170" height="14" uuid="cg-title"><font size="10" isBold="true" isUnderline="true"/><text><![CDATA[Condiciones Generales:]]></text></element>
-		<element kind="textField" x="0" y="94" width="515" height="50" uuid="cg-text"><font size="9"/><expression><![CDATA[$P{condiciones_generales}]]></expression></element>
+		<element kind="staticText" x="0" y="78" width="170" height="14" uuid="fb87c0e5-dd94-5559-bfd0-ba5aae32679f"><font size="10" isBold="true" isUnderline="true"/><text><![CDATA[Condiciones Generales:]]></text></element>
+		<element kind="textField" x="0" y="94" width="515" height="50" uuid="c7fb44a2-16ec-5f90-af85-33edf8a2548d"><font size="9"/><expression><![CDATA[$P{condiciones_generales}]]></expression></element>
 
-		<element kind="staticText" x="0" y="148" width="170" height="14" uuid="cap-title"><font size="10" isBold="true" isUnderline="true"/><text><![CDATA[Capacitación Plataforma:]]></text></element>
-		<element kind="textField" x="0" y="164" width="515" height="24" uuid="cap-text"><font size="9"/><expression><![CDATA[$P{capacitacion}]]></expression></element>
+		<element kind="staticText" x="0" y="148" width="170" height="14" uuid="87d9ba29-a9b0-55ae-acab-b989cd412565"><font size="10" isBold="true" isUnderline="true"/><text><![CDATA[Capacitación Plataforma:]]></text></element>
+		<element kind="textField" x="0" y="164" width="515" height="24" uuid="0e405cb6-1598-5e9b-b70d-3e9b4fe85641"><font size="9"/><expression><![CDATA[$P{capacitacion}]]></expression></element>
 
-		<element kind="staticText" x="0" y="190" width="170" height="14" uuid="ca-title"><font size="10" isBold="true" isUnderline="true"/><text><![CDATA[Cobros Adicionales:]]></text></element>
-		<element kind="textField" x="0" y="206" width="515" height="24" uuid="ca-text"><font size="9"/><expression><![CDATA[$P{cobros_adicionales}]]></expression></element>
+		<element kind="staticText" x="0" y="190" width="170" height="14" uuid="aa0825ae-647c-5a92-b085-0f10111c4437"><font size="10" isBold="true" isUnderline="true"/><text><![CDATA[Cobros Adicionales:]]></text></element>
+		<element kind="textField" x="0" y="206" width="515" height="24" uuid="7c158333-8bce-5b38-92cc-e5e856a825ec"><font size="9"/><expression><![CDATA[$P{cobros_adicionales}]]></expression></element>
 
-		<element kind="textField" x="0" y="236" width="250" height="14" uuid="ejecutivo-text"><font size="10"/><expression><![CDATA["Ejecutiva: " + $P{ejecutivo}]]></expression></element>
-		<element kind="staticText" x="300" y="236" width="210" height="14" uuid="firma"><font size="10" isBold="true"/><text><![CDATA[Firma Cliente ___________________]]></text></element>
+		<element kind="textField" x="0" y="236" width="250" height="14" uuid="480b487a-2289-53cb-aafa-413381b78573"><font size="10"/><expression><![CDATA["Ejecutiva: " + $P{ejecutivo}]]></expression></element>
+		<element kind="staticText" x="300" y="236" width="210" height="14" uuid="61c79c26-8aed-5d77-bd78-4d1e889b9265"><font size="10" isBold="true"/><text><![CDATA[Firma Cliente ___________________]]></text></element>
 	</pageFooter>
 </jasperReport>
