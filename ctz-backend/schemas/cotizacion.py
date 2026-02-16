@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date
 # un schema es una representación estructurada de los datos que se utilizan para validar y serializar la información que se intercambia entre el cliente y el servidor en una API.
@@ -39,3 +39,29 @@ class CotizacionResponse(CotizacionBase):
 
     class Config:
         from_attributes = True
+
+
+class CotizacionJasperItem(BaseModel):
+    cantidad: int
+    descripcion: str
+    precio_unitario: float
+    descuento: float
+    total: float
+
+
+class CotizacionJasperPayload(BaseModel):
+    cliente: str
+    rut: str
+    ejecutivo: str
+    fecha_emision: Optional[date] = None
+    fecha_vencimiento: Optional[date] = None
+    conexiones_simultaneas: Optional[int] = None
+    usuarios: Optional[str] = None
+    subtotal: float
+    iva: float
+    total_mensual: float
+    total_periodo: float
+    condiciones_generales: list[str] = Field(default_factory=list)
+    capacitacion: list[str] = Field(default_factory=list)
+    cobros_adicionales: list[str] = Field(default_factory=list)
+    items: list[CotizacionJasperItem] = Field(default_factory=list)
