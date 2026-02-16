@@ -142,11 +142,19 @@ const subtotal = computed(() =>
 const iva = computed(() => Math.round(subtotal.value * 0.19))
 const total = computed(() => roundAmount(subtotal.value + iva.value))
 const totalPeriod = computed(() => {
+  if (props.baseData.planType === 'Única') {
+    return total.value
+  }
+
   const months = Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1)
   return roundAmount(total.value * Math.max(1, months))
 })
 
 const periodDescriptor = computed(() => {
+  if (props.baseData.planType === 'Única') {
+    return 'Pago único'
+  }
+
   const months = Math.max(1, Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1))
   return `Cada ${months} mes${months === 1 ? '' : 'es'}`
 })
