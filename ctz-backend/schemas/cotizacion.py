@@ -23,7 +23,7 @@ class CotizacionBase(BaseModel):
 class CotizacionCreate(CotizacionBase):
     pass
 
-class CotizacionUpdate(BaseModel):
+class CotizacionUpdate(CotizacionBase):
     estado: Optional[str]= None
 
 class CotizacionResponse(CotizacionBase):
