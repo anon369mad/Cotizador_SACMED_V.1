@@ -107,6 +107,7 @@ const historyError = ref('')
 const historySearch = ref('')
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const prestacionesCache = ref(null)
+const planesCache = ref(null)
 
 const filteredHistory = computed(() => {
   const term = historySearch.value.trim().toLowerCase()
@@ -185,7 +186,22 @@ async function getPrestaciones() {
   return prestacionesCache.value
 }
 
-function extractManualConditions(rawConditions, detailItems, prestaciones = []) {
+async function getPlanes() {
+  if (Array.isArray(planesCache.value)) {
+    return planesCache.value
+  }
+
+  const response = await fetch(`${apiBaseUrl}/planes`)
+  if (!response.ok) {
+    throw new Error('No se pudieron cargar los planes para duplicar la cotización')
+  }
+
+  const planes = await response.json()
+  planesCache.value = Array.isArray(planes) ? planes : []
+  return planesCache.value
+}
+
+function extractManualConditions(rawConditions, detailItems, prestaciones = [], planes = []) {
   const allConditions = splitConditionLines(rawConditions)
   if (!allConditions.length) return []
 
@@ -201,6 +217,19 @@ function extractManualConditions(rawConditions, detailItems, prestaciones = []) 
     const itemConditions = conditionsByPrestacion.get(Number(item?.id_prestacion)) || []
     for (const condition of itemConditions) {
       serviceConditionKeys.add(condition.toLowerCase())
+    }
+
+    if (item?.id_prestacion != null) continue
+
+    const itemName = String(item?.name || '').toLowerCase()
+    for (const plan of planes) {
+      const planName = String(plan?.nombre || '').trim()
+      if (!planName) continue
+      if (!itemName.includes(planName.toLowerCase())) continue
+
+      for (const condition of splitConditionLines(plan?.condiciones)) {
+        serviceConditionKeys.add(condition.toLowerCase())
+      }
     }
   }
 
@@ -334,7 +363,10 @@ async function duplicateQuote(h){
 
   try {
     const detailItems = await fetchQuoteDetails(h.id)
-    const prestaciones = await getPrestaciones()
+    const [prestaciones, planes] = await Promise.all([
+      getPrestaciones(),
+      getPlanes()
+    ])
     const id = Date.now() + Math.random()
 
     tabs.value.push({
@@ -348,7 +380,7 @@ async function duplicateQuote(h){
         connections: h.connections || 0,
         periodMonths: h.periods || 6,
         items: detailItems,
-        conditions: extractManualConditions(h.rawConditions, detailItems, prestaciones),
+        conditions: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes),
         idCotizacion: null,
         estado: null
       }
