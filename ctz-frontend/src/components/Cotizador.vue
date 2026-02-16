@@ -559,48 +559,44 @@ watch(
       </div>
     </div>
     <div class="card-body">
-      <div class="form-grid">
-        <div class="section">
+      <div class="section">
+        <div class="section-head">
           <h4>Datos del cliente</h4>
-          <div class="row two">
-            <div class="field">
-              <label>RUT Persona/Empresa *</label>
-             <input
+        </div>
+        <div class="row two">
+          <div class="field">
+            <label>RUT Persona/Empresa *</label>
+            <input
               v-model="form.rut"
               placeholder="Ej: 12.345.678-5"
               @input="formatRut"
               maxlength="12"
-              required/>
-              <small v-if="rutError" class="error">
-                RUT inválido
-              </small>
-
-            </div>
-            <div class="field">
-              <label>Nombre/Razón Social *</label>
-              <input v-model="form.cliente" placeholder="Ej: Empresa ABC Ltda." required/>
-            </div>
+              required
+            />
+            <small v-if="rutError" class="error">RUT inválido</small>
+          </div>
+          <div class="field">
+            <label>Nombre/Razón Social *</label>
+            <input v-model="form.cliente" placeholder="Ej: Empresa ABC Ltda." required />
           </div>
         </div>
+      </div>
 
-        <div class="section" v-if="form.planType === 'Período'">
+      <div class="section" v-if="form.planType === 'Período'">
+        <div class="section-head">
           <h4>Configuración del servicio</h4>
-          <div class="row two">
-            <div class="field">
-              <label>Cantidad de Conexiones</label>
-              <input type="number" min="0" v-model.number="form.conexiones" />
-              <small v-if="planesLoading">Cargando planes...</small>
-              <small v-else-if="planesError" class="error">{{ planesError }}</small>
-            </div>
-            <div class="field">
-              <label>Período de Contratación (meses)</label>
-              <input
-                type="number"
-                :min="minPeriodMonths"
-                v-model.number="form.periodMonths"
-              />
-              <small v-if="showRestrictedPeriodHint">Para 1 o 2 conexiones, el período debe ser mayor a 3 meses.</small>
-            </div>
+        </div>
+        <div class="row two">
+          <div class="field">
+            <label>Cantidad de Conexiones</label>
+            <input type="number" min="0" v-model.number="form.conexiones" />
+            <small v-if="planesLoading">Cargando planes...</small>
+            <small v-else-if="planesError" class="error">{{ planesError }}</small>
+          </div>
+          <div class="field">
+            <label>Período de Contratación (meses)</label>
+            <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
+            <small v-if="showRestrictedPeriodHint">Para 1 o 2 conexiones, el período debe ser mayor a 3 meses.</small>
           </div>
         </div>
       </div>
@@ -739,7 +735,7 @@ watch(
 .row.two { display: flex; gap: 12px }
 .field { display: flex; flex-direction: column; gap: 6px }
 .field label { font-size: 12px; color: #6b747a }
-.field input { padding: 10px 12px; border-radius: 8px;border: 1px solid rgba(15, 21, 64, 0.24); font-size: 14px; background: #fbfdff;color: black; }
+.field input { padding: 10px 6hopx; border-radius: 8px;border: 1px solid rgba(15, 21, 64, 0.24); font-size: 14px; background: #fbfdff;color: black; }
 
 /* items list */
 .item {align-items: center;justify-items: center; border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px;  background: #f8fbff; padding: 12px }
