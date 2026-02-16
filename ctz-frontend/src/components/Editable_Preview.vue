@@ -145,9 +145,8 @@ const totalPeriod = computed(() => {
 })
 
 const periodDescriptor = computed(() => {
-  const months = Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1)
-  if (months === 3) return 'Trimestral'
-  return `${months} mes${months === 1 ? '' : 'es'}`
+  const months = Math.max(1, Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1))
+  return `Cada ${months} mes${months === 1 ? '' : 'es'}`
 })
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const isSaving = ref(false)
