@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion import Cotizacion
@@ -39,8 +39,15 @@ def crear_cotizacion(data: CotizacionCreate, db: Session = Depends(get_db)):
     return cotizacion
 
 @router.get("/cotizaciones", response_model=list[CotizacionResponse])
-def listar_cotizaciones(db: Session = Depends(get_db)):
-    cotizaciones = db.query(Cotizacion).all()
+def listar_cotizaciones(
+    id_usuario: int | None = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Cotizacion)
+    if id_usuario is not None:
+        query = query.filter(Cotizacion.id_usuario == id_usuario)
+
+    cotizaciones = query.all()
     return attach_user_names(cotizaciones, db)
 
 @router.get("/cotizaciones/{id_cotizacion}", response_model=CotizacionResponse)
