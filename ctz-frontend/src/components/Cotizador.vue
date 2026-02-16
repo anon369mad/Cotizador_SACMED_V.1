@@ -464,10 +464,10 @@ const total = computed(() => subtotal.value + iva.value)
 const minPeriodMonths = computed(() => {
   if (form.planType !== 'Período') return 1
   const conexiones = Number(form.conexiones || 0)
-  return conexiones === 1 || conexiones === 2 ? 3 : 1
+  return conexiones === 1 || conexiones === 2 ? 4 : 1
 })
 
-const shouldLockPeriodMonths = computed(() => {
+const showRestrictedPeriodHint = computed(() => {
   if (form.planType !== 'Período') return false
   const conexiones = Number(form.conexiones || 0)
   return conexiones === 1 || conexiones === 2
@@ -505,11 +505,6 @@ watch(
   [() => form.conexiones, () => form.planType],
   () => {
     if (form.planType !== 'Período') return
-    if (shouldLockPeriodMonths.value) {
-      form.periodMonths = 3
-      return
-    }
-
     if (Number(form.periodMonths || 0) < minPeriodMonths.value) {
       form.periodMonths = minPeriodMonths.value
     }
@@ -595,10 +590,9 @@ watch(
               <input
                 type="number"
                 :min="minPeriodMonths"
-                :disabled="shouldLockPeriodMonths"
                 v-model.number="form.periodMonths"
               />
-              <small v-if="shouldLockPeriodMonths">Para 1 o 2 conexiones, el período se fija automáticamente en 3 meses.</small>
+              <small v-if="showRestrictedPeriodHint">Para 1 o 2 conexiones, el período debe ser mayor a 3 meses.</small>
             </div>
           </div>
         </div>
