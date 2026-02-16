@@ -222,6 +222,10 @@ const planes = ref([])
 const planesLoading = ref(false)
 const planesError = ref('')
 
+function roundAmount(value) {
+  return Math.round(Number(value) || 0)
+}
+
 function formatRut(e) {
   let v = e.target.value
 
@@ -258,7 +262,7 @@ function addService() {
       id: manualItemId,
       name: manualName,
       qty: form.cantidad,
-      unitValue: form.valor,
+      unitValue: roundAmount(form.valor),
       discountPct: form.descuento,
       condiciones: null,
       source: 'manual'
@@ -284,7 +288,7 @@ function addService() {
     id_prestacion: prestacionSeleccionada.id_prestacion,
     name: prestacionSeleccionada.nombre,
     qty: form.cantidad,
-    unitValue: form.valor,
+    unitValue: roundAmount(form.valor),
     discountPct: form.descuento,
     condiciones: prestacionSeleccionada.condiciones || null,
     source: 'db'
@@ -384,7 +388,7 @@ function syncPlanItems() {
     id_plan: planBase.id_plan,
     name: `${planBase.nombre} (${conexionesIncluidas} conexiones)`,
     qty: 1,
-    unitValue: Number(planBase.valor_plan_mensual || 0),
+    unitValue: roundAmount(planBase.valor_plan_mensual),
     discountPct: 0,
     condiciones: planBase.condiciones || null,
     autoPlan: true,
@@ -394,9 +398,9 @@ function syncPlanItems() {
   if (conexionesExtra > 0) {
     planItems.push({
       id: `auto-plan-extra-${planBase.id_plan}`,
-      name: `Conexiones extra (${planBase.nombre})`,
+      name: `Conexiones adicionales (${planBase.nombre})`,
       qty: conexionesExtra,
-      unitValue: Number(planBase.valor_conexion_adicional || 0),
+      unitValue: roundAmount(planBase.valor_conexion_adicional),
       discountPct: 0,
       autoPlan: true,
       source: 'db'
@@ -429,11 +433,11 @@ function onSelectPrestacion() {
     form.moneda = 'CLP'
   } else {
     form.moneda = 'UF'
-    valor = form.valor_original * valorUf.value
+    valor = roundAmount(form.valor_original * valorUf.value)
   }
 
   // lo que verá el usuario
-  form.valor = valor
+  form.valor = roundAmount(valor)
 }
 
 
@@ -454,13 +458,16 @@ watch(
 )
 
 const subtotal = computed(() =>
-  form.items.reduce((sum, it) => {
-    return sum + it.qty * it.unitValue * (1 - it.discountPct / 100)
-  }, 0)
+  roundAmount(
+    form.items.reduce((sum, it) => {
+      const lineTotal = roundAmount(it.qty * it.unitValue * (1 - it.discountPct / 100))
+      return sum + lineTotal
+    }, 0)
+  )
 )
 
 const iva = computed(() => Math.round(subtotal.value * 0.19))
-const total = computed(() => subtotal.value + iva.value)
+const total = computed(() => roundAmount(subtotal.value + iva.value))
 const minPeriodMonths = computed(() => {
   if (form.planType !== 'Período') return 1
   const conexiones = Number(form.conexiones || 0)
