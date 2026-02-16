@@ -24,6 +24,11 @@
         </div>
       </section>
 
+      <section class="sheet-section" v-if="showMonths">
+        <h4>Período de contratación</h4>
+        <p class="period-text">{{ periodDescriptor }}</p>
+      </section>
+
       <section class="sheet-section">
         <h4>Servicios</h4>
         <table class="items-table">
@@ -148,9 +153,56 @@ const conditionEntries = computed(() => {
     .filter(Boolean)
 })
 
-const subtotal = computed(() => normalizedItems.value.reduce((sum, item) => sum + item.total, 0))
-const iva = computed(() => Math.round(subtotal.value * 0.19))
-const total = computed(() => subtotal.value + iva.value)
+const subtotal = computed(() => {
+  const explicitSubtotal = Number(props.quote.subtotal)
+  if (Number.isFinite(explicitSubtotal) && explicitSubtotal > 0) {
+    return Math.round(explicitSubtotal)
+  }
+
+  return normalizedItems.value.reduce((sum, item) => sum + item.total, 0)
+})
+
+const iva = computed(() => {
+  const explicitIva = Number(props.quote.ivaMonto ?? props.quote.iva_monto)
+  if (Number.isFinite(explicitIva) && explicitIva > 0) {
+    return Math.round(explicitIva)
+  }
+
+  return Math.round(subtotal.value * 0.19)
+})
+
+const total = computed(() => {
+  const explicitTotal = Number(
+    props.quote.totalHistorial ?? props.quote.total_historial ?? props.quote.price
+  )
+
+  if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
+    return Math.round(explicitTotal)
+  }
+
+  const explicitMonthlyTotal = Number(props.quote.totalMensual ?? props.quote.total)
+  if (Number.isFinite(explicitMonthlyTotal) && explicitMonthlyTotal > 0) {
+    const planType = String(props.quote.planType || '').toLowerCase()
+    const isUniquePlan = planType.includes('única') || planType.includes('unica')
+
+    if (isUniquePlan) return Math.round(explicitMonthlyTotal)
+
+    const months = Math.max(1, Number(props.quote.periodMonths ?? props.quote.periods ?? 1))
+    return Math.round(explicitMonthlyTotal * months)
+  }
+
+  return subtotal.value + iva.value
+})
+
+const showMonths = computed(() => {
+  const planType = String(props.quote.planType || '').toLowerCase()
+  return planType.includes('período') || planType.includes('periodo')
+})
+
+const periodDescriptor = computed(() => {
+  const months = Math.max(1, Number(props.quote.periodMonths ?? props.quote.periods ?? 1))
+  return `${months} mes${months === 1 ? '' : 'es'}`
+})
 
 function formatMoney(value) {
   return '$' + Number(value || 0).toLocaleString('es-CL')
@@ -220,6 +272,12 @@ function conditionLabel(condition) {
   color: #0f172a;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.period-text {
+  margin: 0;
+  font-size: 13px;
+  color: #334155;
 }
 
 .two-cols {

@@ -139,6 +139,10 @@ const previewQuote = reactive({
   periodMonths: 3,
   items: [],
   conditions: [],
+  subtotal: null,
+  ivaMonto: null,
+  totalMensual: null,
+  totalHistorial: null,
   idCotizacion: null,
   estado: null
 })
@@ -327,6 +331,10 @@ async function selectHistory(h){
   previewQuote.periodMonths = h.periods || 6
   previewQuote.items = []
   previewQuote.conditions = []
+  previewQuote.subtotal = h.subtotal ?? null
+  previewQuote.ivaMonto = h.ivaMonto ?? null
+  previewQuote.totalMensual = h.totalMensual ?? null
+  previewQuote.totalHistorial = h.price ?? null
   previewQuote.idCotizacion = h.id
   previewQuote.estado = h.status
 
@@ -416,6 +424,9 @@ function mapHistoryItem(item){
     connections: item.conexiones || 0,
     periods: toNumber(item.meses, 6),
     price: getHistoryTotal(item),
+    subtotal: toNumber(item.subtotal, 0),
+    ivaMonto: toNumber(item.iva_monto, 0),
+    totalMensual: toNumber(item.total, 0),
     items: [],
     conditions: parseConditionLines(item.condiciones_adicionales),
     rawConditions: item.condiciones_adicionales || '',
