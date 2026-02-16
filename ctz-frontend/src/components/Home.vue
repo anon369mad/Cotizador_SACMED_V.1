@@ -134,6 +134,7 @@ const previewQuote = reactive({
   ejecutivo: props.userName || 'Usuario',
   rut: '',
   name: '—',
+  planType: 'Período',
   connections: 1,
   periodMonths: 3,
   items: [],
@@ -169,6 +170,10 @@ function splitConditionLines(rawConditions) {
     .split(/\r?\n/)
     .map((entry) => entry.trim())
     .filter(Boolean)
+}
+
+function normalizePlanType(value) {
+  return String(value || '').toUpperCase().includes('UNICA') ? 'Única' : 'Período'
 }
 
 function getConditionsFromDetailItem(item, prestaciones = [], planes = []) {
@@ -317,6 +322,7 @@ async function selectHistory(h){
   previewQuote.ejecutivo = h.user || 'Usuario'
   previewQuote.name = h.company
   previewQuote.rut = h.rut || ''
+  previewQuote.planType = normalizePlanType(h.plan)
   previewQuote.connections = h.connections || 0
   previewQuote.periodMonths = h.periods || 6
   previewQuote.items = []
@@ -425,6 +431,7 @@ async function deleteDraftQuote(h) {
         estado: null,
         name: '—',
         rut: '',
+        planType: 'Período',
         items: [],
         conditions: []
       })
@@ -496,7 +503,7 @@ async function editDraftQuote(h) {
         rut: h.rut || '',
         name: h.company,
         cliente: h.company,
-        planType: String(h.plan || '').toUpperCase().includes('UNICA') ? 'Única' : 'Período',
+        planType: normalizePlanType(h.plan),
         connections: h.connections || 0,
         conexiones: h.connections || 0,
         periodMonths: h.periods || 6,
