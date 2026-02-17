@@ -443,16 +443,14 @@ function mapHistoryItem(item){
   }
 }
 
-async function deleteDraftQuote(h) {
-  if (statusLabel(h.status) === 'Confirmada') return
-
+async function deleteHistoryQuote(h) {
   try {
     const response = await fetch(`${apiBaseUrl}/cotizaciones/${h.id}`, {
       method: 'DELETE'
     })
 
     if (!response.ok) {
-      throw new Error('No se pudo eliminar el borrador del historial')
+      throw new Error('No se pudo eliminar la cotización del historial')
     }
 
     await loadHistory()
@@ -471,7 +469,7 @@ async function deleteDraftQuote(h) {
   } catch (error) {
     historyError.value = error instanceof Error
       ? error.message
-      : 'Error inesperado al eliminar borrador'
+      : 'Error inesperado al eliminar cotización'
   }
 }
 
@@ -682,7 +680,7 @@ onMounted(() => {
                       v-if="statusLabel(h.status) !== 'Confirmada'"
                       class="action-btn danger"
                       type="button"
-                      @click="deleteDraftQuote(h)"
+                      @click="deleteHistoryQuote(h)"
                     >Eliminar borrador</button>
                   </div>
                 </div>
@@ -724,6 +722,11 @@ onMounted(() => {
                   <div class="list-actions">
                     <button class="action-btn" type="button" @click="selectHistory(h)">Visualizar</button>
                     <button class="action-btn secondary" type="button" @click="duplicateQuote(h)">Duplicar</button>
+                    <button
+                      class="action-btn danger"
+                      type="button"
+                      @click="deleteHistoryQuote(h)"
+                    >Eliminar confirmada</button>
                   </div>
                 </div>
                 <div class="list-right">

@@ -403,9 +403,6 @@ def eliminar_cotizacion(id_cotizacion: int, db: Session = Depends(get_db)):
     if not cotizacion:
         raise HTTPException(status_code=404, detail="Cotización no encontrada")
 
-    if cotizacion.estado == "CONFIRMADA":
-        raise HTTPException(status_code=400, detail="Las cotizaciones confirmadas no se pueden eliminar")
-
     db.query(CotizacionDetalle)\
         .filter(CotizacionDetalle.id_cotizacion == id_cotizacion)\
         .delete()
