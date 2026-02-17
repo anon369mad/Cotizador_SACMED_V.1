@@ -9,7 +9,8 @@ router = APIRouter(tags=["Detalles de Cotización"])
 @router.post("/cotizacion_detalles", response_model=CotizacionDetalleResponse)
 def crear_detalle(data: CotizacionDetalleCreate, db: Session = Depends(get_db)):
     subtotal = data.cantidad * data.valor_unitario
-    total = subtotal - data.descuento
+    descuento_pct = max(0, min(100, data.descuento))
+    total = subtotal * (1 - (descuento_pct / 100))
 
     detalle = CotizacionDetalle(
         id_cotizacion=data.id_cotizacion,
@@ -17,7 +18,7 @@ def crear_detalle(data: CotizacionDetalleCreate, db: Session = Depends(get_db)):
         cantidad=data.cantidad,
         descripcion=data.descripcion,
         valor_unitario=data.valor_unitario,
-        descuento=data.descuento,
+        descuento=descuento_pct,
         subtotal=subtotal,
         total=total,
     )
