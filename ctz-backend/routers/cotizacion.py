@@ -1,8 +1,5 @@
 from datetime import date, timedelta
-import json
-import os
-from urllib import error as urllib_error
-from urllib import request as urllib_request
+from html import escape
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -44,6 +41,16 @@ def _to_float(value, default=0.0):
     if value is None:
         return float(default)
     return float(value)
+
+
+def _format_currency(value: float) -> str:
+    return f"{round(_to_float(value)):,.0f}".replace(",", ".")
+
+
+def _format_date(value: date | None) -> str:
+    if not value:
+        return "-"
+    return value.strftime("%d-%m-%Y")
 
 
 def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasperPayload:
@@ -102,8 +109,9 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
 
     if not condiciones_generales:
         condiciones_generales = [
-            "Los valores indicados son mensuales y deben pagarse desde la fecha que se acepten los términos.",
-            "El cobro se realiza para garantizar la disponibilidad del servicio, no por su nivel de uso.",
+            "Los valores indicados son mensuales y deberán ser pagados desde la fecha que se acepten los términos y condiciones.",
+            "El cobro se realiza por garantizar la disponibilidad 24/7 del servicio, no por su nivel de uso.",
+            "En caso de 1 a 2 conexiones, el período de contratación debe superar los 3 meses para facturación mensual.",
         ]
 
     return CotizacionJasperPayload(
@@ -120,14 +128,127 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         total_periodo=total_periodo,
         condiciones_generales=condiciones_generales,
         capacitacion=[
-            "Este presupuesto incluye 2 horas de configuración remota para asistir en el uso de la plataforma.",
+            "Este presupuesto incluye 2 horas de configuración inicial remota para asistirle en el uso de la plataforma.",
         ],
         cobros_adicionales=[
-            "La activación de SMS/WhatsApp puede generar costos adicionales según uso.",
-            "El presupuesto incluye 10 GB de almacenamiento en disco.",
+            "La activación de SMS/WhatsApp puede generar costos adicionales, que se facturarán según su uso.",
+            "El presupuesto incluye 10 GB de almacenamiento. Excedentes pueden tener cargos adicionales.",
         ],
         items=items,
     )
+
+
+def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
+    item_rows = ""
+    for item in payload.items:
+        item_rows += f"""
+        <tr>
+          <td>{item.cantidad}</td>
+          <td>{escape(item.descripcion)}</td>
+          <td class=\"money\">$ {_format_currency(item.precio_unitario)}</td>
+          <td class=\"money\">$ {_format_currency(item.descuento)}</td>
+          <td class=\"money\">$ {_format_currency(item.total)}</td>
+        </tr>
+        """
+
+    if not item_rows:
+        item_rows = """
+        <tr>
+          <td>1</td>
+          <td>Suscripción SACMED Plan Starter</td>
+          <td class=\"money\">$ 0</td>
+          <td class=\"money\">$ 0</td>
+          <td class=\"money\">$ 0</td>
+        </tr>
+        """
+
+    condiciones = "".join(f"<li>{escape(text)}</li>" for text in payload.condiciones_generales)
+    capacitacion = "".join(f"<li>{escape(text)}</li>" for text in payload.capacitacion)
+    cobros = "".join(f"<li>{escape(text)}</li>" for text in payload.cobros_adicionales)
+
+    return f"""
+    <!doctype html>
+    <html lang=\"es\">
+    <head>
+      <meta charset=\"utf-8\" />
+      <style>
+        @page {{ size: A4; margin: 14mm; }}
+        body {{ font-family: Arial, sans-serif; color:#2f2f2f; font-size:12px; }}
+        .sheet {{ border:1px solid #525252; padding:22px; min-height: 255mm; box-sizing:border-box; }}
+        .logo {{ font-size:52px; font-weight:700; color:#1f76d0; letter-spacing:1px; margin-bottom:8px; }}
+        .title {{ font-size:33px; color:#666; font-weight:700; margin: 8px 0 20px; }}
+        .dates {{ width: 55%; margin-left:auto; border-collapse: collapse; font-size:12px; margin-bottom:26px; }}
+        .dates td {{ border:1px solid #4f78a4; padding:5px 8px; background:#dce9f8; }}
+        .dates td:first-child {{ font-weight:700; width:60%; }}
+        .client {{ margin: 16px 0 18px; }}
+        .client strong {{ margin-right:8px; }}
+        table.main {{ width:100%; border-collapse: collapse; font-size:12px; }}
+        table.main th {{ background:#b7d1eb; border:1px solid #787878; padding:6px; text-align:center; }}
+        table.main td {{ border:1px solid #909090; padding:5px 7px; }}
+        .money {{ text-align:right; white-space:nowrap; }}
+        .summary-wrap {{ display:flex; justify-content:space-between; margin-top:8px; }}
+        .summary-left {{ width:60%; font-weight:600; line-height:1.7; }}
+        .summary-right {{ width:40%; border-collapse: collapse; }}
+        .summary-right td {{ border:1px solid #909090; padding:4px 6px; }}
+        .summary-right tr:last-child td {{ background:#9ec3e8; font-weight:700; }}
+        .section-title {{ margin:16px 0 7px; font-weight:700; text-decoration:underline; color:#325f8d; }}
+        ul {{ margin: 4px 0 8px 18px; padding:0; line-height:1.45; }}
+        li {{ margin: 0 0 6px; }}
+        .footer {{ margin-top:24px; display:flex; justify-content:space-between; }}
+        .sign {{ margin-top:40px; font-weight:700; text-align:right; }}
+      </style>
+    </head>
+    <body>
+      <div class=\"sheet\">
+        <div class=\"logo\">SACMED</div>
+        <div class=\"title\">Presupuesto</div>
+
+        <table class=\"dates\">
+          <tr><td>Fecha de emisión</td><td>{_format_date(payload.fecha_emision)}</td></tr>
+          <tr><td>Fecha de vencimiento</td><td>{_format_date(payload.fecha_vencimiento)}</td></tr>
+        </table>
+
+        <div class=\"client\"><strong>Cliente:</strong> {escape(payload.cliente)}</div>
+
+        <table class=\"main\">
+          <thead>
+            <tr>
+              <th>Cantidad</th><th>Descripción</th><th>Precio unitario</th><th>Descuento</th><th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {item_rows}
+          </tbody>
+        </table>
+
+        <div class=\"summary-wrap\">
+          <div class=\"summary-left\">
+            <div>Total de conexiones simultáneas: {payload.conexiones_simultaneas or 0}</div>
+            <div>Usuarios: {escape(payload.usuarios or 'Ilimitados')}</div>
+          </div>
+          <table class=\"summary-right\">
+            <tr><td>Subtotal</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
+            <tr><td>IVA</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
+            <tr><td>Total Mensual</td><td class=\"money\">$ {_format_currency(payload.total_mensual)}</td></tr>
+            <tr><td>Total Trimestral</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
+          </table>
+        </div>
+
+        <div class=\"section-title\">Condiciones Generales:</div>
+        <ul>{condiciones}</ul>
+
+        <div class=\"section-title\">Capacitación:</div>
+        <ul>{capacitacion}</ul>
+
+        <div class=\"section-title\">Cobros Adicionales:</div>
+        <ul>{cobros}</ul>
+
+        <div class=\"footer\">Ejecutiva: {escape(payload.ejecutivo or 'Sin asignar')}</div>
+        <div class=\"sign\">Firma Cliente ________________________</div>
+      </div>
+    </body>
+    </html>
+    """
 
 
 @router.post("/cotizaciones", response_model=CotizacionResponse)
@@ -173,55 +294,47 @@ def obtener_cotizacion_para_jasper(id_cotizacion: int, db: Session = Depends(get
     return _build_jasper_payload(cotizacion, db)
 
 
+@router.get("/cotizaciones/{id_cotizacion}/weasy", response_model=CotizacionJasperPayload)
+def obtener_cotizacion_para_weasy(id_cotizacion: int, db: Session = Depends(get_db)):
+    return obtener_cotizacion_para_jasper(id_cotizacion, db)
+
+
 @router.get("/cotizaciones/{id_cotizacion}/jasper/pdf")
 def generar_pdf_jasper(id_cotizacion: int, db: Session = Depends(get_db)):
     cotizacion = db.query(Cotizacion).get(id_cotizacion)
     if not cotizacion:
         raise HTTPException(status_code=404, detail="Cotización no encontrada")
 
-    jasper_render_url = os.getenv("JASPER_RENDER_URL")
-    if not jasper_render_url:
+    try:
+        from weasyprint import HTML
+    except ImportError as exc:
         raise HTTPException(
             status_code=503,
-            detail="El servicio Jasper no está configurado. Define JASPER_RENDER_URL en el backend.",
-        )
+            detail="WeasyPrint no está instalado en el backend.",
+        ) from exc
 
-    payload = _build_jasper_payload(cotizacion, db).dict()
-    body = json.dumps(payload).encode("utf-8")
-    request = urllib_request.Request(
-        jasper_render_url,
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "Accept": "application/pdf",
-        },
-        method="POST",
-    )
-
-    jasper_token = os.getenv("JASPER_API_TOKEN")
-    if jasper_token:
-        request.add_header("Authorization", f"Bearer {jasper_token}")
+    payload = _build_jasper_payload(cotizacion, db)
+    html = _build_weasy_html(payload)
 
     try:
-        with urllib_request.urlopen(request, timeout=45) as response:
-            pdf_content = response.read()
-            content_type = response.headers.get("Content-Type", "application/pdf")
-    except urllib_error.HTTPError as exc:
-        error_text = exc.read().decode("utf-8", errors="ignore")
-        detail = error_text.strip() or "Jasper respondió con un error al generar el PDF."
-        raise HTTPException(status_code=502, detail=detail) from exc
-    except urllib_error.URLError as exc:
+        pdf_content = HTML(string=html).write_pdf()
+    except Exception as exc:
         raise HTTPException(
-            status_code=502,
-            detail="No fue posible conectar con el servicio Jasper.",
+            status_code=500,
+            detail=f"No se pudo generar el PDF con WeasyPrint: {exc}",
         ) from exc
 
     file_name = f"cotizacion-{id_cotizacion}.pdf"
     return StreamingResponse(
         iter([pdf_content]),
-        media_type=content_type,
+        media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{file_name}"'},
     )
+
+
+@router.get("/cotizaciones/{id_cotizacion}/weasy/pdf")
+def generar_pdf_weasy(id_cotizacion: int, db: Session = Depends(get_db)):
+    return generar_pdf_jasper(id_cotizacion, db)
 
 
 @router.put("/cotizaciones/{id_cotizacion}", response_model=CotizacionResponse)
