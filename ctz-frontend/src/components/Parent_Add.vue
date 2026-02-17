@@ -3,7 +3,7 @@ import { reactive, ref, watch, computed } from 'vue'
 import Cotizador from './Cotizador.vue'
 import Editable_Preview from './Editable_Preview.vue'
 
-const emit = defineEmits(['history-changed'])
+const emit = defineEmits(['history-changed', 'quote-finalized'])
 
 const props = defineProps({
   tabId: {
@@ -82,6 +82,10 @@ function notifyHistoryChanged() {
   emit('history-changed')
 }
 
+function notifyQuoteFinalized(payload) {
+  emit('quote-finalized', payload)
+}
+
 function resetAll() {
   // Reset preview
   Object.assign(previewData, defaultPreview())
@@ -116,6 +120,7 @@ function resetAll() {
           @sync-form="syncFormFromPreview"
           @discard="resetAll"
           @history-changed="notifyHistoryChanged"
+          @quote-finalized="notifyQuoteFinalized"
         />
       </div>
     </div>
