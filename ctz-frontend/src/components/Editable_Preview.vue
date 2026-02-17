@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-const emit = defineEmits(['discard', 'sync-form', 'quote-saved', 'history-changed'])
+const emit = defineEmits(['discard', 'sync-form', 'quote-saved', 'history-changed', 'quote-finalized'])
 
 const props = defineProps({
   baseData: {
@@ -164,6 +164,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const weasyPdfUrl = ref('')
 const showWeasyPreview = ref(false)
+const pendingConfirmationId = ref(null)
 
 function roundAmount(value) {
   return Math.round(Number(value) || 0)
@@ -478,14 +479,49 @@ async function openWeasyPreview(idCotizacion) {
   showWeasyPreview.value = true
 }
 
-function downloadWeasyPdf() {
+async function downloadWeasyPdf() {
   if (!weasyPdfUrl.value) return
+
+  if (!pendingConfirmationId.value) {
+    errorMessage.value = 'Primero debes confirmar la cotización antes de descargar el PDF.'
+    return
+  }
+
+  isSaving.value = true
+  errorMessage.value = ''
+
   const link = document.createElement('a')
   link.href = weasyPdfUrl.value
   link.download = `cotizacion-${props.baseData.idCotizacion || 'confirmada'}.pdf`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+
+  try {
+    const statusResponse = await fetch(`${apiBaseUrl}/cotizaciones/${pendingConfirmationId.value}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado: 'CONFIRMADA' })
+    })
+
+    if (!statusResponse.ok) {
+      throw new Error('No se pudo confirmar el estado después de descargar el PDF')
+    }
+
+    props.baseData.estado = 'CONFIRMADA'
+    emit('quote-saved', { idCotizacion: pendingConfirmationId.value, estado: 'CONFIRMADA' })
+    emit('history-changed')
+    emit('quote-finalized', { idCotizacion: pendingConfirmationId.value })
+    successMessage.value = 'Cotización descargada y confirmada. Fue movida a la pantalla de confirmadas.'
+    pendingConfirmationId.value = null
+    showWeasyPreview.value = false
+  } catch (error) {
+    errorMessage.value = error instanceof Error
+      ? error.message
+      : 'Ocurrió un error al confirmar la cotización descargada'
+  } finally {
+    isSaving.value = false
+  }
 }
 
 async function confirmQuote() {
@@ -504,22 +540,11 @@ async function confirmQuote() {
   try {
     const idCotizacion = props.baseData.idCotizacion ?? await buildAndPersistQuote()
 
-    const statusResponse = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado: 'CONFIRMADA' })
-    })
-
-    if (!statusResponse.ok) {
-      throw new Error('No se pudo confirmar el estado de la cotización')
-    }
-
-    props.baseData.estado = 'CONFIRMADA'
-    emit('quote-saved', { idCotizacion, estado: 'CONFIRMADA' })
-    emit('history-changed')
+    pendingConfirmationId.value = idCotizacion
     await openWeasyPreview(idCotizacion)
-    successMessage.value = 'Cotización confirmada. Revisa el PDF antes de descargar.'
+    successMessage.value = 'Cotización lista. Para confirmarla definitivamente debes descargar el PDF.'
   } catch (error) {
+    pendingConfirmationId.value = null
     errorMessage.value = error instanceof Error
       ? error.message
       : 'Ocurrió un error inesperado al confirmar la cotización'

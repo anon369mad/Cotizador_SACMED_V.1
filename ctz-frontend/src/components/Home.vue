@@ -129,6 +129,15 @@ const filteredHistory = computed(() => {
   })
 })
 
+
+const draftHistory = computed(() =>
+  filteredHistory.value.filter((item) => statusLabel(item.status) !== 'Confirmada')
+)
+
+const confirmedHistory = computed(() =>
+  filteredHistory.value.filter((item) => statusLabel(item.status) === 'Confirmada')
+)
+
 const previewQuote = reactive({
   idUsuario: props.userId != null ? Number(props.userId) : null,
   ejecutivo: props.userName || 'Usuario',
@@ -574,6 +583,20 @@ async function loadHistory(){
   }
 }
 
+
+function openConfirmedView() {
+  currentView.value = 'confirmed'
+}
+
+function returnToDraftsView() {
+  currentView.value = 'home'
+}
+
+async function handleQuoteFinalized() {
+  await loadHistory()
+  currentView.value = 'confirmed'
+}
+
 onMounted(() => {
   previewQuote.idUsuario = props.userId != null ? Number(props.userId) : null
   previewQuote.ejecutivo = props.userName || 'Usuario'
@@ -629,7 +652,7 @@ onMounted(() => {
       <template v-if="currentView === 'home'">
         <section class="main-area">
           <div class="hist-card">
-            <h4>Historial de Cotizaciones</h4>
+            <h4>Borradores en Cotizador</h4>
             <input
               v-model="historySearch"
               class="search"
@@ -638,11 +661,11 @@ onMounted(() => {
 
             <div v-if="isLoadingHistory" class="list-empty">Cargando historial...</div>
             <div v-else-if="historyError" class="list-empty error">{{ historyError }}</div>
-            <div v-else-if="!filteredHistory.length" class="list-empty">
-              {{ history.length ? 'No se encontraron resultados para la búsqueda.' : 'No hay cotizaciones registradas.' }}
+            <div v-else-if="!draftHistory.length" class="list-empty">
+              {{ history.length ? 'No se encontraron borradores para la búsqueda.' : 'No hay borradores registrados.' }}
             </div>
             <ul v-else class="list">
-              <li class="list-item" v-for="h in filteredHistory" :key="h.id">
+              <li class="list-item" v-for="h in draftHistory" :key="h.id">
                 <div class="list-left">
                   <div class="company">{{ h.company }}</div>
                   <div class="meta">{{ h.user }} · {{ h.date }}<br/><small>{{ h.plan }} · {{ h.connections }} conexiones</small></div>
@@ -669,6 +692,7 @@ onMounted(() => {
                 </div>
               </li>
             </ul>
+            <button class="action-btn secondary" type="button" @click="openConfirmedView">Ver cotizaciones confirmadas</button>
           </div>
           <aside class="sidebar">
             <Preview :quote="previewQuote" />
@@ -676,7 +700,47 @@ onMounted(() => {
         </section>
       </template>
 
-      <template v-if="currentView === 'tabs'">
+      
+      <template v-if="currentView === 'confirmed'">
+        <section class="main-area">
+          <div class="hist-card">
+            <h4>Cotizaciones confirmadas</h4>
+            <input
+              v-model="historySearch"
+              class="search"
+              placeholder="Buscar confirmadas..."
+            />
+
+            <div v-if="isLoadingHistory" class="list-empty">Cargando historial...</div>
+            <div v-else-if="historyError" class="list-empty error">{{ historyError }}</div>
+            <div v-else-if="!confirmedHistory.length" class="list-empty">
+              No hay cotizaciones confirmadas para mostrar.
+            </div>
+            <ul v-else class="list">
+              <li class="list-item" v-for="h in confirmedHistory" :key="h.id">
+                <div class="list-left">
+                  <div class="company">{{ h.company }}</div>
+                  <div class="meta">{{ h.user }} · {{ h.date }}<br/><small>{{ h.plan }} · {{ h.connections }} conexiones</small></div>
+                  <div class="list-actions">
+                    <button class="action-btn" type="button" @click="selectHistory(h)">Visualizar</button>
+                    <button class="action-btn secondary" type="button" @click="duplicateQuote(h)">Duplicar</button>
+                  </div>
+                </div>
+                <div class="list-right">
+                  <div class="status" :class="statusClass(h.status)">{{ statusLabel(h.status) }}</div>
+                  <div class="price">{{ formatMoney(h.price) }}</div>
+                </div>
+              </li>
+            </ul>
+            <button class="action-btn" type="button" @click="returnToDraftsView">Volver a borradores</button>
+          </div>
+          <aside class="sidebar">
+            <Preview :quote="previewQuote" />
+          </aside>
+        </section>
+      </template>
+
+<template v-if="currentView === 'tabs'">
   <section class="main-area main-area--tabs">
     <Parent_Add
   :key="activeTabId"
@@ -684,6 +748,7 @@ onMounted(() => {
   :tab-id="activeTabId"
   @back="currentView = 'home'"
   @history-changed="loadHistory"
+  @quote-finalized="handleQuoteFinalized"
 />
 
 
