@@ -162,6 +162,8 @@ const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const isSaving = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const jasperPdfUrl = ref('')
+const showJasperPreview = ref(false)
 
 function roundAmount(value) {
   return Math.round(Number(value) || 0)
@@ -430,6 +432,7 @@ async function saveDraft() {
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
+  resetJasperPreview()
 
   try {
     if (props.baseData.idCotizacion) {
@@ -449,6 +452,42 @@ async function saveDraft() {
   }
 }
 
+
+function resetJasperPreview() {
+  if (jasperPdfUrl.value) {
+    URL.revokeObjectURL(jasperPdfUrl.value)
+  }
+  jasperPdfUrl.value = ''
+  showJasperPreview.value = false
+}
+
+async function openJasperPreview(idCotizacion) {
+  const response = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}/jasper/pdf`)
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(errorText || 'No se pudo generar el PDF con Jasper')
+  }
+
+  const pdfBlob = await response.blob()
+  if (jasperPdfUrl.value) {
+    URL.revokeObjectURL(jasperPdfUrl.value)
+  }
+
+  jasperPdfUrl.value = URL.createObjectURL(pdfBlob)
+  showJasperPreview.value = true
+}
+
+function downloadJasperPdf() {
+  if (!jasperPdfUrl.value) return
+  const link = document.createElement('a')
+  link.href = jasperPdfUrl.value
+  link.download = `cotizacion-${props.baseData.idCotizacion || 'confirmada'}.pdf`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 async function confirmQuote() {
   const monthsError = getMonthsValidationError()
   if (monthsError) {
@@ -460,6 +499,7 @@ async function confirmQuote() {
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
+  resetJasperPreview()
 
   try {
     const idCotizacion = props.baseData.idCotizacion ?? await buildAndPersistQuote()
@@ -477,7 +517,8 @@ async function confirmQuote() {
     props.baseData.estado = 'CONFIRMADA'
     emit('quote-saved', { idCotizacion, estado: 'CONFIRMADA' })
     emit('history-changed')
-    successMessage.value = 'Cotización confirmada y guardada correctamente.'
+    await openJasperPreview(idCotizacion)
+    successMessage.value = 'Cotización confirmada. Revisa el PDF antes de descargar.'
   } catch (error) {
     errorMessage.value = error instanceof Error
       ? error.message
@@ -494,6 +535,7 @@ async function discardQuote() {
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
+  resetJasperPreview()
 
   try {
     if (props.baseData.idCotizacion && props.baseData.estado !== 'CONFIRMADA') {
@@ -653,8 +695,22 @@ async function discardQuote() {
         </template>
       </li>
     </ul>
+  
+</div>
+
+<div v-if="showJasperPreview && jasperPdfUrl" class="jasper-preview">
+  <div class="jasper-preview-header">
+    <h5>Vista previa PDF (Jasper)</h5>
+    <button class="btn-download" @click="downloadJasperPdf">Descargar PDF</button>
   </div>
+  <iframe
+    :src="jasperPdfUrl"
+    class="jasper-preview-frame"
+    title="Vista previa cotización Jasper"
+  />
+</div>
 <div class="final-actions">
+
   <button class="btn-discard" :disabled="isSaving" @click="discardQuote">
     Descartar
   </button>
@@ -931,6 +987,48 @@ async function discardQuote() {
   color: #475569;
   font-size: 12px;
 }
+
+.jasper-preview {
+  margin-top: 16px;
+  border: 1px solid #d9e1eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.jasper-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.jasper-preview-header h5 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.jasper-preview-frame {
+  width: 100%;
+  height: 560px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.btn-download {
+  background: #0f766e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.btn-download:hover {
+  background: #115e59;
+}
+
 /* === BOTONES FINALES === */
 .final-actions {
   margin-top: 24px;

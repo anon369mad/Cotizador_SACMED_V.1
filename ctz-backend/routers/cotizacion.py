@@ -1,5 +1,11 @@
 from datetime import date, timedelta
+import json
+import os
+from urllib import error as urllib_error
+from urllib import request as urllib_request
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion import Cotizacion
@@ -40,49 +46,10 @@ def _to_float(value, default=0.0):
     return float(value)
 
 
-@router.post("/cotizaciones", response_model=CotizacionResponse)
-def crear_cotizacion(data: CotizacionCreate, db: Session = Depends(get_db)):
-    cotizacion = Cotizacion(**data.dict())
-    cotizacion.fecha_emision = date.today()
-    cotizacion.fecha_vencimiento = date.today() + timedelta(days=30)
-    db.add(cotizacion)
-    db.commit()
-    db.refresh(cotizacion)
-    return cotizacion
-
-
-@router.get("/cotizaciones", response_model=list[CotizacionResponse])
-def listar_cotizaciones(
-    id_usuario: int | None = Query(default=None),
-    db: Session = Depends(get_db)
-):
-    query = db.query(Cotizacion)
-    if id_usuario is not None:
-        query = query.filter(Cotizacion.id_usuario == id_usuario)
-
-    cotizaciones = query.all()
-    return attach_user_names(cotizaciones, db)
-
-
-@router.get("/cotizaciones/{id_cotizacion}", response_model=CotizacionResponse)
-def obtener_cotizacion(id_cotizacion: int, db: Session = Depends(get_db)):
-    cotizacion = db.query(Cotizacion).get(id_cotizacion)
-    if not cotizacion:
-        raise HTTPException(status_code=404, detail="Cotización no encontrada")
-
-    attach_user_names([cotizacion], db)
-    return cotizacion
-
-
-@router.get("/cotizaciones/{id_cotizacion}/jasper", response_model=CotizacionJasperPayload)
-def obtener_cotizacion_para_jasper(id_cotizacion: int, db: Session = Depends(get_db)):
-    cotizacion = db.query(Cotizacion).get(id_cotizacion)
-    if not cotizacion:
-        raise HTTPException(status_code=404, detail="Cotización no encontrada")
-
+def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasperPayload:
     detalles = (
         db.query(CotizacionDetalle)
-        .filter(CotizacionDetalle.id_cotizacion == id_cotizacion)
+        .filter(CotizacionDetalle.id_cotizacion == cotizacion.id_cotizacion)
         .all()
     )
 
@@ -160,6 +127,100 @@ def obtener_cotizacion_para_jasper(id_cotizacion: int, db: Session = Depends(get
             "El presupuesto incluye 10 GB de almacenamiento en disco.",
         ],
         items=items,
+    )
+
+
+@router.post("/cotizaciones", response_model=CotizacionResponse)
+def crear_cotizacion(data: CotizacionCreate, db: Session = Depends(get_db)):
+    cotizacion = Cotizacion(**data.dict())
+    cotizacion.fecha_emision = date.today()
+    cotizacion.fecha_vencimiento = date.today() + timedelta(days=30)
+    db.add(cotizacion)
+    db.commit()
+    db.refresh(cotizacion)
+    return cotizacion
+
+
+@router.get("/cotizaciones", response_model=list[CotizacionResponse])
+def listar_cotizaciones(
+    id_usuario: int | None = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Cotizacion)
+    if id_usuario is not None:
+        query = query.filter(Cotizacion.id_usuario == id_usuario)
+
+    cotizaciones = query.all()
+    return attach_user_names(cotizaciones, db)
+
+
+@router.get("/cotizaciones/{id_cotizacion}", response_model=CotizacionResponse)
+def obtener_cotizacion(id_cotizacion: int, db: Session = Depends(get_db)):
+    cotizacion = db.query(Cotizacion).get(id_cotizacion)
+    if not cotizacion:
+        raise HTTPException(status_code=404, detail="Cotización no encontrada")
+
+    attach_user_names([cotizacion], db)
+    return cotizacion
+
+
+@router.get("/cotizaciones/{id_cotizacion}/jasper", response_model=CotizacionJasperPayload)
+def obtener_cotizacion_para_jasper(id_cotizacion: int, db: Session = Depends(get_db)):
+    cotizacion = db.query(Cotizacion).get(id_cotizacion)
+    if not cotizacion:
+        raise HTTPException(status_code=404, detail="Cotización no encontrada")
+
+    return _build_jasper_payload(cotizacion, db)
+
+
+@router.get("/cotizaciones/{id_cotizacion}/jasper/pdf")
+def generar_pdf_jasper(id_cotizacion: int, db: Session = Depends(get_db)):
+    cotizacion = db.query(Cotizacion).get(id_cotizacion)
+    if not cotizacion:
+        raise HTTPException(status_code=404, detail="Cotización no encontrada")
+
+    jasper_render_url = os.getenv("JASPER_RENDER_URL")
+    if not jasper_render_url:
+        raise HTTPException(
+            status_code=503,
+            detail="El servicio Jasper no está configurado. Define JASPER_RENDER_URL en el backend.",
+        )
+
+    payload = _build_jasper_payload(cotizacion, db).dict()
+    body = json.dumps(payload).encode("utf-8")
+    request = urllib_request.Request(
+        jasper_render_url,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/pdf",
+        },
+        method="POST",
+    )
+
+    jasper_token = os.getenv("JASPER_API_TOKEN")
+    if jasper_token:
+        request.add_header("Authorization", f"Bearer {jasper_token}")
+
+    try:
+        with urllib_request.urlopen(request, timeout=45) as response:
+            pdf_content = response.read()
+            content_type = response.headers.get("Content-Type", "application/pdf")
+    except urllib_error.HTTPError as exc:
+        error_text = exc.read().decode("utf-8", errors="ignore")
+        detail = error_text.strip() or "Jasper respondió con un error al generar el PDF."
+        raise HTTPException(status_code=502, detail=detail) from exc
+    except urllib_error.URLError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="No fue posible conectar con el servicio Jasper.",
+        ) from exc
+
+    file_name = f"cotizacion-{id_cotizacion}.pdf"
+    return StreamingResponse(
+        iter([pdf_content]),
+        media_type=content_type,
+        headers={"Content-Disposition": f'inline; filename="{file_name}"'},
     )
 
 
