@@ -462,6 +462,10 @@ function resetWeasyPreview() {
   showWeasyPreview.value = false
 }
 
+function closeWeasyPreview() {
+  showWeasyPreview.value = false
+}
+
 async function openWeasyPreview(idCotizacion) {
   const response = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}/weasy/pdf`)
 
@@ -723,17 +727,23 @@ async function discardQuote() {
   
 </div>
 
-<div v-if="showWeasyPreview && weasyPdfUrl" class="weasy-preview">
-  <div class="weasy-preview-header">
-    <h5>Vista previa PDF (WeasyPrint)</h5>
-    <button class="btn-download" @click="downloadWeasyPdf">Descargar PDF</button>
+<div v-if="showWeasyPreview && weasyPdfUrl" class="weasy-preview-overlay" @click.self="closeWeasyPreview">
+  <div class="weasy-preview-modal">
+    <div class="weasy-preview-header">
+      <h5>Vista previa PDF (WeasyPrint)</h5>
+      <div class="weasy-preview-actions">
+        <button class="btn-download" @click="downloadWeasyPdf">Descargar PDF</button>
+        <button class="btn-close" @click="closeWeasyPreview">Cerrar</button>
+      </div>
+    </div>
+    <iframe
+      :src="weasyPdfUrl"
+      class="weasy-preview-frame"
+      title="Vista previa cotización WeasyPrint"
+    />
   </div>
-  <iframe
-    :src="weasyPdfUrl"
-    class="weasy-preview-frame"
-    title="Vista previa cotización WeasyPrint"
-  />
 </div>
+
 <div class="final-actions">
 
   <button class="btn-discard" :disabled="isSaving" @click="discardQuote">
@@ -1013,12 +1023,25 @@ async function discardQuote() {
   font-size: 12px;
 }
 
-.weasy-preview {
-  margin-top: 16px;
+.weasy-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 999;
+}
+
+.weasy-preview-modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 40px);
   border: 1px solid #d9e1eb;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px;
   background: #f8fafc;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
 }
 
 .weasy-preview-header {
@@ -1028,6 +1051,12 @@ async function discardQuote() {
   margin-bottom: 10px;
 }
 
+.weasy-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .weasy-preview-header h5 {
   margin: 0;
   color: #0f172a;
@@ -1035,7 +1064,7 @@ async function discardQuote() {
 
 .weasy-preview-frame {
   width: 100%;
-  height: 560px;
+  height: min(74vh, 700px);
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   background: #fff;
@@ -1052,6 +1081,19 @@ async function discardQuote() {
 
 .btn-download:hover {
   background: #115e59;
+}
+
+.btn-close {
+  background: #475569;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  background: #334155;
 }
 
 /* === BOTONES FINALES === */
