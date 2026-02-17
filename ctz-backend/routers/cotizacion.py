@@ -183,6 +183,11 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     condiciones = "".join(f"<li>{escape(text)}</li>" for text in payload.condiciones_generales)
     capacitacion = "".join(f"<li>{escape(text)}</li>" for text in payload.capacitacion)
     cobros = "".join(f"<li>{escape(text)}</li>" for text in payload.cobros_adicionales)
+    logo_html = (
+        f'<img src="{img_data_uri}" alt="SACMED" style="height: 60px; vertical-align: middle;" />'
+        if img_data_uri
+        else "SACMED"
+    )
 
     return f"""
     <!doctype html>
@@ -219,7 +224,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     <body>
       <div class=\"sheet\">
         <div class=\"logo\">
-            <img src=\"././ctz-frontend/src/public/sacmed.png\" alt=\"SACMED\" style=\"height: 60px; vertical-align: middle;\" />
+            {logo_html}
         </div>
         <div class=\"title\">Presupuesto</div>
 
