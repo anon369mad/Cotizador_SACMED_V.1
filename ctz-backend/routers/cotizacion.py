@@ -184,7 +184,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     capacitacion = "".join(f"<li>{escape(text)}</li>" for text in payload.capacitacion)
     cobros = "".join(f"<li>{escape(text)}</li>" for text in payload.cobros_adicionales)
     logo_html = (
-        f'<img src="{img_data_uri}" alt="SACMED" style="height: 60px; vertical-align: middle;" />'
+        f'<img src="{img_data_uri}" alt="SACMED" style="height: 90px; vertical-align: middle;" />'
         if img_data_uri
         else "SACMED"
     )
