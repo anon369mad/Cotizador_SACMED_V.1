@@ -542,7 +542,9 @@ async function confirmQuote() {
   resetWeasyPreview()
 
   try {
-    const idCotizacion = props.baseData.idCotizacion ?? await buildAndPersistQuote()
+    const idCotizacion = props.baseData.idCotizacion
+      ? await updatePersistedDraft()
+      : await buildAndPersistQuote()
 
     pendingConfirmationId.value = idCotizacion
     await openWeasyPreview(idCotizacion)
