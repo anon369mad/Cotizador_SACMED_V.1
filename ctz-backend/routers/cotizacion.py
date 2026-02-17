@@ -1,5 +1,7 @@
 from datetime import date, timedelta
 from html import escape
+import base64
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -139,6 +141,22 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
 
 
 def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
+    # Try to embed the logo as a base64 data URI so WeasyPrint can load it
+    img_data_uri = ""
+    try:
+        logo_path = (
+            Path(__file__).resolve().parents[2]
+            / "ctz-frontend"
+            / "public"
+            / "sacmed.png"
+        )
+        if logo_path.exists():
+            with open(logo_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("ascii")
+            img_data_uri = f"data:image/png;base64,{encoded}"
+    except Exception:
+        img_data_uri = ""
+
     item_rows = ""
     for item in payload.items:
         item_rows += f"""
@@ -200,7 +218,9 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     </head>
     <body>
       <div class=\"sheet\">
-        <div class=\"logo\">SACMED</div>
+        <div class=\"logo\">
+            <img src=\"././ctz-frontend/src/public/sacmed.png\" alt=\"SACMED\" style=\"height: 60px; vertical-align: middle;\" />
+        </div>
         <div class=\"title\">Presupuesto</div>
 
         <table class=\"dates\">
