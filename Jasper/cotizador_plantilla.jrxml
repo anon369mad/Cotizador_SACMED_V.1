@@ -89,7 +89,7 @@
 	</detail>
 	<pageFooter height="260">
 		<element kind="staticText" uuid="b84e2966-ee08-5b39-a419-e9533b3e9bf9" x="0" y="8" width="220" height="14" fontSize="10.0" bold="true">
-			<text><![CDATA[Total de conexiones simultáneas:]]></text>
+			<text><![CDATA[Total de conexiones solicitadas:]]></text>
 		</element>
 		<element kind="textField" uuid="b2b14783-26e3-5533-9d22-42ccb7eeeb8c" x="224" y="8" width="50" height="14" fontSize="10.0" bold="true">
 			<expression><![CDATA[$P{conexiones_simultaneas}]]></expression>

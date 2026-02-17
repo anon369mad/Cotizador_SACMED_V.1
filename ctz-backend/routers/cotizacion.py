@@ -109,6 +109,23 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
             if linea.strip()
         ]
 
+    condiciones_base_pdf = [
+        "Los valores indicados son mensuales y deberán ser pagados desde la fecha que se acepten los términos y condiciones. https://beta-sacmed.movacaribe.com/TdToS.v2.0.2.pdf",
+        "El cobro se realiza por garantizar la disponibilidad 24/7 del servicio, no por su nivel de uso.",
+        "En caso de que la cantidad de conexiones a contratar sea de una o dos, el primer pago debe ser trimestral (Total Mensual * 3) luego de pasar los 3 meses se genera facturación mensual.",
+    ]
+
+    capacitacion_base_pdf = [
+        "Este presupuesto incluye 2 horas de configuración inicial remota para asistirle en el uso de la plataforma.",
+    ]
+
+    cobros_adicionales_base_pdf = [
+        "La activación de SMS/WhatsApp, pueden generar costos adicionales, que se facturarán según su uso.",
+        "El presupuesto incluye 10 GB de almacenamiento en disco. Cualquier uso que exceda este límite se cobrará automáticamente a un valor de $5.000 más IVA por cada 5 GB adicionales.",
+    ]
+
+    condiciones_pdf = condiciones_generales + condiciones_base_pdf
+
     tipo_cotizacion = (cotizacion.tipo or "").strip() or "-"
     modalidad_pago = "Pago único" if tipo_cotizacion == "Única" else f"Cada {meses} mes" + ("" if meses == 1 else "es")
 
@@ -127,9 +144,9 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         iva=iva,
         total_mensual=total_mensual,
         total_periodo=total_periodo,
-        condiciones_generales=condiciones_generales,
-        capacitacion=[],
-        cobros_adicionales=[],
+        condiciones_generales=condiciones_pdf,
+        capacitacion=capacitacion_base_pdf,
+        cobros_adicionales=cobros_adicionales_base_pdf,
         items=items,
     )
 
@@ -174,10 +191,17 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         </tr>
         """
 
-    condiciones = "".join(f"<li>{escape(text)}</li>" for text in payload.condiciones_generales)
-    condiciones_section = ""
-    if condiciones:
-        condiciones_section = f'<div class="section-title">Condiciones adicionales:</div><ul>{condiciones}</ul>'
+    def _render_section(title: str, items: list[str]) -> str:
+        if not items:
+            return ""
+        item_list = "".join(f"<li>{escape(text)}</li>" for text in items if text)
+        if not item_list:
+            return ""
+        return f'<div class="section-title">{escape(title)}</div><ul>{item_list}</ul>'
+
+    condiciones_section = _render_section("Condiciones Generales:", payload.condiciones_generales)
+    capacitacion_section = _render_section("Capacitación Plataforma:", payload.capacitacion)
+    cobros_adicionales_section = _render_section("Cobros Adicionales:", payload.cobros_adicionales)
     total_label = "Total (Pago único)"
     if payload.total_periodo != payload.total_mensual:
         total_label = "Total (Período)"
@@ -252,7 +276,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
 
         <div class=\"summary-wrap\">
           <div class=\"summary-left\">
-            <div>Total de conexiones simultáneas: {payload.conexiones_simultaneas or 0}</div>
+            <div>Total de conexiones solicitadas: {payload.conexiones_simultaneas or 0}</div>
             <div>Usuarios: {escape(payload.usuarios or 'Ilimitados')}</div>
           </div>
           <table class=\"summary-right\">
@@ -263,6 +287,8 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         </div>
 
         {condiciones_section}
+        {capacitacion_section}
+        {cobros_adicionales_section}
 
         <div class=\"footer\">Documento generado por: {escape(payload.ejecutivo or 'Usuario')}</div>
         <div class=\"sign\">Firma Cliente ________________________</div>
