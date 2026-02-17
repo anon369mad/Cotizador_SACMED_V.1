@@ -70,10 +70,10 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     for detalle in detalles:
         cantidad = detalle.cantidad or 0
         valor_unitario = _to_float(detalle.valor_unitario)
-        descuento = _to_float(detalle.descuento)
+        descuento = max(0.0, min(100.0, _to_float(detalle.descuento)))
         total = _to_float(detalle.total)
         if total == 0:
-            total = max(0.0, (cantidad * valor_unitario) - descuento)
+            total = max(0.0, (cantidad * valor_unitario) * (1 - (descuento / 100)))
 
         items.append(
             CotizacionJasperItem(
@@ -109,13 +109,6 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
             if linea.strip()
         ]
 
-    if not condiciones_generales:
-        condiciones_generales = [
-            "Los valores indicados son mensuales y deberán ser pagados desde la fecha que se acepten los términos y condiciones.",
-            "El cobro se realiza por garantizar la disponibilidad 24/7 del servicio, no por su nivel de uso.",
-            "En caso de 1 a 2 conexiones, el período de contratación debe superar los 3 meses para facturación mensual.",
-        ]
-
     return CotizacionJasperPayload(
         cliente=cotizacion.nombre_cliente or "Cliente",
         rut=cotizacion.rut_cliente or "",
@@ -129,13 +122,8 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         total_mensual=total_mensual,
         total_periodo=total_periodo,
         condiciones_generales=condiciones_generales,
-        capacitacion=[
-            "Este presupuesto incluye 2 horas de configuración inicial remota para asistirle en el uso de la plataforma.",
-        ],
-        cobros_adicionales=[
-            "La activación de SMS/WhatsApp puede generar costos adicionales, que se facturarán según su uso.",
-            "El presupuesto incluye 10 GB de almacenamiento. Excedentes pueden tener cargos adicionales.",
-        ],
+        capacitacion=[],
+        cobros_adicionales=[],
         items=items,
     )
 
@@ -164,7 +152,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
           <td>{item.cantidad}</td>
           <td>{escape(item.descripcion)}</td>
           <td class=\"money\">$ {_format_currency(item.precio_unitario)}</td>
-          <td class=\"money\">$ {_format_currency(item.descuento)}</td>
+          <td class=\"money\">{_format_currency(item.descuento)}%</td>
           <td class=\"money\">$ {_format_currency(item.total)}</td>
         </tr>
         """
@@ -181,8 +169,12 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         """
 
     condiciones = "".join(f"<li>{escape(text)}</li>" for text in payload.condiciones_generales)
-    capacitacion = "".join(f"<li>{escape(text)}</li>" for text in payload.capacitacion)
-    cobros = "".join(f"<li>{escape(text)}</li>" for text in payload.cobros_adicionales)
+    condiciones_section = ""
+    if condiciones:
+        condiciones_section = f'<div class="section-title">Condiciones adicionales:</div><ul>{condiciones}</ul>'
+    total_label = "Total (Pago único)"
+    if payload.total_periodo != payload.total_mensual:
+        total_label = "Total (Período)"
     logo_html = (
         f'<img src="{img_data_uri}" alt="SACMED" style="height: 90px; vertical-align: middle;" />'
         if img_data_uri
@@ -226,19 +218,19 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         <div class=\"logo\">
             {logo_html}
         </div>
-        <div class=\"title\">Presupuesto</div>
+        <div class=\"title\">Documento de cotización</div>
 
         <table class=\"dates\">
           <tr><td>Fecha de emisión</td><td>{_format_date(payload.fecha_emision)}</td></tr>
           <tr><td>Fecha de vencimiento</td><td>{_format_date(payload.fecha_vencimiento)}</td></tr>
         </table>
 
-        <div class=\"client\"><strong>Cliente:</strong> {escape(payload.cliente)}</div>
+        <div class=\"client\"><strong>Cliente:</strong> {escape(payload.cliente)}<br /><strong>RUT:</strong> {escape(payload.rut)}</div>
 
         <table class=\"main\">
           <thead>
             <tr>
-              <th>Cantidad</th><th>Descripción</th><th>Precio unitario</th><th>Descuento</th><th>Total</th>
+              <th>Cantidad</th><th>Servicio</th><th>Unitario</th><th>Desc.</th><th>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -252,23 +244,15 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
             <div>Usuarios: {escape(payload.usuarios or 'Ilimitados')}</div>
           </div>
           <table class=\"summary-right\">
-            <tr><td>Subtotal</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
-            <tr><td>IVA</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
-            <tr><td>Total Mensual</td><td class=\"money\">$ {_format_currency(payload.total_mensual)}</td></tr>
-            <tr><td>Total Trimestral</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
+            <tr><td>Subtotal mensual</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
+            <tr><td>IVA mensual (19%)</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
+            <tr><td>{total_label}</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
           </table>
         </div>
 
-        <div class=\"section-title\">Condiciones Generales:</div>
-        <ul>{condiciones}</ul>
+        {condiciones_section}
 
-        <div class=\"section-title\">Capacitación:</div>
-        <ul>{capacitacion}</ul>
-
-        <div class=\"section-title\">Cobros Adicionales:</div>
-        <ul>{cobros}</ul>
-
-        <div class=\"footer\">Ejecutiva: {escape(payload.ejecutivo or 'Sin asignar')}</div>
+        <div class=\"footer\">Documento generado por: {escape(payload.ejecutivo or 'Usuario')}</div>
         <div class=\"sign\">Firma Cliente ________________________</div>
       </div>
     </body>
