@@ -162,8 +162,8 @@ const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const isSaving = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-const jasperPdfUrl = ref('')
-const showJasperPreview = ref(false)
+const weasyPdfUrl = ref('')
+const showWeasyPreview = ref(false)
 
 function roundAmount(value) {
   return Math.round(Number(value) || 0)
@@ -432,7 +432,7 @@ async function saveDraft() {
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
-  resetJasperPreview()
+  resetWeasyPreview()
 
   try {
     if (props.baseData.idCotizacion) {
@@ -453,35 +453,35 @@ async function saveDraft() {
 }
 
 
-function resetJasperPreview() {
-  if (jasperPdfUrl.value) {
-    URL.revokeObjectURL(jasperPdfUrl.value)
+function resetWeasyPreview() {
+  if (weasyPdfUrl.value) {
+    URL.revokeObjectURL(weasyPdfUrl.value)
   }
-  jasperPdfUrl.value = ''
-  showJasperPreview.value = false
+  weasyPdfUrl.value = ''
+  showWeasyPreview.value = false
 }
 
-async function openJasperPreview(idCotizacion) {
-  const response = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}/jasper/pdf`)
+async function openWeasyPreview(idCotizacion) {
+  const response = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}/weasy/pdf`)
 
   if (!response.ok) {
     const errorText = await response.text()
-    throw new Error(errorText || 'No se pudo generar el PDF con Jasper')
+    throw new Error(errorText || 'No se pudo generar el PDF con WeasyPrint')
   }
 
   const pdfBlob = await response.blob()
-  if (jasperPdfUrl.value) {
-    URL.revokeObjectURL(jasperPdfUrl.value)
+  if (weasyPdfUrl.value) {
+    URL.revokeObjectURL(weasyPdfUrl.value)
   }
 
-  jasperPdfUrl.value = URL.createObjectURL(pdfBlob)
-  showJasperPreview.value = true
+  weasyPdfUrl.value = URL.createObjectURL(pdfBlob)
+  showWeasyPreview.value = true
 }
 
-function downloadJasperPdf() {
-  if (!jasperPdfUrl.value) return
+function downloadWeasyPdf() {
+  if (!weasyPdfUrl.value) return
   const link = document.createElement('a')
-  link.href = jasperPdfUrl.value
+  link.href = weasyPdfUrl.value
   link.download = `cotizacion-${props.baseData.idCotizacion || 'confirmada'}.pdf`
   document.body.appendChild(link)
   link.click()
@@ -499,7 +499,7 @@ async function confirmQuote() {
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
-  resetJasperPreview()
+  resetWeasyPreview()
 
   try {
     const idCotizacion = props.baseData.idCotizacion ?? await buildAndPersistQuote()
@@ -517,7 +517,7 @@ async function confirmQuote() {
     props.baseData.estado = 'CONFIRMADA'
     emit('quote-saved', { idCotizacion, estado: 'CONFIRMADA' })
     emit('history-changed')
-    await openJasperPreview(idCotizacion)
+    await openWeasyPreview(idCotizacion)
     successMessage.value = 'Cotización confirmada. Revisa el PDF antes de descargar.'
   } catch (error) {
     errorMessage.value = error instanceof Error
@@ -535,7 +535,7 @@ async function discardQuote() {
   isSaving.value = true
   errorMessage.value = ''
   successMessage.value = ''
-  resetJasperPreview()
+  resetWeasyPreview()
 
   try {
     if (props.baseData.idCotizacion && props.baseData.estado !== 'CONFIRMADA') {
@@ -698,15 +698,15 @@ async function discardQuote() {
   
 </div>
 
-<div v-if="showJasperPreview && jasperPdfUrl" class="jasper-preview">
-  <div class="jasper-preview-header">
-    <h5>Vista previa PDF (Jasper)</h5>
-    <button class="btn-download" @click="downloadJasperPdf">Descargar PDF</button>
+<div v-if="showWeasyPreview && weasyPdfUrl" class="weasy-preview">
+  <div class="weasy-preview-header">
+    <h5>Vista previa PDF (WeasyPrint)</h5>
+    <button class="btn-download" @click="downloadWeasyPdf">Descargar PDF</button>
   </div>
   <iframe
-    :src="jasperPdfUrl"
-    class="jasper-preview-frame"
-    title="Vista previa cotización Jasper"
+    :src="weasyPdfUrl"
+    class="weasy-preview-frame"
+    title="Vista previa cotización WeasyPrint"
   />
 </div>
 <div class="final-actions">
@@ -988,7 +988,7 @@ async function discardQuote() {
   font-size: 12px;
 }
 
-.jasper-preview {
+.weasy-preview {
   margin-top: 16px;
   border: 1px solid #d9e1eb;
   border-radius: 8px;
@@ -996,19 +996,19 @@ async function discardQuote() {
   background: #f8fafc;
 }
 
-.jasper-preview-header {
+.weasy-preview-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
 }
 
-.jasper-preview-header h5 {
+.weasy-preview-header h5 {
   margin: 0;
   color: #0f172a;
 }
 
-.jasper-preview-frame {
+.weasy-preview-frame {
   width: 100%;
   height: 560px;
   border: 1px solid #cbd5e1;
