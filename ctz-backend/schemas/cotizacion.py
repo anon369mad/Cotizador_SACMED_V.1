@@ -53,6 +53,9 @@ class CotizacionJasperPayload(BaseModel):
     cliente: str
     rut: str
     ejecutivo: str
+    tipo_cotizacion: str = "-"
+    modalidad_pago: str = "Pago único"
+    meses: int = 1
     fecha_emision: Optional[date] = None
     fecha_vencimiento: Optional[date] = None
     conexiones_simultaneas: Optional[int] = None

@@ -97,8 +97,8 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     if total_mensual == 0:
         total_mensual = subtotal + iva
 
-    meses = cotizacion.meses or 1
-    total_periodo = total_mensual * meses
+    meses = max(1, int(cotizacion.meses or 1))
+    total_periodo = total_mensual if (cotizacion.tipo or '').strip() == 'Única' else (total_mensual * meses)
 
     condiciones_texto = (cotizacion.condiciones_adicionales or "").strip()
     condiciones_generales = []
@@ -109,10 +109,16 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
             if linea.strip()
         ]
 
+    tipo_cotizacion = (cotizacion.tipo or "").strip() or "-"
+    modalidad_pago = "Pago único" if tipo_cotizacion == "Única" else f"Cada {meses} mes" + ("" if meses == 1 else "es")
+
     return CotizacionJasperPayload(
         cliente=cotizacion.nombre_cliente or "Cliente",
         rut=cotizacion.rut_cliente or "",
         ejecutivo=usuario.nombre if usuario else "",
+        tipo_cotizacion=tipo_cotizacion,
+        modalidad_pago=modalidad_pago,
+        meses=meses,
         fecha_emision=cotizacion.fecha_emision,
         fecha_vencimiento=cotizacion.fecha_vencimiento,
         conexiones_simultaneas=cotizacion.conexiones,
@@ -225,7 +231,13 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
           <tr><td>Fecha de vencimiento</td><td>{_format_date(payload.fecha_vencimiento)}</td></tr>
         </table>
 
-        <div class=\"client\"><strong>Cliente:</strong> {escape(payload.cliente)}<br /><strong>RUT:</strong> {escape(payload.rut)}</div>
+        <div class="client">
+          <div><strong>Cliente:</strong> {escape(payload.cliente)}</div>
+          <div><strong>RUT:</strong> {escape(payload.rut)}</div>
+          <div><strong>Tipo de cotización:</strong> {escape(payload.tipo_cotizacion or '-')}</div>
+          <div><strong>Período (meses):</strong> {payload.meses}</div>
+          <div><strong>Modalidad de pago:</strong> {escape(payload.modalidad_pago)}</div>
+        </div>
 
         <table class=\"main\">
           <thead>
