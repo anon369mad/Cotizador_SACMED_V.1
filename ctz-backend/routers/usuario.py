@@ -1,4 +1,7 @@
 from datetime import datetime, timedelta
+from email.message import EmailMessage
+from smtplib import SMTP, SMTPException
+import os
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -96,9 +99,39 @@ def request_password_recovery(data: PasswordRecoveryRequest, db: Session = Depen
         "expires_at": datetime.utcnow() + timedelta(minutes=30),
     }
 
+    smtp_host = os.getenv("SMTP_HOST", "localhost")
+    smtp_port = int(os.getenv("SMTP_PORT", "25"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_sender = os.getenv("SMTP_SENDER", smtp_user or "no-reply@cotizador.local")
+    smtp_use_tls = os.getenv("SMTP_USE_TLS", "false").lower() == "true"
+
+    message = EmailMessage()
+    message["Subject"] = "Token de recuperación de contraseña"
+    message["From"] = smtp_sender
+    message["To"] = usuario.email
+    message.set_content(
+        f"Hola,\n\nTu token de recuperación es: {token}\n"
+        "Este token expira en 30 minutos.\n\n"
+        "Si no solicitaste este cambio, ignora este mensaje."
+    )
+
+    try:
+        with SMTP(host=smtp_host, port=smtp_port, timeout=10) as smtp:
+            if smtp_use_tls:
+                smtp.starttls()
+            if smtp_user and smtp_password:
+                smtp.login(smtp_user, smtp_password)
+            smtp.send_message(message)
+    except (SMTPException, OSError, ValueError):
+        recovery_tokens.pop(token, None)
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible enviar el token al correo. Puede ser que el correo no exista.",
+        )
+
     return PasswordRecoveryTokenResponse(
-        message="Token de recuperación generado correctamente",
-        recovery_token=token,
+        message="Token de recuperación enviado correctamente al correo ingresado",
     )
 
 
