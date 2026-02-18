@@ -503,46 +503,43 @@ onMounted(loadData)
           </div>
         </section>
 
-        <section v-else class="card iva-card">
-          <div class="section-header">
-            <h3>Configuración de IVA</h3>
-            <button
-              v-if="!ivaEditMode"
-              class="icon-btn"
-              type="button"
-              aria-label="Editar IVA"
-              @click="startIvaEdit"
-            >
-              ✏️
-            </button>
-          </div>
-
-          <template v-if="ivaEditMode">
-            <label>
-              Nombre
-              <input v-model="ivaDraft.nombre" type="text" />
-            </label>
+        <section v-else class="iva-tab-panel">
+          <div class="card iva-card">
+            <h3>Configuración de Impuestos</h3>
             <label>
               Porcentaje de IVA
               <div class="iva-input">
-                <input v-model.number="ivaDraft.porcentaje" type="number" min="0" max="100" />
+                <input
+                  v-if="ivaEditMode"
+                  v-model.number="ivaDraft.porcentaje"
+                  type="number"
+                  min="0"
+                  max="100"
+                />
+                <input
+                  v-else
+                  :value="Number(ivaForm.porcentaje || 0)"
+                  type="text"
+                  readonly
+                />
                 <span>%</span>
               </div>
             </label>
-            <div class="actions">
-              <button class="icon-btn success" type="button" aria-label="Aceptar cambios de IVA" @click="submitIva">✓</button>
-              <button class="icon-btn danger" type="button" aria-label="Descartar cambios de IVA" @click="cancelIvaEdit">✕</button>
-            </div>
-          </template>
 
-          <div v-else class="iva-readonly">
-            <div>
-              <span>Nombre</span>
-              <strong>{{ ivaForm.nombre }}</strong>
-            </div>
-            <div>
-              <span>Porcentaje</span>
-              <strong>{{ Number(ivaForm.porcentaje || 0) }}%</strong>
+            <div class="iva-actions">
+              <template v-if="ivaEditMode">
+                <button class="icon-btn success" type="button" aria-label="Aceptar cambios de IVA" @click="submitIva">✓</button>
+                <button class="icon-btn danger" type="button" aria-label="Descartar cambios de IVA" @click="cancelIvaEdit">✕</button>
+              </template>
+              <button
+                v-else
+                class="icon-btn"
+                type="button"
+                aria-label="Editar IVA"
+                @click="startIvaEdit"
+              >
+                ✏️
+              </button>
             </div>
           </div>
         </section>
@@ -689,20 +686,67 @@ onMounted(loadData)
   justify-content: space-between;
   margin-top: 4px;
 }
-.iva-card { max-width: 420px; display: grid; gap: 10px; }
-.iva-card label { display: grid; gap: 6px; }
-.iva-input { display: flex; gap: 8px; align-items: center; }
-.iva-readonly {
-  display: grid;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid #dfe5ef;
-  border-radius: 10px;
-  background: #f8fbff;
+.iva-tab-panel {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 52px 0 18px;
 }
-.iva-readonly div { display: grid; gap: 2px; }
-.iva-readonly span { font-size: 12px; color: #677a90; }
-.iva-readonly strong { font-size: 16px; color: #1a2430; }
+.iva-card {
+  width: min(92vw, 365px);
+  border-radius: 26px;
+  border: 1px solid #c5ccd6;
+  background: #f9fafc;
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  padding: 44px 30px 24px;
+}
+.iva-card h3 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.12;
+  text-align: center;
+  color: #243449;
+  font-weight: 700;
+}
+.iva-card label {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  color: #3c4f67;
+  font-weight: 600;
+  font-size: 23px;
+}
+.iva-input { display: flex; gap: 10px; align-items: center; }
+.iva-input input {
+  width: 128px;
+  height: 48px;
+  border: 1px solid #cad1dc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 24px;
+  text-align: left;
+  color: #3d4c5f;
+  background: #fff;
+}
+.iva-input span {
+  font-size: 29px;
+  color: #73859c;
+}
+.iva-actions {
+  min-height: 62px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}
+.iva-actions .icon-btn {
+  width: 54px;
+  height: 54px;
+  font-size: 30px;
+}
+.icon-btn.success { background: #34d058; color: #fff; }
 
 .btn-primary { border: none; background: #0ea5e9; color: #fff; border-radius: 8px; padding: 9px 14px; cursor: pointer; }
 .add-price-btn {
@@ -801,6 +845,8 @@ onMounted(loadData)
   .price-modal-row span { font-size: 22px; }
   .price-modal-row input,
   .price-modal-row textarea { font-size: 18px; }
+  .iva-card h3 { font-size: 28px; }
+  .iva-card label { font-size: 20px; }
 }
 
 @media (max-width: 680px) {
@@ -808,5 +854,13 @@ onMounted(loadData)
   .price-modal-row { grid-template-columns: 1fr; gap: 6px; }
   .price-modal-actions { gap: 20px; }
   .price-modal .icon-btn { width: 58px; height: 58px; font-size: 30px; }
+  .iva-tab-panel { padding-top: 24px; }
+  .iva-card { padding: 30px 16px 20px; gap: 14px; }
+  .iva-card h3 { font-size: 22px; }
+  .iva-card label { font-size: 17px; gap: 8px; }
+  .iva-input input { width: 96px; height: 40px; font-size: 20px; }
+  .iva-input span { font-size: 22px; }
+  .iva-actions { gap: 14px; min-height: 46px; }
+  .iva-actions .icon-btn { width: 42px; height: 42px; font-size: 24px; }
 }
 </style>
