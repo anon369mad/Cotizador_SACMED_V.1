@@ -509,22 +509,47 @@ onMounted(loadData)
     </div>
 
     <div v-if="planModal.open" class="modal-backdrop">
-      <div class="modal">
-        <h3>{{ planModal.mode === 'create' ? 'Crear registro' : 'Editar registro' }}</h3>
-        <label>Nombre <input v-model="planForm.nombre" type="text" /></label>
+      <div class="modal price-modal">
+        <h3 class="price-modal-title">{{ planForm.nombre || (planModal.type === 'plan' ? 'Nuevo plan' : 'Nueva prestación') }}</h3>
 
-        <template v-if="planModal.type === 'plan'">
-          <label>Conexiones incluidas <input v-model.number="planForm.conexiones_incluidas" type="number" min="1" /></label>
-          <label>Valor plan mensual <input v-model.number="planForm.valor_plan_mensual" type="number" min="0" /></label>
-          <label>Valor conexión adicional <input v-model.number="planForm.valor_conexion_adicional" type="number" min="0" /></label>
-        </template>
+        <div class="price-modal-grid">
+          <label class="price-modal-row">
+            <span>Nombre</span>
+            <input v-model="planForm.nombre" type="text" />
+          </label>
 
-        <label v-else>Valor unitario <input v-model.number="planForm.valor_unitario" type="number" min="0" /></label>
-        <label>Condiciones <textarea v-model="planForm.condiciones" rows="3"></textarea></label>
+          <template v-if="planModal.type === 'plan'">
+            <label class="price-modal-row">
+              <span>Conexiones</span>
+              <input v-model.number="planForm.conexiones_incluidas" type="number" min="1" />
+            </label>
 
-        <div class="modal-actions">
-          <button class="btn-link" type="button" @click="closePriceModal">Cancelar</button>
-          <button class="btn-primary" type="button" @click="submitPrice">Guardar</button>
+            <p class="price-modal-subtitle">Precios</p>
+
+            <label class="price-modal-row">
+              <span>Valor plan mensual</span>
+              <input v-model.number="planForm.valor_plan_mensual" type="number" min="0" />
+            </label>
+            <label class="price-modal-row">
+              <span>Valor conexión extra</span>
+              <input v-model.number="planForm.valor_conexion_adicional" type="number" min="0" />
+            </label>
+          </template>
+
+          <label v-else class="price-modal-row">
+            <span>Valor unitario</span>
+            <input v-model.number="planForm.valor_unitario" type="number" min="0" />
+          </label>
+
+          <label class="price-modal-row">
+            <span>Condiciones</span>
+            <textarea v-model="planForm.condiciones" rows="2"></textarea>
+          </label>
+        </div>
+
+        <div class="price-modal-actions">
+          <button class="icon-btn success" type="button" @click="submitPrice">✓</button>
+          <button class="icon-btn danger" type="button" @click="closePriceModal">✕</button>
         </div>
       </div>
     </div>
@@ -626,7 +651,89 @@ onMounted(loadData)
 .modal input, .modal select, .modal textarea, .iva-card input { border: 1px solid #cad4e2; border-radius: 8px; padding: 9px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 
+.price-modal {
+  width: min(92vw, 760px);
+  border: 4px solid #1ea6e7;
+  border-radius: 44px;
+  padding: 28px 44px 22px;
+  gap: 20px;
+}
+.price-modal-title {
+  margin: 0;
+  text-align: center;
+  font-size: 46px;
+  line-height: 1.1;
+  font-weight: 500;
+}
+.price-modal-grid {
+  display: grid;
+  gap: 14px;
+}
+.price-modal-subtitle {
+  text-align: center;
+  color: #919eae;
+  font-size: 34px;
+  margin: 0;
+  line-height: 1;
+}
+.price-modal-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: center;
+}
+.price-modal-row span {
+  font-size: 40px;
+  color: #2b333f;
+}
+.price-modal-row input,
+.price-modal-row textarea {
+  border: 2px solid #a9adb3;
+  border-radius: 24px;
+  min-height: 56px;
+  font-size: 34px;
+  padding: 8px 18px;
+}
+.price-modal-row textarea {
+  min-height: 82px;
+  resize: none;
+}
+.price-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 78px;
+  margin-top: 2px;
+}
+.price-modal .icon-btn {
+  width: 82px;
+  height: 82px;
+  font-size: 48px;
+  color: #fff;
+}
+.price-modal .icon-btn.success { background: #35d34f; }
+
+@media (max-width: 1200px) {
+  .price-modal { width: min(92vw, 620px); padding: 24px 28px 20px; }
+  .price-modal-title { font-size: 38px; }
+  .price-modal-subtitle { font-size: 28px; }
+  .price-modal-row span { font-size: 30px; }
+  .price-modal-row input,
+  .price-modal-row textarea { font-size: 24px; min-height: 48px; }
+}
+
 @media (max-width: 960px) {
   .prices-grid { grid-template-columns: 1fr; }
+  .price-modal-title { font-size: 32px; }
+  .price-modal-subtitle { font-size: 24px; }
+  .price-modal-row span { font-size: 22px; }
+  .price-modal-row input,
+  .price-modal-row textarea { font-size: 18px; }
+}
+
+@media (max-width: 680px) {
+  .price-modal { padding: 18px; border-radius: 26px; }
+  .price-modal-row { grid-template-columns: 1fr; gap: 6px; }
+  .price-modal-actions { gap: 20px; }
+  .price-modal .icon-btn { width: 58px; height: 58px; font-size: 30px; }
 }
 </style>
