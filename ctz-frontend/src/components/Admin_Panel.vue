@@ -430,16 +430,16 @@ onMounted(loadData)
         <section v-else-if="activeTab === 'precios'" class="card">
           <div class="prices-grid">
             <div>
-              <div class="section-header">
+              <div class="section-header prices-header">
                 <h3>Planes</h3>
-                <button class="btn-primary" type="button" @click="openCreatePrice('plan')">+ Nuevo plan</button>
+                <button class="btn-primary add-price-btn" type="button" @click="openCreatePrice('plan')">+ Nuevo plan</button>
               </div>
-              <ul class="cards-list">
+              <ul class="cards-list prices-cards-list">
                 <li v-for="plan in plans" :key="plan.id_plan" class="price-card">
                   <h4>{{ plan.nombre }}</h4>
-                  <p>Conexiones: {{ plan.conexiones_incluidas }}</p>
-                  <p>Mensual: {{ Number(plan.valor_plan_mensual).toLocaleString('es-CL') }}</p>
-                  <p>Conexión extra: {{ Number(plan.valor_conexion_adicional).toLocaleString('es-CL') }}</p>
+                  <div class="price-field"><span>Conexiones</span><strong>{{ plan.conexiones_incluidas }}</strong></div>
+                  <div class="price-field"><span>Plan mensual</span><strong>{{ Number(plan.valor_plan_mensual).toLocaleString('es-CL') }}</strong></div>
+                  <div class="price-field"><span>Conexión extra</span><strong>{{ Number(plan.valor_conexion_adicional).toLocaleString('es-CL') }}</strong></div>
                   <small>{{ plan.condiciones || 'Sin condiciones' }}</small>
                   <div class="actions">
                     <button class="icon-btn" type="button" @click="openEditPrice('plan', plan)">✏️</button>
@@ -450,14 +450,14 @@ onMounted(loadData)
             </div>
 
             <div>
-              <div class="section-header">
+              <div class="section-header prices-header">
                 <h3>Prestaciones</h3>
-                <button class="btn-primary" type="button" @click="openCreatePrice('servicio')">+ Nuevo servicio</button>
+                <button class="btn-primary add-price-btn" type="button" @click="openCreatePrice('servicio')">+ Nuevo servicio</button>
               </div>
-              <ul class="cards-list">
+              <ul class="cards-list prices-cards-list">
                 <li v-for="service in services" :key="service.id_prestacion" class="price-card">
                   <h4>{{ service.nombre }}</h4>
-                  <p>Valor unitario: {{ Number(service.valor_unitario || 0).toLocaleString('es-CL') }}</p>
+                  <div class="price-field"><span>Valor unitario</span><strong>{{ Number(service.valor_unitario || 0).toLocaleString('es-CL') }}</strong></div>
                   <small>{{ service.condiciones || 'Sin condiciones' }}</small>
                   <div class="actions">
                     <button class="icon-btn" type="button" @click="openEditPrice('servicio', service)">✏️</button>
@@ -551,17 +551,68 @@ onMounted(loadData)
 .entity-row { display: flex; justify-content: space-between; align-items: center; border: 1px solid #e1e6ef; border-radius: 10px; padding: 12px; }
 .entity-row p { margin: 4px 0; color: #4d627d; }
 .actions { display: flex; gap: 8px; }
-.icon-btn { border: 1px solid #d5dbe7; background: #fff; border-radius: 8px; cursor: pointer; padding: 6px 10px; }
-.icon-btn.danger { border-color: #f4b4b4; color: #d11a2a; }
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #d0d3d8;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.icon-btn.danger { background: #f43f5e; color: #fff; }
 .prices-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.price-card { border: 1px solid #dce4f0; border-radius: 10px; padding: 12px; display: grid; gap: 6px; }
-.price-card h4 { margin: 0; }
-.price-card p, .price-card small { margin: 0; }
+.prices-header { margin-bottom: 16px; }
+.prices-cards-list {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+.price-card {
+  border: 3px solid #56bdf1;
+  border-radius: 20px;
+  background: #fff;
+  padding: 12px 14px;
+  display: grid;
+  gap: 7px;
+  align-content: start;
+}
+.price-card h4 { margin: 0; text-align: center; font-size: 20px; color: #1f2d3d; }
+.price-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.price-field span { color: #4b5e77; }
+.price-field strong { color: #1a2430; font-weight: 700; }
+.price-card small {
+  margin: 0;
+  min-height: 28px;
+  color: #6f8197;
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: #f6f8fb;
+}
+.price-card .actions {
+  justify-content: space-between;
+  margin-top: 4px;
+}
 .iva-card { max-width: 420px; display: grid; gap: 10px; }
 .iva-card label { display: grid; gap: 6px; }
 .iva-input { display: flex; gap: 8px; align-items: center; }
 
 .btn-primary { border: none; background: #0ea5e9; color: #fff; border-radius: 8px; padding: 9px 14px; cursor: pointer; }
+.add-price-btn {
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 600;
+  box-shadow: 0 6px 14px rgba(14, 165, 233, 0.25);
+}
 .btn-link { border: none; background: transparent; color: #1d2b3a; cursor: pointer; }
 .feedback { margin: 0 0 10px; padding: 10px; border-radius: 8px; }
 .feedback.success { background: #e8f8ef; color: #117c39; }
