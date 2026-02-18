@@ -429,10 +429,40 @@ onMounted(loadData)
       </div>
 
       <template v-else>
-        <div class="tab-row">
-          <button class="tab" :class="{ active: activeTab === 'usuarios' }" @click="activeTab = 'usuarios'">Usuarios</button>
-          <button class="tab" :class="{ active: activeTab === 'precios' }" @click="activeTab = 'precios'">Precios</button>
-          <button class="tab" :class="{ active: activeTab === 'iva' }" @click="activeTab = 'iva'">% IVA</button>
+        <div class="tab-row" role="tablist" aria-label="Secciones de administración">
+          <button
+            class="tab"
+            :class="{ active: activeTab === 'usuarios' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === 'usuarios'"
+            @click="activeTab = 'usuarios'"
+          >
+            <span class="tab-icon" aria-hidden="true">👥</span>
+            <span>Usuarios</span>
+          </button>
+          <button
+            class="tab"
+            :class="{ active: activeTab === 'precios' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === 'precios'"
+            @click="activeTab = 'precios'"
+          >
+            <span class="tab-icon" aria-hidden="true">$</span>
+            <span>Precios</span>
+          </button>
+          <button
+            class="tab"
+            :class="{ active: activeTab === 'iva' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === 'iva'"
+            @click="activeTab = 'iva'"
+          >
+            <span class="tab-icon" aria-hidden="true">%</span>
+            <span>IVA</span>
+          </button>
         </div>
 
         <p v-if="feedback" class="feedback" :class="feedbackType">{{ feedback }}</p>
@@ -624,9 +654,45 @@ onMounted(loadData)
 .badge { background: #0ea5e9; color: #fff; border-radius: 999px; padding: 2px 10px; font-size: 12px; }
 
 .content { padding: 20px 24px; }
-.tab-row { display: flex; gap: 8px; margin-bottom: 14px; }
-.tab { border: 1px solid #d5dbe7; background: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
-.tab.active { background: #0ea5e9; color: #fff; border-color: #0ea5e9; }
+.tab-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #dce1e6;
+}
+.tab {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 14px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #61758e;
+  font-size: 20px;
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.tab-icon {
+  color: #96a3b5;
+  font-size: 33px;
+  line-height: 1;
+}
+.tab.active {
+  background: #f8f8f9;
+  color: #1f2329;
+  border-color: #d4d8de;
+}
+.tab.active .tab-icon { color: #1f2329; }
+.tab:not(.active):hover {
+  background: rgba(255, 255, 255, 0.4);
+  color: #506377;
+}
 .card { background: #fff; border: 1px solid #dfe5ef; border-radius: 12px; padding: 16px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .section-header h3 { margin: 0; }
@@ -850,6 +916,9 @@ onMounted(loadData)
 }
 
 @media (max-width: 680px) {
+  .tab-row { padding: 6px; }
+  .tab { font-size: 16px; padding: 10px 8px; gap: 6px; }
+  .tab-icon { font-size: 22px; }
   .price-modal { padding: 18px; border-radius: 26px; }
   .price-modal-row { grid-template-columns: 1fr; gap: 6px; }
   .price-modal-actions { gap: 20px; }
