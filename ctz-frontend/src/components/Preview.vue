@@ -61,7 +61,7 @@
             <strong class="mono">{{ formatMoney(subtotal) }}</strong>
           </div>
           <div>
-            <span>IVA (19%)</span>
+            <span>IVA ({{ Number(ivaPct) % 1 === 0 ? Number(ivaPct).toFixed(0) : Number(ivaPct).toFixed(1) }}%)</span>
             <strong class="mono">{{ formatMoney(iva) }}</strong>
           </div>
           <div class="grand-total">
@@ -93,6 +93,8 @@
 
 <script setup>
 import { computed } from 'vue'
+
+const ivaPct = computed(() => Number(props.quote.iva_porcentaje ?? props.quote.porcentaje ?? 19))
 
 const props = defineProps({
   quote: {
@@ -168,7 +170,7 @@ const iva = computed(() => {
     return Math.round(explicitIva)
   }
 
-  return Math.round(subtotal.value * 0.19)
+  return Math.round(subtotal.value * (Number(ivaPct.value || 19) / 100))
 })
 
 const total = computed(() => {

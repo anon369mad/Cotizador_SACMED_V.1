@@ -62,6 +62,7 @@ class CotizacionJasperPayload(BaseModel):
     usuarios: Optional[str] = None
     subtotal: float
     iva: float
+    iva_porcentaje: float = 19.0
     total_mensual: float
     total_periodo: float
     condiciones_generales: list[str] = Field(default_factory=list)

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion import Cotizacion
 from models.usuario import Usuario
+from models.iva import Iva
 from schemas.cotizacion import (
     CotizacionCreate,
     CotizacionResponse,
@@ -90,8 +91,26 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         subtotal = sum(item.total for item in items)
 
     iva = _to_float(cotizacion.iva_monto)
+    # Determine IVA percentage from the database (use cotizacion.id_iva if provided,
+    # otherwise use the first active IVA). The DB stores percentage like 19 or 19.9
+    porcentaje = None
+    try:
+        if getattr(cotizacion, 'id_iva', None):
+            iva_obj = db.query(Iva).get(cotizacion.id_iva)
+            if iva_obj:
+                porcentaje = float(iva_obj.porcentaje)
+        if porcentaje is None:
+            iva_obj = db.query(Iva).filter(Iva.activo == True).first()
+            if iva_obj:
+                porcentaje = float(iva_obj.porcentaje)
+    except Exception:
+        porcentaje = None
+
+    if porcentaje is None:
+        porcentaje = 19.0
+
     if iva == 0:
-        iva = subtotal * 0.19
+        iva = subtotal * (porcentaje / 100.0)
 
     total_mensual = _to_float(cotizacion.total)
     if total_mensual == 0:
@@ -142,6 +161,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         usuarios="Ilimitados",
         subtotal=subtotal,
         iva=iva,
+        iva_porcentaje=porcentaje,
         total_mensual=total_mensual,
         total_periodo=total_periodo,
         condiciones_generales=condiciones_pdf,
@@ -205,11 +225,23 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     total_label = "Total (Pago único)"
     if payload.total_periodo != payload.total_mensual:
         total_label = "Total (Período)"
+
     logo_html = (
         f'<img src="{img_data_uri}" alt="SACMED" style="height: 90px; vertical-align: middle;" />'
         if img_data_uri
         else "SACMED"
     )
+
+    # Prepare IVA percentage display (always compute so the template can use it)
+    iva_pct_value = getattr(payload, 'iva_porcentaje', None) or 19.0
+    try:
+        iva_pct_num = float(iva_pct_value)
+        if iva_pct_num.is_integer():
+            iva_pct_text = f"{int(iva_pct_num)}%"
+        else:
+            iva_pct_text = f"{round(iva_pct_num, 1)}%"
+    except Exception:
+        iva_pct_text = "19%"
 
     return f"""
     <!doctype html>
@@ -279,11 +311,11 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
             <div>Total de conexiones solicitadas: {payload.conexiones_simultaneas or 0}</div>
             <div>Usuarios: {escape(payload.usuarios or 'Ilimitados')}</div>
           </div>
-          <table class=\"summary-right\">
-            <tr><td>Subtotal mensual</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
-            <tr><td>IVA mensual (19%)</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
-            <tr><td>{total_label}</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
-          </table>
+                    <table class=\"summary-right\">\
+                        <tr><td>Subtotal mensual</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
+                        <tr><td>IVA mensual ({iva_pct_text})</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
+                        <tr><td>{total_label}</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
+                    </table>
         </div>
 
         {condiciones_section}

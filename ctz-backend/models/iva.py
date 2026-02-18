@@ -6,7 +6,6 @@ class Iva(Base):
     __tablename__ = "iva"
 
     id_iva = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String(50), nullable=False)
     porcentaje = Column(DECIMAL(5,2), nullable=False)
     activo = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP, server_default=func.now())

@@ -16,6 +16,7 @@ const props = defineProps({
 })
 
 const valorUf = ref(null);
+const ivaPct = ref(19)
 const loading = ref(true);
 const obtenerUf = async () => {
   try {
@@ -457,12 +458,28 @@ function onSelectPrestacion() {
 }
 
 
+async function loadIva() {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/iva`)
+    if (res.ok) {
+      const list = await res.json()
+      if (Array.isArray(list) && list.length) {
+        const active = list.find((x) => x.activo) || list[0]
+        if (active && active.porcentaje != null) ivaPct.value = Number(active.porcentaje)
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 onMounted(() => {
   ensureConditionsArray()
   syncConditionsWithItems()
   cargarPrestaciones()
   cargarPlanes()
   obtenerUf()
+  loadIva()
 })
 
 watch(
@@ -482,7 +499,7 @@ const subtotal = computed(() =>
   )
 )
 
-const iva = computed(() => Math.round(subtotal.value * 0.19))
+const iva = computed(() => Math.round(subtotal.value * (Number(ivaPct.value || 19) / 100)))
 const total = computed(() => roundAmount(subtotal.value + iva.value))
 const minPeriodMonths = computed(() => {
   if (form.planType !== 'Período') return 1

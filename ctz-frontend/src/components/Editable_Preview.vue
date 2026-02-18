@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 const emit = defineEmits(['discard', 'sync-form', 'quote-saved', 'history-changed', 'quote-finalized'])
 
 const props = defineProps({
@@ -139,7 +139,30 @@ const subtotal = computed(() =>
   )
 )
 
-const iva = computed(() => Math.round(subtotal.value * 0.19))
+const ivaPct = ref(Number(props.baseData.ivaPorcentaje ?? props.baseData.porcentajeIva ?? 19))
+
+onMounted(async () => {
+  if (!props.baseData?.ivaPorcentaje) {
+    try {
+      const res = await fetch(`${apiBaseUrl}/iva`)
+      if (res.ok) {
+        const list = await res.json()
+        if (Array.isArray(list) && list.length) {
+          let sel = null
+          if (props.baseData?.idIva) {
+            sel = list.find((x) => Number(x.id_iva) === Number(props.baseData.idIva))
+          }
+          if (!sel) sel = list.find((x) => x.activo) || list[0]
+          if (sel && sel.porcentaje != null) ivaPct.value = Number(sel.porcentaje)
+        }
+      }
+    } catch (e) {
+      // ignore and keep default
+    }
+  }
+})
+
+const iva = computed(() => Math.round(subtotal.value * (Number(ivaPct.value || 19) / 100)))
 const total = computed(() => roundAmount(subtotal.value + iva.value))
 const totalPeriod = computed(() => {
   if (props.baseData.planType === 'Única') {
@@ -673,7 +696,7 @@ async function discardQuote() {
       <strong>${{ subtotal.toFixed(0) }}</strong>
     </div>
     <div>
-      <span>IVA mensual (19%)</span>
+      <span>IVA mensual ({{ Number(ivaPct) % 1 === 0 ? Number(ivaPct).toFixed(0) : Number(ivaPct).toFixed(1) }}%)</span>
       <strong>${{ iva.toFixed(0) }}</strong>
     </div>
     <div class="grand-total">
