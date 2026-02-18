@@ -21,7 +21,6 @@ class PasswordRecoveryRequest(BaseModel):
 
 class PasswordRecoveryTokenResponse(BaseModel):
     message: str
-    recovery_token: str
 
 
 class PasswordResetConfirm(BaseModel):

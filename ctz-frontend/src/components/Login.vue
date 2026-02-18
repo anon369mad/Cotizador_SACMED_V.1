@@ -51,11 +51,6 @@
             {{ recoveryLoading ? 'Generando token...' : 'Generar token' }}
           </button>
 
-          <div v-if="recoveryToken" class="token-box">
-            <p><strong>Token generado:</strong> {{ recoveryToken }}</p>
-            <p class="token-help">Cópialo y úsalo para establecer la nueva contraseña.</p>
-          </div>
-
           <div class="form-group">
             <label for="reset-token">Token</label>
             <input id="reset-token" v-model="resetToken" type="text" placeholder="Pega aquí tu token" />
@@ -99,7 +94,6 @@ export default {
       loading: false,
       showRecovery: false,
       recoveryEmail: '',
-      recoveryToken: '',
       resetToken: '',
       newPassword: '',
       recoveryLoading: false,
@@ -142,7 +136,6 @@ export default {
     async requestRecoveryToken() {
       this.recoveryError = ''
       this.recoveryMessage = ''
-      this.recoveryToken = ''
 
       if (!this.recoveryEmail.trim()) {
         this.recoveryError = 'Debes ingresar un correo para recuperar la contraseña.'
@@ -166,8 +159,6 @@ export default {
           return
         }
 
-        this.recoveryToken = data.recovery_token
-        this.resetToken = data.recovery_token
         this.recoveryMessage = data.message
       } catch (error) {
         this.recoveryError = 'No fue posible conectar con el servicio de recuperación.'
@@ -411,19 +402,6 @@ input:focus {
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
-}
-
-.token-box {
-  background: rgba(28, 164, 255, 0.1);
-  border: 1px dashed #1ca4ff;
-  border-radius: 8px;
-  padding: 10px;
-  color: #004f9f;
-}
-
-.token-help {
-  margin: 6px 0 0;
-  font-size: 12px;
 }
 
 @media (max-width: 520px) {
