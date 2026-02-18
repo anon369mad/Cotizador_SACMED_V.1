@@ -57,6 +57,12 @@ const ivaForm = reactive({
   porcentaje: 19,
   activo: true
 })
+const ivaEditMode = ref(false)
+const ivaDraft = reactive({
+  nombre: 'IVA',
+  porcentaje: 19,
+  activo: true
+})
 
 const isAdmin = computed(() => String(props.userRole || '').toUpperCase() === 'ADMIN')
 
@@ -120,7 +126,34 @@ async function loadIva() {
     ivaForm.nombre = current.nombre || 'IVA'
     ivaForm.porcentaje = Number(current.porcentaje || 0)
     ivaForm.activo = current.activo !== false
+    syncIvaDraft()
+  } else {
+    ivaForm.id_iva = null
+    ivaForm.nombre = 'IVA'
+    ivaForm.porcentaje = 19
+    ivaForm.activo = true
+    syncIvaDraft()
   }
+
+  ivaEditMode.value = false
+}
+
+function syncIvaDraft() {
+  ivaDraft.nombre = ivaForm.nombre
+  ivaDraft.porcentaje = Number(ivaForm.porcentaje || 0)
+  ivaDraft.activo = ivaForm.activo
+}
+
+function startIvaEdit() {
+  syncIvaDraft()
+  ivaEditMode.value = true
+  resetFeedback()
+}
+
+function cancelIvaEdit() {
+  syncIvaDraft()
+  ivaEditMode.value = false
+  resetFeedback()
 }
 
 async function loadData() {
@@ -347,9 +380,9 @@ async function submitIva() {
   resetFeedback()
   try {
     const payload = {
-      nombre: ivaForm.nombre.trim() || 'IVA',
-      porcentaje: Number(ivaForm.porcentaje || 0),
-      activo: ivaForm.activo
+      nombre: ivaDraft.nombre.trim() || 'IVA',
+      porcentaje: Number(ivaDraft.porcentaje || 0),
+      activo: ivaDraft.activo
     }
 
     if (ivaForm.id_iva) {
@@ -367,6 +400,7 @@ async function submitIva() {
 
     showFeedback('IVA actualizado correctamente')
     await loadIva()
+    ivaEditMode.value = false
   } catch (error) {
     showFeedback(error instanceof Error ? error.message : 'No se pudo actualizar el IVA', 'error')
   }
@@ -470,19 +504,47 @@ onMounted(loadData)
         </section>
 
         <section v-else class="card iva-card">
-          <h3>Configuración de IVA</h3>
-          <label>
-            Nombre
-            <input v-model="ivaForm.nombre" type="text" />
-          </label>
-          <label>
-            Porcentaje de IVA
-            <div class="iva-input">
-              <input v-model.number="ivaForm.porcentaje" type="number" min="0" max="100" />
-              <span>%</span>
+          <div class="section-header">
+            <h3>Configuración de IVA</h3>
+            <button
+              v-if="!ivaEditMode"
+              class="icon-btn"
+              type="button"
+              aria-label="Editar IVA"
+              @click="startIvaEdit"
+            >
+              ✏️
+            </button>
+          </div>
+
+          <template v-if="ivaEditMode">
+            <label>
+              Nombre
+              <input v-model="ivaDraft.nombre" type="text" />
+            </label>
+            <label>
+              Porcentaje de IVA
+              <div class="iva-input">
+                <input v-model.number="ivaDraft.porcentaje" type="number" min="0" max="100" />
+                <span>%</span>
+              </div>
+            </label>
+            <div class="actions">
+              <button class="icon-btn success" type="button" aria-label="Aceptar cambios de IVA" @click="submitIva">✓</button>
+              <button class="icon-btn danger" type="button" aria-label="Descartar cambios de IVA" @click="cancelIvaEdit">✕</button>
             </div>
-          </label>
-          <button class="btn-primary" type="button" @click="submitIva">Guardar IVA</button>
+          </template>
+
+          <div v-else class="iva-readonly">
+            <div>
+              <span>Nombre</span>
+              <strong>{{ ivaForm.nombre }}</strong>
+            </div>
+            <div>
+              <span>Porcentaje</span>
+              <strong>{{ Number(ivaForm.porcentaje || 0) }}%</strong>
+            </div>
+          </div>
         </section>
       </template>
     </main>
@@ -630,6 +692,17 @@ onMounted(loadData)
 .iva-card { max-width: 420px; display: grid; gap: 10px; }
 .iva-card label { display: grid; gap: 6px; }
 .iva-input { display: flex; gap: 8px; align-items: center; }
+.iva-readonly {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dfe5ef;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+.iva-readonly div { display: grid; gap: 2px; }
+.iva-readonly span { font-size: 12px; color: #677a90; }
+.iva-readonly strong { font-size: 16px; color: #1a2430; }
 
 .btn-primary { border: none; background: #0ea5e9; color: #fff; border-radius: 8px; padding: 9px 14px; cursor: pointer; }
 .add-price-btn {
