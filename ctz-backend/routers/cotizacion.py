@@ -10,6 +10,7 @@ from database.session import get_db
 from models.cotizacion import Cotizacion
 from models.usuario import Usuario
 from models.iva import Iva
+from models.prestacion import Prestacion
 from schemas.cotizacion import (
     CotizacionCreate,
     CotizacionResponse,
@@ -174,7 +175,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     )
 
 
-def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
+def _build_weasy_html(payload: CotizacionJasperPayload, prestaciones: list[Prestacion]) -> str:
     # Try to embed the logo as a base64 data URI so WeasyPrint can load it
     img_data_uri = ""
     try:
@@ -237,6 +238,24 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         else "SACMED"
     )
 
+    prestaciones_rows = ""
+    for prestacion in prestaciones:
+        nombre = escape(prestacion.nombre or "Prestación")
+        condiciones = escape((prestacion.condiciones or "").strip())
+        prestaciones_rows += f"""
+        <tr>
+          <td>{nombre}</td>
+          <td>{condiciones or '-'}</td>
+        </tr>
+        """
+
+    if not prestaciones_rows:
+        prestaciones_rows = """
+        <tr>
+          <td colspan="2">No hay prestaciones activas configuradas.</td>
+        </tr>
+        """
+
     # Prepare IVA percentage display (always compute so the template can use it)
     iva_pct_value = getattr(payload, 'iva_porcentaje', None) or 19.0
     try:
@@ -278,6 +297,22 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         li {{ margin: 0 0 6px; }}
         .footer {{ margin-top:24px; display:flex; justify-content:space-between; }}
         .sign {{ margin-top:40px; font-weight:700; text-align:right; }}
+        .additional-page {{ page-break-before: always; border:1px solid #b6ab7a; padding:24px; min-height: 255mm; box-sizing:border-box; }}
+        .additional-logo {{ text-align:center; margin: 8px 0 18px; }}
+        .additional-logo img {{ height: 58px; }}
+        .additional-logo .text-logo {{ font-size: 56px; font-weight:700; color:#1f76d0; letter-spacing:1px; }}
+        .additional-title {{ font-size:20px; color:#2a5f97; margin: 8px 0 12px; font-weight:700; }}
+        .additional-subtitle {{ font-size:14px; color:#2a5f97; margin: 14px 0 8px; font-weight:700; }}
+        .additional-list {{ margin-left: 18px; line-height:1.45; }}
+        .additional-list > li {{ margin-bottom: 12px; }}
+        .additional-list ul {{ margin-top: 4px; }}
+        .prestaciones-table {{ width:100%; border-collapse: collapse; margin-top: 8px; font-size:11px; }}
+        .prestaciones-table th {{ border:1px solid #777; background:#efefef; text-align:left; padding:6px; }}
+        .prestaciones-table td {{ border:1px solid #888; padding:6px; vertical-align:top; }}
+        .nota-iva {{ margin-top: 10px; font-weight:700; }}
+        .fea-table {{ width:100%; border-collapse: collapse; margin-top: 8px; }}
+        .fea-table th, .fea-table td {{ border:1px solid #777; padding:6px; font-size:11px; }}
+        .footer-address {{ margin-top: 18px; text-align:center; color:#3d76ae; font-size:10px; font-weight:700; }}
       </style>
     </head>
     <body>
@@ -331,6 +366,82 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         <div class=\"footer\">Documento generado por: {escape(payload.ejecutivo or 'Usuario')}</div>
         <div class=\"sign\">Firma Cliente ________________________</div>
       </div>
+      <div class="additional-page">
+        <div class="additional-logo">
+          {f'<img src="{img_data_uri}" alt="SACMED" />' if img_data_uri else '<div class="text-logo">SACMED</div>'}
+        </div>
+
+        <div class="additional-title">Servicios adicionales</div>
+
+        <div class="additional-subtitle">Prestaciones activas en plataforma</div>
+        <table class="prestaciones-table">
+          <thead>
+            <tr><th>Prestación</th><th>Condiciones</th></tr>
+          </thead>
+          <tbody>
+            {prestaciones_rows}
+          </tbody>
+        </table>
+
+        <ol class="additional-list">
+          <li><strong style="color:#2f78c4;">Integración con Flow (Pagos en línea)</strong>
+            <ul>
+              <li>La contratación se realiza <strong>directamente a través de su sitio web</strong>: www.flow.cl.</li>
+              <li>Configuración sin costo adicional por parte de SACMED.</li>
+              <li>Factura emitida por Flow.</li>
+            </ul>
+          </li>
+          <li><strong style="color:#2f78c4;">Integración con Boleta Electrónica</strong>
+            <ul>
+              <li>Empresa (RUT): 1 UF + IVA mensual (hasta 50 millones en facturación).</li>
+              <li>Boletas de honorarios (RUN de médicos): 25.000 + IVA mensual por profesional.</li>
+              <li>Factura emitida por SACMED.</li>
+            </ul>
+          </li>
+          <li><strong style="color:#2f78c4;">Confirmación de Citas (WhatsApp y SMS)</strong>
+            <ul>
+              <li>WhatsApp: $50 + IVA por mensaje (válido por 24 horas).</li>
+              <li>SMS: $49 + IVA por mensaje.</li>
+              <li><strong>Nota:</strong> Funcionalidad desactivada por defecto. Debe ser <strong>activada por el usuario</strong>, quien debe aceptar los términos del servicio. Se notificará al administrador una vez activada.</li>
+              <li><strong>WhatsApp manual:</strong> Confirmación sin costo adicional.</li>
+            </ul>
+          </li>
+          <li><strong style="color:#2f78c4;">Almacenamiento en disco</strong>
+            <div>Al sobrepasar el límite de GB otorgados en el presupuesto, se aplicará un cargo de $5.000 más IVA por cada tramo de <strong>5 GB adicionales</strong>.</div>
+          </li>
+          <li><strong style="color:#2f78c4;">Venta de Bonos Fonasa en agendamiento en Línea.</strong>
+            <ul>
+              <li>Integración a través de Snabb.</li>
+              <li>Para información y tarifas, contactar a <strong>Samuel Barrientos al +56 9 7926 0485</strong>.</li>
+            </ul>
+          </li>
+          <li><strong style="color:#2f78c4;">Firma electrónica avanzada (FEA)</strong>
+            <ul>
+              <li>Solución segura y sin token externo para firmar recetas simples y retenidas, cumpliendo con el Decreto 466 (reglamento).</li>
+              <li>Factura emitida por SACMED.</li>
+            </ul>
+          </li>
+        </ol>
+
+        <div class="nota-iva">El IVA no está incluido en los valores señalados, por lo que debe ser sumado al total.</div>
+
+        <table class="fea-table">
+          <thead>
+            <tr>
+              <th>Planes</th><th>Cantidad de firmas</th><th>Precio Anual</th><th>Precio por Firma Adicional</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Básico</td><td>400</td><td>$ 40.000</td><td>$ 150</td></tr>
+            <tr><td>Medio</td><td>1200</td><td>$ 60.000</td><td>$100</td></tr>
+            <tr><td>Avanzado</td><td>4000</td><td>$ 80.000</td><td>$50</td></tr>
+            <tr><td>Ilimitado</td><td>ILIMITADAS</td><td>$120.000</td><td>SIN COSTO</td></tr>
+          </tbody>
+        </table>
+
+        <div class="footer-address">1 PONIENTE # 123 EDIFICIO PIEDRA AZUL – OFICINA # 303, VIÑA DEL MAR, CHILE</div>
+      </div>
+
     </body>
     </html>
     """
@@ -399,7 +510,8 @@ def generar_pdf_jasper(id_cotizacion: int, db: Session = Depends(get_db)):
         ) from exc
 
     payload = _build_jasper_payload(cotizacion, db)
-    html = _build_weasy_html(payload)
+    prestaciones_activas = db.query(Prestacion).filter(Prestacion.activo.is_(True)).order_by(Prestacion.nombre.asc()).all()
+    html = _build_weasy_html(payload, prestaciones_activas)
 
     try:
         pdf_content = HTML(string=html).write_pdf()
