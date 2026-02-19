@@ -417,8 +417,13 @@ function toNumber(value, fallback = 0) {
 function getHistoryTotal(item) {
   const monthlyTotal = toNumber(item.total)
   const months = Math.max(1, toNumber(item.meses, 1))
+  const connections = toNumber(item.conexiones, 0)
   const isUniquePlan = String(item.tipo || '').toUpperCase().includes('UNICA')
-  return isUniquePlan ? monthlyTotal : monthlyTotal * months
+
+  if (isUniquePlan) return monthlyTotal
+  if (connections === 1 || connections === 2) return monthlyTotal * 3
+
+  return monthlyTotal * months
 }
 
 function mapHistoryItem(item){

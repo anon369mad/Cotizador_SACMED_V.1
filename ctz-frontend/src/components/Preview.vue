@@ -64,9 +64,13 @@
             <span>IVA ({{ Number(ivaPct) % 1 === 0 ? Number(ivaPct).toFixed(0) : Number(ivaPct).toFixed(1) }}%)</span>
             <strong class="mono">{{ formatMoney(iva) }}</strong>
           </div>
+          <div>
+            <span>Total mensual</span>
+            <strong class="mono">{{ formatMoney(monthlyTotal) }}</strong>
+          </div>
           <div class="grand-total">
-            <span>Total</span>
-            <strong class="mono">{{ formatMoney(total) }}</strong>
+            <span>{{ periodTotalLabel }}</span>
+            <strong class="mono">{{ formatMoney(periodTotal) }}</strong>
           </div>
         </div>
       </section>
@@ -173,27 +177,40 @@ const iva = computed(() => {
   return Math.round(subtotal.value * (Number(ivaPct.value || 19) / 100))
 })
 
-const total = computed(() => {
+const isReducedConnectionPlan = computed(() => {
+  const connections = Number(props.quote.conexiones ?? props.quote.connections ?? 0)
+  return showMonths.value && (connections === 1 || connections === 2)
+})
+
+const periodMonthsForTotal = computed(() => {
+  if (!showMonths.value) return 1
+  if (isReducedConnectionPlan.value) return 3
+  return Math.max(1, Number(props.quote.periodMonths ?? props.quote.periods ?? 1))
+})
+
+const monthlyTotal = computed(() => {
+  const explicitMonthlyTotal = Number(props.quote.totalMensual ?? props.quote.total)
+  if (Number.isFinite(explicitMonthlyTotal) && explicitMonthlyTotal > 0) {
+    return Math.round(explicitMonthlyTotal)
+  }
+  return subtotal.value + iva.value
+})
+
+const periodTotal = computed(() => {
   const explicitTotal = Number(
     props.quote.totalHistorial ?? props.quote.total_historial ?? props.quote.price
   )
-
   if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
     return Math.round(explicitTotal)
   }
 
-  const explicitMonthlyTotal = Number(props.quote.totalMensual ?? props.quote.total)
-  if (Number.isFinite(explicitMonthlyTotal) && explicitMonthlyTotal > 0) {
-    const planType = String(props.quote.planType || '').toLowerCase()
-    const isUniquePlan = planType.includes('única') || planType.includes('unica')
+  if (!showMonths.value) return monthlyTotal.value
+  return Math.round(monthlyTotal.value * periodMonthsForTotal.value)
+})
 
-    if (isUniquePlan) return Math.round(explicitMonthlyTotal)
-
-    const months = Math.max(1, Number(props.quote.periodMonths ?? props.quote.periods ?? 1))
-    return Math.round(explicitMonthlyTotal * months)
-  }
-
-  return subtotal.value + iva.value
+const periodTotalLabel = computed(() => {
+  if (!showMonths.value) return 'Total'
+  return isReducedConnectionPlan.value ? 'Total trimestral' : 'Total período'
 })
 
 const showMonths = computed(() => {
