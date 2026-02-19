@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from database.connection import engine
 from sqlalchemy import inspect, text
 from routers import cliente, usuario, cotizacion, cotizacion_detalle, prestacion, iva, plan
+from models.conexion_capacitacion import ConexionCapacitacion
+from routers import conexion_capacitacion
 
 
 app = FastAPI(title="SACMED Cotizador API")
@@ -22,7 +24,14 @@ def ensure_plan_whatsapp_column():
             )
 
 
+def ensure_conexiones_capacitacion_table():
+    inspector = inspect(engine)
+    if "conexiones_capacitacion" not in inspector.get_table_names():
+        ConexionCapacitacion.__table__.create(bind=engine)
+
+
 ensure_plan_whatsapp_column()
+ensure_conexiones_capacitacion_table()
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,3 +56,4 @@ app.include_router(cotizacion_detalle.router)
 app.include_router(prestacion.router)
 app.include_router(iva.router)
 app.include_router(plan.router)
+app.include_router(conexion_capacitacion.router)

@@ -25,6 +25,7 @@ const feedbackType = ref('success')
 const users = ref([])
 const plans = ref([])
 const services = ref([])
+const trainingConnections = ref([])
 const ivaConfig = ref([])
 
 const userSearch = ref('')
@@ -50,6 +51,11 @@ const planForm = reactive({
   activo: true,
   clp: true,
   mensajes_whatsapp: 0
+})
+const trainingModal = ref({ open: false, mode: 'create', id: null })
+const trainingForm = reactive({
+  conexiones: 1,
+  horas_capacitacion: 0
 })
 
 const ivaForm = reactive({
@@ -110,12 +116,14 @@ async function loadUsers() {
 }
 
 async function loadPrices() {
-  const [allPlans, allServices] = await Promise.all([
+  const [allPlans, allServices, allTrainingConnections] = await Promise.all([
     request('/planes'),
-    request('/prestaciones')
+    request('/prestaciones'),
+    request('/conexiones-capacitacion')
   ])
   plans.value = Array.isArray(allPlans) ? allPlans : []
   services.value = Array.isArray(allServices) ? allServices : []
+  trainingConnections.value = Array.isArray(allTrainingConnections) ? allTrainingConnections : []
 }
 
 async function loadIva() {
@@ -382,6 +390,74 @@ async function deletePrice(type, entry) {
   }
 }
 
+function openCreateTrainingConnection() {
+  trainingModal.value = { open: true, mode: 'create', id: null }
+  Object.assign(trainingForm, {
+    conexiones: 1,
+    horas_capacitacion: 0
+  })
+}
+
+function openEditTrainingConnection(entry) {
+  trainingModal.value = { open: true, mode: 'edit', id: entry.id_conexion_capacitacion }
+  Object.assign(trainingForm, {
+    conexiones: Number(entry.conexiones || 1),
+    horas_capacitacion: Number(entry.horas_capacitacion || 0)
+  })
+}
+
+function closeTrainingModal() {
+  trainingModal.value = { open: false, mode: 'create', id: null }
+}
+
+async function submitTrainingConnection() {
+  resetFeedback()
+  if (Number(trainingForm.conexiones || 0) < 1) {
+    showFeedback('Las conexiones deben ser mayor o igual a 1', 'error')
+    return
+  }
+
+  if (Number(trainingForm.horas_capacitacion || 0) < 0) {
+    showFeedback('Las horas de capacitación no pueden ser negativas', 'error')
+    return
+  }
+
+  try {
+    const payload = {
+      conexiones: Number(trainingForm.conexiones || 0),
+      horas_capacitacion: Number(trainingForm.horas_capacitacion || 0)
+    }
+
+    const endpoint = trainingModal.value.mode === 'create'
+      ? '/conexiones-capacitacion'
+      : `/conexiones-capacitacion/${trainingModal.value.id}`
+    const method = trainingModal.value.mode === 'create' ? 'POST' : 'PUT'
+
+    await request(endpoint, {
+      method,
+      body: JSON.stringify(payload)
+    })
+
+    await loadPrices()
+    showFeedback(trainingModal.value.mode === 'create' ? 'Relación creada correctamente' : 'Relación actualizada correctamente')
+    closeTrainingModal()
+  } catch (error) {
+    showFeedback(error instanceof Error ? error.message : 'No se pudo guardar la relación', 'error')
+  }
+}
+
+async function deleteTrainingConnection(entry) {
+  if (!window.confirm(`¿Eliminar la relación ${entry.conexiones} conexiones / ${entry.horas_capacitacion} horas?`)) return
+
+  try {
+    await request(`/conexiones-capacitacion/${entry.id_conexion_capacitacion}`, { method: 'DELETE' })
+    showFeedback('Relación eliminada correctamente')
+    await loadPrices()
+  } catch (error) {
+    showFeedback(error instanceof Error ? error.message : 'No se pudo eliminar la relación', 'error')
+  }
+}
+
 async function submitIva() {
   resetFeedback()
   try {
@@ -538,6 +614,24 @@ onMounted(loadData)
                 </li>
               </ul>
             </div>
+
+            <div>
+              <div class="section-header prices-header">
+                <h3>Capacitación plataforma</h3>
+                <button class="btn-primary add-price-btn" type="button" @click="openCreateTrainingConnection">+ Nueva relación</button>
+              </div>
+              <ul class="cards-list prices-cards-list">
+                <li v-for="relation in trainingConnections" :key="relation.id_conexion_capacitacion" class="price-card">
+                  <h4>{{ relation.conexiones }} conexiones</h4>
+                  <div class="price-field"><span>Horas de capacitación</span><strong>{{ relation.horas_capacitacion }}</strong></div>
+                  <small>Relación editable independiente del plan</small>
+                  <div class="actions">
+                    <button class="icon-btn" type="button" @click="openEditTrainingConnection(relation)">✏️</button>
+                    <button class="icon-btn danger" type="button" @click="deleteTrainingConnection(relation)">🗑️</button>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
         </section>
 
@@ -665,6 +759,24 @@ onMounted(loadData)
         </div>
       </div>
     </div>
+
+    <div v-if="trainingModal.open" class="modal-backdrop">
+      <div class="modal">
+        <h3>{{ trainingModal.mode === 'create' ? 'Nueva relación de capacitación' : 'Editar relación de capacitación' }}</h3>
+        <label>
+          Conexiones
+          <input v-model.number="trainingForm.conexiones" type="number" min="1" />
+        </label>
+        <label>
+          Horas de capacitación
+          <input v-model.number="trainingForm.horas_capacitacion" type="number" min="0" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn-link" type="button" @click="closeTrainingModal">Cancelar</button>
+          <button class="btn-primary" type="button" @click="submitTrainingConnection">Guardar</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -737,7 +849,7 @@ onMounted(loadData)
   font-size: 15px;
 }
 .icon-btn.danger { background: #f43f5e; color: #fff; }
-.prices-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.prices-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .prices-header { margin-bottom: 16px; }
 .prices-cards-list {
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
