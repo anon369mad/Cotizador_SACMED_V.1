@@ -19,7 +19,7 @@ def crear_prestacion(data: PrestacionCreate, db: Session = Depends(get_db)):
 
 @router.get("/prestaciones", response_model=list[PrestacionResponse])
 def listar_prestaciones(db: Session = Depends(get_db)):
-    return db.query(Prestacion).all()
+    return db.query(Prestacion).filter(Prestacion.activo.is_(True)).all()
 
 @router.get("/prestaciones/{id_prestacion}", response_model=PrestacionResponse)
 def obtener_prestacion(id_prestacion: int, db: Session = Depends(get_db)):
@@ -48,6 +48,6 @@ def eliminar_prestacion(id_prestacion: int, db: Session = Depends(get_db)):
     prestacion = db.query(Prestacion).get(id_prestacion)
     if not prestacion:
         raise HTTPException(status_code=404, detail="Prestación no encontrada")
-    db.delete(prestacion)
+    prestacion.activo = False
     db.commit()
-    return {"ok": True}
+    return {"ok": True, "message": "Prestación desactivada correctamente"}

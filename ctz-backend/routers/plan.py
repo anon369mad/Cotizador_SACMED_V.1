@@ -19,7 +19,7 @@ def crear_plan(data: PlanCreate, db: Session = Depends(get_db)):
 
 @router.get("/planes", response_model=list[PlanResponse])
 def listar_planes(db: Session = Depends(get_db)):
-    return db.query(Plan).all()
+    return db.query(Plan).filter(Plan.activo.is_(True)).all()
 
 @router.get("/planes/{id_plan}", response_model=PlanResponse)
 def obtener_plan(id_plan: int, db: Session = Depends(get_db)):
@@ -49,6 +49,6 @@ def eliminar_plan(id_plan: int, db: Session = Depends(get_db)):
     plan = db.query(Plan).get(id_plan)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
-    db.delete(plan)
+    plan.activo = False
     db.commit()
-    return {"ok": True}
+    return {"ok": True, "message": "Plan desactivado correctamente"}
