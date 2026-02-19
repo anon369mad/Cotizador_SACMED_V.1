@@ -189,13 +189,6 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         .order_by(CapacitacionPlataforma.conexiones_desde.desc())
         .first()
     )
-    if not regla_capacitacion:
-        regla_capacitacion = (
-            db.query(CapacitacionPlataforma)
-            .filter(CapacitacionPlataforma.activo.is_(True))
-            .order_by(CapacitacionPlataforma.conexiones_desde.asc())
-            .first()
-        )
     if regla_capacitacion:
         horas_capacitacion = int(regla_capacitacion.horas_capacitacion or 0)
 
