@@ -3,7 +3,7 @@ from models.base import Base
 
 
 class ConexionCapacitacion(Base):
-    __tablename__ = "conexiones_capacitacion"
+    __tablename__ = "conexiones_almacenamiento"
 
     id_conexion_capacitacion = Column(Integer, primary_key=True)
     conexiones = Column(Integer, nullable=False)

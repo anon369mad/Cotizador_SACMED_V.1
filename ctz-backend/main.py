@@ -25,9 +25,18 @@ def ensure_plan_whatsapp_column():
             )
 
 
-def ensure_conexiones_capacitacion_table():
+def ensure_conexiones_almacenamiento_table():
     inspector = inspect(engine)
-    if "conexiones_capacitacion" not in inspector.get_table_names():
+    table_names = set(inspector.get_table_names())
+
+    if "conexiones_almacenamiento" not in table_names and "conexiones_capacitacion" in table_names:
+        with engine.begin() as connection:
+            connection.execute(
+                text("ALTER TABLE conexiones_capacitacion RENAME TO conexiones_almacenamiento")
+            )
+        return
+
+    if "conexiones_almacenamiento" not in table_names:
         ConexionCapacitacion.__table__.create(bind=engine)
 
 
@@ -38,30 +47,30 @@ def ensure_capacitaciones_plataforma_table():
     if "capacitaciones_plataforma" not in inspector.get_table_names():
         CapacitacionPlataforma.__table__.create(bind=engine)
 
-def ensure_conexiones_capacitacion_storage_column():
+def ensure_conexiones_almacenamiento_storage_column():
     inspector = inspect(engine)
-    if "conexiones_capacitacion" not in inspector.get_table_names():
+    if "conexiones_almacenamiento" not in inspector.get_table_names():
         return
 
     with engine.begin() as connection:
-        columns = {column["name"] for column in inspector.get_columns("conexiones_capacitacion")}
+        columns = {column["name"] for column in inspector.get_columns("conexiones_almacenamiento")}
 
         if "gigabytes_almacenamiento" not in columns:
             connection.execute(
                 text(
-                    "ALTER TABLE conexiones_capacitacion "
+                    "ALTER TABLE conexiones_almacenamiento "
                     "ADD COLUMN gigabytes_almacenamiento INTEGER NOT NULL DEFAULT 0"
                 )
             )
 
         if "horas_capacitacion" in columns:
-            connection.execute(text("ALTER TABLE conexiones_capacitacion DROP COLUMN horas_capacitacion"))
+            connection.execute(text("ALTER TABLE conexiones_almacenamiento DROP COLUMN horas_capacitacion"))
 
 
 ensure_plan_whatsapp_column()
-ensure_conexiones_capacitacion_table()
+ensure_conexiones_almacenamiento_table()
 ensure_capacitaciones_plataforma_table()
-ensure_conexiones_capacitacion_storage_column()
+ensure_conexiones_almacenamiento_storage_column()
 
 app.add_middleware(
     CORSMiddleware,
