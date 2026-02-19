@@ -1,39 +1,28 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database.connection import engine
-from sqlalchemy.orm import Session
 from sqlalchemy import inspect, text
-from database.session import get_db
 from routers import cliente, usuario, cotizacion, cotizacion_detalle, prestacion, iva, plan
-from repositories.cliente_repository import get_clientes
 
 
 app = FastAPI(title="SACMED Cotizador API")
 
 
-def ensure_dynamic_attributes_columns():
+def ensure_plan_whatsapp_column():
     inspector = inspect(engine)
 
-    required = {
-        "planes": "atributos_adicionales",
-        "prestaciones": "atributos_adicionales",
-    }
-
     with engine.begin() as connection:
-        for table_name, column_name in required.items():
-            columns = {column["name"] for column in inspector.get_columns(table_name)}
-            if column_name in columns:
-                continue
+        columns = {column["name"] for column in inspector.get_columns("planes")}
+        if "mensajes_whatsapp" not in columns:
             connection.execute(
                 text(
-                    f"ALTER TABLE {table_name} "
-                    f"ADD COLUMN {column_name} JSON NOT NULL "
-                    "DEFAULT (JSON_OBJECT())"
+                    "ALTER TABLE planes "
+                    "ADD COLUMN mensajes_whatsapp INTEGER NOT NULL DEFAULT 0"
                 )
             )
 
 
-ensure_dynamic_attributes_columns()
+ensure_plan_whatsapp_column()
 
 app.add_middleware(
     CORSMiddleware,

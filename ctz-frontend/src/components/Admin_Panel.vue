@@ -49,7 +49,7 @@ const planForm = reactive({
   condiciones: '',
   activo: true,
   clp: true,
-  dynamic_attributes: []
+  mensajes_whatsapp: 0
 })
 
 const ivaForm = reactive({
@@ -77,145 +77,6 @@ const filteredUsers = computed(() => {
   )
 })
 
-
-function createEmptyDynamicAttribute() {
-  return { key: '', value: '', type: 'text' }
-}
-
-function normalizeAdditionalAttributes(attributes) {
-  if (!attributes || typeof attributes !== 'object' || Array.isArray(attributes)) return []
-
-  return Object.entries(attributes).map(([key, value]) => {
-    let type = 'text'
-    let normalizedValue = value
-
-    if (typeof value === 'number') {
-      type = 'number'
-      normalizedValue = Number(value)
-    } else if (typeof value === 'boolean') {
-      type = 'boolean'
-      normalizedValue = value ? 'true' : 'false'
-    } else if (value == null) {
-      normalizedValue = ''
-    } else {
-      normalizedValue = String(value)
-    }
-
-    return { key, value: normalizedValue, type }
-  })
-}
-
-function resetDynamicAttributes(attributes = null) {
-  const normalized = normalizeAdditionalAttributes(attributes)
-  planForm.dynamic_attributes = normalized.length ? normalized : [createEmptyDynamicAttribute()]
-}
-
-function addDynamicAttribute() {
-  planForm.dynamic_attributes.push(createEmptyDynamicAttribute())
-}
-
-function removeDynamicAttribute(index) {
-  planForm.dynamic_attributes.splice(index, 1)
-  if (!planForm.dynamic_attributes.length) {
-    addDynamicAttribute()
-  }
-}
-
-function buildAdditionalAttributesPayload() {
-  const payload = {}
-  const names = new Set()
-
-  for (const item of planForm.dynamic_attributes) {
-    const key = String(item.key || '').trim()
-    const rawValue = item.value
-
-    if (!key) {
-      if (String(rawValue || '').trim()) {
-        throw new Error('Cada atributo adicional debe tener un nombre')
-      }
-      continue
-    }
-
-    if (names.has(key)) {
-      throw new Error(`El atributo adicional "${key}" está repetido`)
-    }
-    names.add(key)
-
-    if (item.type === 'number') {
-      if (rawValue === '' || rawValue === null || Number.isNaN(Number(rawValue))) {
-        throw new Error(`El atributo "${key}" debe tener un número válido`)
-      }
-      payload[key] = Number(rawValue)
-    } else if (item.type === 'boolean') {
-      payload[key] = rawValue === 'true' || rawValue === true
-    } else {
-      payload[key] = rawValue == null ? '' : String(rawValue)
-    }
-  }
-
-  return payload
-}
-
-function buildPlanPayloadFromEntry(entry, attributes) {
-  return {
-    nombre: String(entry?.nombre || '').trim(),
-    conexiones_incluidas: Number(entry?.conexiones_incluidas || 0),
-    valor_plan_mensual: Number(entry?.valor_plan_mensual || 0),
-    valor_conexion_adicional: Number(entry?.valor_conexion_adicional || 0),
-    condiciones: entry?.condiciones || '',
-    activo: entry?.activo !== false,
-    atributos_adicionales: attributes
-  }
-}
-
-function buildServicePayloadFromEntry(entry, attributes) {
-  return {
-    nombre: String(entry?.nombre || '').trim(),
-    valor_unitario: Number(entry?.valor_unitario || 0),
-    condiciones: entry?.condiciones || '',
-    activo: entry?.activo !== false,
-    clp: entry?.clp !== false,
-    atributos_adicionales: attributes
-  }
-}
-
-async function syncAdditionalAttributeKeys(type, sourceAttributes) {
-  const expectedKeys = Object.keys(sourceAttributes || {})
-  if (!expectedKeys.length) return 0
-
-  const source = type === 'plan' ? plans.value : services.value
-  let updatedCount = 0
-
-  for (const entry of source) {
-    const currentAttributes = {
-      ...(entry?.atributos_adicionales && typeof entry.atributos_adicionales === 'object'
-        ? entry.atributos_adicionales
-        : {})
-    }
-
-    let changed = false
-    for (const key of expectedKeys) {
-      if (Object.prototype.hasOwnProperty.call(currentAttributes, key)) continue
-      currentAttributes[key] = ''
-      changed = true
-    }
-
-    if (!changed) continue
-
-    const endpoint = type === 'plan' ? `/planes/${entry.id_plan}` : `/prestaciones/${entry.id_prestacion}`
-    const payload = type === 'plan'
-      ? buildPlanPayloadFromEntry(entry, currentAttributes)
-      : buildServicePayloadFromEntry(entry, currentAttributes)
-
-    await request(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(payload)
-    })
-    updatedCount += 1
-  }
-
-  return updatedCount
-}
 
 function resetFeedback() {
   feedback.value = ''
@@ -419,9 +280,9 @@ function openCreatePrice(type) {
     valor_unitario: 0,
     condiciones: '',
     activo: true,
-    clp: true
+    clp: true,
+    mensajes_whatsapp: 0
   })
-  resetDynamicAttributes()
 }
 
 function openEditPrice(type, entry) {
@@ -440,9 +301,9 @@ function openEditPrice(type, entry) {
     valor_unitario: Number(entry.valor_unitario || 0),
     condiciones: entry.condiciones || '',
     activo: entry.activo !== false,
-    clp: entry.clp !== false
+    clp: entry.clp !== false,
+    mensajes_whatsapp: Number(entry.mensajes_whatsapp || 0)
   })
-  resetDynamicAttributes(entry.atributos_adicionales)
 }
 
 function closePriceModal() {
@@ -458,8 +319,6 @@ async function submitPrice() {
   }
 
   try {
-    const additionalAttributes = buildAdditionalAttributesPayload()
-
     if (planModal.value.type === 'plan') {
       const payload = {
         nombre: planForm.nombre.trim(),
@@ -468,7 +327,7 @@ async function submitPrice() {
         valor_conexion_adicional: Number(planForm.valor_conexion_adicional || 0),
         condiciones: planForm.condiciones,
         activo: planForm.activo,
-        atributos_adicionales: additionalAttributes
+        mensajes_whatsapp: Number(planForm.mensajes_whatsapp || 0)
       }
 
       const endpoint = planModal.value.mode === 'create'
@@ -486,8 +345,7 @@ async function submitPrice() {
         valor_unitario: Number(planForm.valor_unitario || 0),
         condiciones: planForm.condiciones,
         activo: planForm.activo,
-        clp: planForm.clp,
-        atributos_adicionales: additionalAttributes
+        clp: planForm.clp
       }
 
       const endpoint = planModal.value.mode === 'create'
@@ -502,17 +360,8 @@ async function submitPrice() {
     }
 
     await loadPrices()
-
-    const updatedCount = await syncAdditionalAttributeKeys(planModal.value.type, additionalAttributes)
-    if (updatedCount > 0) {
-      await loadPrices()
-    }
-
     const baseMessage = planModal.value.mode === 'create' ? 'Registro creado correctamente' : 'Registro actualizado correctamente'
-    const syncMessage = updatedCount > 0
-      ? ` Se propagaron ${updatedCount} registro${updatedCount === 1 ? '' : 's'} para mantener los atributos alineados.`
-      : ''
-    showFeedback(`${baseMessage}.${syncMessage}`)
+    showFeedback(baseMessage)
     closePriceModal()
   } catch (error) {
     showFeedback(error instanceof Error ? error.message : 'No se pudo guardar la información', 'error')
@@ -661,10 +510,8 @@ onMounted(loadData)
                   <div class="price-field"><span>Conexiones</span><strong>{{ plan.conexiones_incluidas }}</strong></div>
                   <div class="price-field"><span>Plan mensual</span><strong>{{ Number(plan.valor_plan_mensual).toLocaleString('es-CL') }}</strong></div>
                   <div class="price-field"><span>Conexión extra</span><strong>{{ Number(plan.valor_conexion_adicional).toLocaleString('es-CL') }}</strong></div>
+                  <div class="price-field"><span>Mensajes WhatsApp</span><strong>{{ Number(plan.mensajes_whatsapp || 0).toLocaleString('es-CL') }}</strong></div>
                   <small>{{ plan.condiciones || 'Sin condiciones' }}</small>
-                  <ul v-if="plan.atributos_adicionales && Object.keys(plan.atributos_adicionales).length" class="dynamic-attributes-list">
-                    <li v-for="(value, key) in plan.atributos_adicionales" :key="`plan-${plan.id_plan}-${key}`">{{ key }}: {{ value }}</li>
-                  </ul>
                   <div class="actions">
                     <button class="icon-btn" type="button" @click="openEditPrice('plan', plan)">✏️</button>
                     <button class="icon-btn danger" type="button" @click="deletePrice('plan', plan)">🗑️</button>
@@ -684,9 +531,6 @@ onMounted(loadData)
                   <div class="price-field"><span>Valor unitario</span><strong>{{ Number(service.valor_unitario || 0).toLocaleString('es-CL') }}</strong></div>
                   <div class="price-field"><span>Tipo moneda</span><strong>{{ service.clp ? 'CLP' : 'UF' }}</strong></div>
                   <small>{{ service.condiciones || 'Sin condiciones' }}</small>
-                  <ul v-if="service.atributos_adicionales && Object.keys(service.atributos_adicionales).length" class="dynamic-attributes-list">
-                    <li v-for="(value, key) in service.atributos_adicionales" :key="`service-${service.id_prestacion}-${key}`">{{ key }}: {{ value }}</li>
-                  </ul>
                   <div class="actions">
                     <button class="icon-btn" type="button" @click="openEditPrice('servicio', service)">✏️</button>
                     <button class="icon-btn danger" type="button" @click="deletePrice('servicio', service)">🗑️</button>
@@ -809,36 +653,10 @@ onMounted(loadData)
             <textarea v-model="planForm.condiciones" rows="2"></textarea>
           </label>
 
-          <div class="dynamic-attributes-editor">
-            <div class="dynamic-attributes-header">
-              <span>Atributos adicionales</span>
-              <button class="btn-primary" type="button" @click="addDynamicAttribute">+ Agregar atributo</button>
-            </div>
-
-            <div
-              v-for="(attribute, index) in planForm.dynamic_attributes"
-              :key="`attr-${index}`"
-              class="dynamic-attribute-row"
-            >
-              <input v-model="attribute.key" type="text" placeholder="Nombre" />
-              <select v-model="attribute.type">
-                <option value="text">Texto</option>
-                <option value="number">Número</option>
-                <option value="boolean">Booleano</option>
-              </select>
-              <input
-                v-if="attribute.type !== 'boolean'"
-                v-model="attribute.value"
-                :type="attribute.type === 'number' ? 'number' : 'text'"
-                placeholder="Valor"
-              />
-              <select v-else v-model="attribute.value">
-                <option value="true">Sí</option>
-                <option value="false">No</option>
-              </select>
-              <button class="icon-btn danger" type="button" @click="removeDynamicAttribute(index)">−</button>
-            </div>
-          </div>
+          <label v-if="planModal.type === 'plan'" class="price-modal-row">
+            <span>Mensajes WhatsApp</span>
+            <input v-model.number="planForm.mensajes_whatsapp" type="number" min="0" />
+          </label>
         </div>
 
         <div class="price-modal-actions">
@@ -1110,29 +928,6 @@ onMounted(loadData)
 }
 .price-modal .icon-btn.success { background: #35d34f; }
 
-.dynamic-attributes-list {
-  margin: 0;
-  padding-left: 18px;
-  color: #47586d;
-  font-size: 12px;
-}
-.dynamic-attributes-editor {
-  display: grid;
-  gap: 10px;
-  border: 1px solid #d8e1eb;
-  border-radius: 16px;
-  padding: 12px;
-}
-.dynamic-attributes-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-.dynamic-attributes-header span {
-  font-size: 28px;
-  color: #2b333f;
-}
 .dynamic-attribute-row {
   display: grid;
   grid-template-columns: 1.2fr .9fr 1.2fr auto;
@@ -1144,7 +939,6 @@ onMounted(loadData)
   height: 42px;
 }
 @media (max-width: 960px) {
-  .dynamic-attributes-header span { font-size: 20px; }
 }
 @media (max-width: 680px) {
   .dynamic-attribute-row { grid-template-columns: 1fr; }
