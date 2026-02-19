@@ -96,9 +96,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
-const ivaPct = computed(() => Number(props.quote.iva_porcentaje ?? props.quote.porcentaje ?? 19))
+import { computed, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   quote: {
@@ -106,6 +104,40 @@ const props = defineProps({
     default: () => ({})
   }
 })
+
+const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const ivaPctFromDb = ref(null)
+
+const ivaPct = computed(() => Number(
+  props.quote.iva_porcentaje
+  ?? props.quote.porcentaje
+  ?? ivaPctFromDb.value
+  ?? 19
+))
+
+async function loadIvaPct() {
+  try {
+    const res = await fetch(`${apiBaseUrl}/iva`)
+    if (!res.ok) return
+
+    const list = await res.json()
+    if (!Array.isArray(list) || !list.length) return
+
+    let selected = null
+    if (props.quote?.id_iva != null) {
+      selected = list.find((entry) => Number(entry.id_iva) === Number(props.quote.id_iva))
+    }
+
+    if (!selected) selected = list.find((entry) => entry.activo) || list[0]
+    if (selected?.porcentaje != null) ivaPctFromDb.value = Number(selected.porcentaje)
+  } catch (e) {
+    // keep fallback
+  }
+}
+
+onMounted(loadIvaPct)
+
+watch(() => props.quote?.id_iva, loadIvaPct)
 
 function normalizeConditionEntry(entry) {
   if (entry && typeof entry === 'object') {
