@@ -881,12 +881,22 @@ onMounted(loadData)
   color: #2b333f;
 }
 .price-modal-row input,
+.price-modal-row select,
 .price-modal-row textarea {
   border: 2px solid #a9adb3;
   border-radius: 24px;
   min-height: 56px;
   font-size: 34px;
   padding: 8px 18px;
+}
+.price-modal-row select {
+  appearance: none;
+  background-color: #fff;
+  background-image: linear-gradient(45deg, transparent 50%, #5f6670 50%), linear-gradient(135deg, #5f6670 50%, transparent 50%);
+  background-position: calc(100% - 24px) calc(50% - 4px), calc(100% - 16px) calc(50% - 4px);
+  background-size: 8px 8px, 8px 8px;
+  background-repeat: no-repeat;
+  padding-right: 44px;
 }
 .price-modal-row textarea {
   min-height: 82px;
@@ -912,6 +922,7 @@ onMounted(loadData)
   .price-modal-subtitle { font-size: 28px; }
   .price-modal-row span { font-size: 30px; }
   .price-modal-row input,
+  .price-modal-row select,
   .price-modal-row textarea { font-size: 24px; min-height: 48px; }
 }
 
@@ -921,6 +932,7 @@ onMounted(loadData)
   .price-modal-subtitle { font-size: 24px; }
   .price-modal-row span { font-size: 22px; }
   .price-modal-row input,
+  .price-modal-row select,
   .price-modal-row textarea { font-size: 18px; }
   .iva-card h3 { font-size: 28px; }
   .iva-card label { font-size: 20px; }
