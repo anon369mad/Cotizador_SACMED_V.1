@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DECIMAL, Boolean, TIMESTAMP, Text
+from sqlalchemy import Column, Integer, String, DECIMAL, Boolean, TIMESTAMP, Text, JSON
 from models.base import Base
 
 class Prestacion(Base):
@@ -8,6 +8,7 @@ class Prestacion(Base):
     nombre = Column(String(120), nullable=False)
     valor_unitario = Column(DECIMAL(10,2), nullable=False)
     condiciones = Column(Text)
+    atributos_adicionales = Column(JSON, nullable=False, default=dict)
     activo = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP)
     updated_at = Column(TIMESTAMP)
