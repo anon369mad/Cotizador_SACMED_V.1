@@ -26,6 +26,7 @@ const users = ref([])
 const plans = ref([])
 const services = ref([])
 const trainingConnections = ref([])
+const platformTrainingRules = ref([])
 const ivaConfig = ref([])
 
 const userSearch = ref('')
@@ -56,6 +57,12 @@ const trainingModal = ref({ open: false, mode: 'create', id: null })
 const trainingForm = reactive({
   conexiones: 1,
   gigabytes_almacenamiento: 0
+})
+const platformTrainingModal = ref({ open: false, mode: 'create', id: null })
+const platformTrainingForm = reactive({
+  conexiones_desde: 1,
+  conexiones_hasta: null,
+  horas_capacitacion: 0
 })
 
 const ivaForm = reactive({
@@ -116,14 +123,16 @@ async function loadUsers() {
 }
 
 async function loadPrices() {
-  const [allPlans, allServices, allTrainingConnections] = await Promise.all([
+  const [allPlans, allServices, allTrainingConnections, allPlatformTrainingRules] = await Promise.all([
     request('/planes'),
     request('/prestaciones'),
-    request('/conexiones-capacitacion')
+    request('/conexiones-capacitacion'),
+    request('/capacitaciones-plataforma')
   ])
   plans.value = Array.isArray(allPlans) ? allPlans : []
   services.value = Array.isArray(allServices) ? allServices : []
   trainingConnections.value = Array.isArray(allTrainingConnections) ? allTrainingConnections : []
+  platformTrainingRules.value = Array.isArray(allPlatformTrainingRules) ? allPlatformTrainingRules : []
 }
 
 async function loadIva() {
@@ -458,6 +467,96 @@ async function deleteTrainingConnection(entry) {
   }
 }
 
+function formatTrainingInterval(rule) {
+  if (rule.conexiones_hasta == null) {
+    return `${rule.conexiones_desde}+ conexiones`
+  }
+  return `${rule.conexiones_desde} a ${rule.conexiones_hasta} conexiones`
+}
+
+function openCreatePlatformTrainingRule() {
+  platformTrainingModal.value = { open: true, mode: 'create', id: null }
+  Object.assign(platformTrainingForm, {
+    conexiones_desde: 1,
+    conexiones_hasta: null,
+    horas_capacitacion: 0
+  })
+}
+
+function openEditPlatformTrainingRule(rule) {
+  platformTrainingModal.value = { open: true, mode: 'edit', id: rule.id_capacitacion_plataforma }
+  Object.assign(platformTrainingForm, {
+    conexiones_desde: Number(rule.conexiones_desde || 1),
+    conexiones_hasta: rule.conexiones_hasta == null ? null : Number(rule.conexiones_hasta),
+    horas_capacitacion: Number(rule.horas_capacitacion || 0)
+  })
+}
+
+function closePlatformTrainingModal() {
+  platformTrainingModal.value = { open: false, mode: 'create', id: null }
+}
+
+async function submitPlatformTrainingRule() {
+  resetFeedback()
+
+  const desde = Number(platformTrainingForm.conexiones_desde || 0)
+  const hasta = platformTrainingForm.conexiones_hasta == null || platformTrainingForm.conexiones_hasta === ''
+    ? null
+    : Number(platformTrainingForm.conexiones_hasta)
+  const horas = Number(platformTrainingForm.horas_capacitacion || 0)
+
+  if (desde < 1) {
+    showFeedback('El inicio del intervalo debe ser mayor o igual a 1', 'error')
+    return
+  }
+
+  if (hasta !== null && hasta < desde) {
+    showFeedback('El fin del intervalo debe ser mayor o igual al inicio', 'error')
+    return
+  }
+
+  if (horas < 0) {
+    showFeedback('Las horas de capacitación no pueden ser negativas', 'error')
+    return
+  }
+
+  try {
+    const payload = {
+      conexiones_desde: desde,
+      conexiones_hasta: hasta,
+      horas_capacitacion: horas
+    }
+
+    const endpoint = platformTrainingModal.value.mode === 'create'
+      ? '/capacitaciones-plataforma'
+      : `/capacitaciones-plataforma/${platformTrainingModal.value.id}`
+    const method = platformTrainingModal.value.mode === 'create' ? 'POST' : 'PUT'
+
+    await request(endpoint, {
+      method,
+      body: JSON.stringify(payload)
+    })
+
+    await loadPrices()
+    showFeedback(platformTrainingModal.value.mode === 'create' ? 'Relación creada correctamente' : 'Relación actualizada correctamente')
+    closePlatformTrainingModal()
+  } catch (error) {
+    showFeedback(error instanceof Error ? error.message : 'No se pudo guardar la relación', 'error')
+  }
+}
+
+async function deletePlatformTrainingRule(rule) {
+  if (!window.confirm(`¿Eliminar la relación ${formatTrainingInterval(rule)} / ${rule.horas_capacitacion} horas?`)) return
+
+  try {
+    await request(`/capacitaciones-plataforma/${rule.id_capacitacion_plataforma}`, { method: 'DELETE' })
+    showFeedback('Relación eliminada correctamente')
+    await loadPrices()
+  } catch (error) {
+    showFeedback(error instanceof Error ? error.message : 'No se pudo eliminar la relación', 'error')
+  }
+}
+
 async function submitIva() {
   resetFeedback()
   try {
@@ -633,6 +732,25 @@ onMounted(loadData)
                 </li>
               </ul>
             </section>
+
+            <section class="prices-section training-section">
+              <div class="section-header prices-header">
+                <h3>Capacitaciones plataforma</h3>
+                <button class="btn-primary add-price-btn" type="button" @click="openCreatePlatformTrainingRule">+ Nueva relación</button>
+              </div>
+              <ul class="training-list">
+                <li v-for="rule in platformTrainingRules" :key="rule.id_capacitacion_plataforma" class="training-row">
+                  <div class="training-data">
+                    <strong>{{ formatTrainingInterval(rule) }}</strong>
+                    <span>{{ rule.horas_capacitacion }} horas de capacitación</span>
+                  </div>
+                  <div class="actions">
+                    <button class="icon-btn" type="button" @click="openEditPlatformTrainingRule(rule)">✏️</button>
+                    <button class="icon-btn danger" type="button" @click="deletePlatformTrainingRule(rule)">🗑️</button>
+                  </div>
+                </li>
+              </ul>
+            </section>
           </div>
         </section>
 
@@ -775,6 +893,28 @@ onMounted(loadData)
         <div class="modal-actions">
           <button class="btn-link" type="button" @click="closeTrainingModal">Cancelar</button>
           <button class="btn-primary" type="button" @click="submitTrainingConnection">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="platformTrainingModal.open" class="modal-backdrop">
+      <div class="modal">
+        <h3>{{ platformTrainingModal.mode === 'create' ? 'Nueva relación de capacitación' : 'Editar relación de capacitación' }}</h3>
+        <label>
+          Conexiones desde
+          <input v-model.number="platformTrainingForm.conexiones_desde" type="number" min="1" />
+        </label>
+        <label>
+          Conexiones hasta (vacío = en adelante)
+          <input v-model.number="platformTrainingForm.conexiones_hasta" type="number" min="1" />
+        </label>
+        <label>
+          Horas de capacitación
+          <input v-model.number="platformTrainingForm.horas_capacitacion" type="number" min="0" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn-link" type="button" @click="closePlatformTrainingModal">Cancelar</button>
+          <button class="btn-primary" type="button" @click="submitPlatformTrainingRule">Guardar</button>
         </div>
       </div>
     </div>
