@@ -16,7 +16,7 @@ class PrestacionUpdate(BaseModel):
     valor_unitario: Optional[float]
     condiciones: Optional[str]
     activo: Optional[bool]
-    clp: bool = True
+    clp: Optional[bool]
 
 class PrestacionResponse(PrestacionBase):
     id_prestacion: int
