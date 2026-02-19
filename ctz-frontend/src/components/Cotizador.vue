@@ -58,6 +58,7 @@ const defaultForm = {
   descuento: 0,
   seleccionado: '',
   manualServiceName: '',
+  manualServiceCurrency: 'CLP',
   items: []
 }
 
@@ -227,6 +228,21 @@ function roundAmount(value) {
   return Math.round(Number(value) || 0)
 }
 
+function getDisplayedCurrency() {
+  if (form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION) {
+    return form.manualServiceCurrency
+  }
+  return form.moneda
+}
+
+function getValueInClp() {
+  const value = Number(form.valor || 0)
+  if (form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION && form.manualServiceCurrency === 'UF') {
+    return roundAmount(value * Number(valorUf.value || 0))
+  }
+  return roundAmount(value)
+}
+
 function formatRut(e) {
   let v = e.target.value
 
@@ -257,13 +273,21 @@ function addService() {
     const manualName = String(form.manualServiceName || '').trim()
     if (!manualName) return
 
+    const selectedCurrency = form.manualServiceCurrency === 'UF' ? 'UF' : 'CLP'
+    const baseValue = Math.max(0, Number(form.valor || 0))
+    const convertedValue = selectedCurrency === 'UF'
+      ? roundAmount(baseValue * Number(valorUf.value || 0))
+      : roundAmount(baseValue)
+
     const manualItemId = Date.now()
     
     form.items.push({
       id: manualItemId,
       name: manualName,
       qty: form.cantidad,
-      unitValue: roundAmount(form.valor),
+      unitValue: convertedValue,
+      unitValueOriginal: roundAmount(baseValue),
+      currency: selectedCurrency,
       discountPct: form.descuento,
       condiciones: null,
       source: 'manual'
@@ -271,6 +295,7 @@ function addService() {
 
     form.seleccionado = ''
     form.manualServiceName = ''
+    form.manualServiceCurrency = 'CLP'
     form.cantidad = 1
     form.valor = 0
     form.descuento = 0
@@ -300,6 +325,7 @@ function addService() {
   // Limpiar inputs
   form.seleccionado = ''
   form.manualServiceName = ''
+  form.manualServiceCurrency = 'CLP'
   form.cantidad = 1
   form.valor = 0
   form.descuento = 0
@@ -430,6 +456,8 @@ function syncPlanItems() {
 
 function onSelectPrestacion() {
   if (form.seleccionado === MANUAL_SERVICE_OPTION) {
+    form.manualServiceCurrency = 'CLP'
+    form.moneda = form.manualServiceCurrency
     form.valor = 0
     form.valor_original = 0
     return
@@ -525,6 +553,7 @@ function buildPreview() {
     conexiones: form.conexiones,
     condiciones: form.condiciones,
     moneda: form.moneda,
+    valorUf: Number(valorUf.value || 0),
     items: form.items,
   }
 }
@@ -672,9 +701,16 @@ watch(
                 <input type="number" min="0" class="small" v-model.number="form.cantidad" />
               </div>
               <div class="mini-field">
-                <label>Valor ({{ form.moneda }})</label>
+                <label>Valor ({{ getDisplayedCurrency() }})</label>
                 <input v-if="form.planType === 'Período'" type="number" min="0" class="medium" v-model.number="form.valor_original" />
                 <input v-else type="number" min="0" class="medium" v-model.number="form.valor" />
+              </div>
+              <div class="mini-field" v-if="form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION">
+                <label>Moneda</label>
+                <select class="small" v-model="form.manualServiceCurrency">
+                  <option value="CLP">CLP</option>
+                  <option value="UF">UF</option>
+                </select>
               </div>
               <div class="mini-field">
                 <label>Descuento</label>
@@ -684,7 +720,7 @@ watch(
                 </div>
               </div>
             </div>
-            <div v-if="form.moneda === 'UF'" class="uf-info-box">
+            <div v-if="getDisplayedCurrency() === 'UF'" class="uf-info-box">
               <div class="uf-loading" v-if="loading">
                 <span class="spinner">⟳</span> Cargando valor UF...
               </div>
@@ -695,7 +731,7 @@ watch(
                 </div>
                 <div class="uf-item" v-if="valorUf && form.valor > 0">
                   <span class="uf-label">En CLP</span>
-                  <span class="uf-converted">${{ (form.valor).toLocaleString('es-CL') }}</span>
+                  <span class="uf-converted">${{ getValueInClp().toLocaleString('es-CL') }}</span>
                 </div>
               </template>
             </div>

@@ -53,6 +53,7 @@ const editItemId = ref(null)
 const editQty = ref(1)
 const editDiscount = ref(0)
 const editUnitValue = ref(0)
+const editCurrency = ref('CLP')
 
 function ensureConditionsArray() {
   if (!props.baseData.condiciones) {
@@ -209,6 +210,16 @@ function rowTotal(it) {
 }
 
 
+function getEditedUnitValueInClp(it) {
+  if (isDbItem(it)) return roundAmount(it.unitValue)
+  const rawValue = Math.max(0, Number(editUnitValue.value || 0))
+  if (editCurrency.value === 'UF') {
+    return roundAmount(rawValue * Number(props.baseData.valorUf || 0))
+  }
+  return roundAmount(rawValue)
+}
+
+
 function getMonthsValidationError() {
   if (props.baseData.planType !== 'Período') return ''
 
@@ -239,7 +250,8 @@ function startEditItem(it) {
   editItemId.value = it.id
   editQty.value = Number(it.qty || 1)
   editDiscount.value = Number(it.discountPct || 0)
-  editUnitValue.value = Number(it.unitValue || 0)
+  editUnitValue.value = Number((it.unitValueOriginal ?? it.unitValue) || 0)
+  editCurrency.value = it.currency === 'UF' ? 'UF' : 'CLP'
 }
 
 function saveItemChanges(it) {
@@ -247,7 +259,13 @@ function saveItemChanges(it) {
   it.discountPct = Math.min(100, Math.max(0, Number(editDiscount.value || 0)))
 
   if (!isDbItem(it)) {
-    it.unitValue = Math.max(0, Number(editUnitValue.value || 0))
+    const originalValue = Math.max(0, Number(editUnitValue.value || 0))
+    const selectedCurrency = editCurrency.value === 'UF' ? 'UF' : 'CLP'
+    it.currency = selectedCurrency
+    it.unitValueOriginal = roundAmount(originalValue)
+    it.unitValue = selectedCurrency === 'UF'
+      ? roundAmount(originalValue * Number(props.baseData.valorUf || 0))
+      : roundAmount(originalValue)
   }
 
   emit('sync-form', {
@@ -263,6 +281,7 @@ function cancelItemEdit() {
   editQty.value = 1
   editDiscount.value = 0
   editUnitValue.value = 0
+  editCurrency.value = 'CLP'
 }
 
 function splitConditionText(conditionText) {
@@ -647,6 +666,7 @@ async function discardQuote() {
       <tr>
         <th>Cant.</th>
         <th>Servicio</th>
+        <th>Moneda</th>
         <th>Unitario</th>
         <th>Desc.</th>
         <th>Total</th>
@@ -664,6 +684,13 @@ async function discardQuote() {
       </td>
       <td>{{ it.name }}</td>
       <td>
+        <template v-if="isDbItem(it)">{{ it.currency || 'CLP' }}</template>
+        <select v-else v-model="editCurrency" class="edit-input">
+          <option value="CLP">CLP</option>
+          <option value="UF">UF</option>
+        </select>
+      </td>
+      <td>
         <template v-if="isDbItem(it)">${{ roundAmount(it.unitValue) }}</template>
         <input
           v-else
@@ -676,7 +703,7 @@ async function discardQuote() {
       <td>
         <input v-model.number="editDiscount" type="number" min="0" max="100" class="edit-input" />%
       </td>
-      <td class="bold">${{ roundAmount(editQty * (isDbItem(it) ? it.unitValue : editUnitValue) * (1 - editDiscount / 100)) }}</td>
+      <td class="bold">${{ roundAmount(editQty * getEditedUnitValueInClp(it) * (1 - editDiscount / 100)) }}</td>
       <td class="actions">
         <button @click="saveItemChanges(it)">💾</button>
         <button @click="cancelItemEdit">✖️</button>
@@ -685,6 +712,7 @@ async function discardQuote() {
     <template v-else>
       <td>{{ it.qty }}</td>
       <td>{{ it.name }}</td>
+      <td>{{ it.currency || 'CLP' }}</td>
       <td>${{ roundAmount(it.unitValue) }}</td>
       <td>{{ it.discountPct }}%</td>
       <td class="bold">${{ rowTotal(it).toFixed(0) }}</td>
@@ -696,7 +724,7 @@ async function discardQuote() {
   </tr>
 
   <tr v-if="!items.length">
-    <td colspan="6" class="empty">
+    <td colspan="7" class="empty">
       No hay servicios agregados
     </td>
   </tr>
