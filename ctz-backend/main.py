@@ -4,7 +4,8 @@ from database.connection import engine
 from sqlalchemy import inspect, text
 from routers import cliente, usuario, cotizacion, cotizacion_detalle, prestacion, iva, plan
 from models.conexion_capacitacion import ConexionCapacitacion
-from routers import conexion_capacitacion
+from models.capacitacion_plataforma import CapacitacionPlataforma
+from routers import conexion_capacitacion, capacitacion_plataforma
 
 
 app = FastAPI(title="SACMED Cotizador API")
@@ -30,6 +31,13 @@ def ensure_conexiones_capacitacion_table():
         ConexionCapacitacion.__table__.create(bind=engine)
 
 
+
+
+def ensure_capacitaciones_plataforma_table():
+    inspector = inspect(engine)
+    if "capacitaciones_plataforma" not in inspector.get_table_names():
+        CapacitacionPlataforma.__table__.create(bind=engine)
+
 def ensure_conexiones_capacitacion_storage_column():
     inspector = inspect(engine)
     if "conexiones_capacitacion" not in inspector.get_table_names():
@@ -52,6 +60,7 @@ def ensure_conexiones_capacitacion_storage_column():
 
 ensure_plan_whatsapp_column()
 ensure_conexiones_capacitacion_table()
+ensure_capacitaciones_plataforma_table()
 ensure_conexiones_capacitacion_storage_column()
 
 app.add_middleware(
@@ -78,3 +87,4 @@ app.include_router(prestacion.router)
 app.include_router(iva.router)
 app.include_router(plan.router)
 app.include_router(conexion_capacitacion.router)
+app.include_router(capacitacion_plataforma.router)
