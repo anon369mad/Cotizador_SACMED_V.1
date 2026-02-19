@@ -7,7 +7,7 @@ class ConexionCapacitacion(Base):
 
     id_conexion_capacitacion = Column(Integer, primary_key=True)
     conexiones = Column(Integer, nullable=False)
-    horas_capacitacion = Column(Integer, nullable=False)
+    gigabytes_almacenamiento = Column(Integer, nullable=False)
     activo = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP)
     updated_at = Column(TIMESTAMP)

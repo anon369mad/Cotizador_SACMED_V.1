@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 class ConexionCapacitacionBase(BaseModel):
     conexiones: int
-    horas_capacitacion: int
+    gigabytes_almacenamiento: int
     activo: bool = True
 
 
@@ -14,7 +14,7 @@ class ConexionCapacitacionCreate(ConexionCapacitacionBase):
 
 class ConexionCapacitacionUpdate(BaseModel):
     conexiones: Optional[int] = None
-    horas_capacitacion: Optional[int] = None
+    gigabytes_almacenamiento: Optional[int] = None
     activo: Optional[bool] = None
 
 

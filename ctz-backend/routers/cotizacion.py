@@ -138,7 +138,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     ]
 
     capacitacion_base_pdf = [
-        "Este presupuesto incluye 2 horas de configuración inicial remota para asistirle en el uso de la plataforma.",
+        "Este presupuesto incluye 10 GB de almacenamiento en disco por conexión.",
     ]
 
     cobros_adicionales_base_pdf = [
@@ -223,7 +223,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         return f'<div class="section-title">{escape(title)}</div><ul>{item_list}</ul>'
 
     condiciones_section = _render_section("Condiciones Generales:", payload.condiciones_generales)
-    capacitacion_section = _render_section("Capacitación Plataforma:", payload.capacitacion)
+    capacitacion_section = _render_section("Almacenamiento por conexión:", payload.capacitacion)
     cobros_adicionales_section = _render_section("Cobros Adicionales:", payload.cobros_adicionales)
     total_label = "Total (Pago único)"
     if payload.total_periodo != payload.total_mensual:
