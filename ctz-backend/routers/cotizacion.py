@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion import Cotizacion
 from models.conexion_capacitacion import ConexionCapacitacion
+from models.capacitacion_plataforma import CapacitacionPlataforma
 from models.plan import Plan
 from models.usuario import Usuario
 from models.iva import Iva
@@ -176,7 +177,30 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     if plan_referencia:
         mensajes_incluidos = int(plan_referencia.mensajes_whatsapp or 0)
 
+    horas_capacitacion = 0
+    regla_capacitacion = (
+        db.query(CapacitacionPlataforma)
+        .filter(
+            CapacitacionPlataforma.activo.is_(True),
+            CapacitacionPlataforma.conexiones_desde <= conexiones,
+            (CapacitacionPlataforma.conexiones_hasta.is_(None))
+            | (CapacitacionPlataforma.conexiones_hasta >= conexiones),
+        )
+        .order_by(CapacitacionPlataforma.conexiones_desde.desc())
+        .first()
+    )
+    if not regla_capacitacion:
+        regla_capacitacion = (
+            db.query(CapacitacionPlataforma)
+            .filter(CapacitacionPlataforma.activo.is_(True))
+            .order_by(CapacitacionPlataforma.conexiones_desde.asc())
+            .first()
+        )
+    if regla_capacitacion:
+        horas_capacitacion = int(regla_capacitacion.horas_capacitacion or 0)
+
     capacitacion_base_pdf = [
+        f"Este presupuesto incluye {horas_capacitacion} horas de capacitación para la plataforma según el intervalo de conexiones contratado.",
         f"Este presupuesto incluye {gigabytes_incluidos} GB de almacenamiento en disco por conexión.",
     ]
 
