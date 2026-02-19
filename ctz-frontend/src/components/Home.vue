@@ -515,6 +515,16 @@ async function editDraftQuote(h) {
 
   historyError.value = ''
   try {
+    const existingDraftTab = tabs.value.find(
+      (tab) => Number(tab?.data?.idCotizacion) === Number(h.id)
+    )
+
+    if (existingDraftTab) {
+      activeTabId.value = existingDraftTab.id
+      currentView.value = 'tabs'
+      return
+    }
+
     const detailItems = await fetchQuoteDetails(h.id)
     const [prestaciones, planes] = await Promise.all([
       getPrestaciones(),
