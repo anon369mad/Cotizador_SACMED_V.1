@@ -575,7 +575,7 @@ onMounted(loadData)
 
         <section v-else-if="activeTab === 'precios'" class="card">
           <div class="prices-grid">
-            <div>
+            <section class="prices-section">
               <div class="section-header prices-header">
                 <h3>Planes</h3>
                 <button class="btn-primary add-price-btn" type="button" @click="openCreatePrice('plan')">+ Nuevo plan</button>
@@ -594,9 +594,9 @@ onMounted(loadData)
                   </div>
                 </li>
               </ul>
-            </div>
+            </section>
 
-            <div>
+            <section class="prices-section">
               <div class="section-header prices-header">
                 <h3>Prestaciones</h3>
                 <button class="btn-primary add-price-btn" type="button" @click="openCreatePrice('servicio')">+ Nuevo servicio</button>
@@ -613,25 +613,26 @@ onMounted(loadData)
                   </div>
                 </li>
               </ul>
-            </div>
+            </section>
 
-            <div>
+            <section class="prices-section training-section">
               <div class="section-header prices-header">
                 <h3>Capacitación plataforma</h3>
                 <button class="btn-primary add-price-btn" type="button" @click="openCreateTrainingConnection">+ Nueva relación</button>
               </div>
-              <ul class="cards-list prices-cards-list">
-                <li v-for="relation in trainingConnections" :key="relation.id_conexion_capacitacion" class="price-card">
-                  <h4>{{ relation.conexiones }} conexiones</h4>
-                  <div class="price-field"><span>Horas de capacitación</span><strong>{{ relation.horas_capacitacion }}</strong></div>
-                  <small>Relación editable independiente del plan</small>
+              <ul class="training-list">
+                <li v-for="relation in trainingConnections" :key="relation.id_conexion_capacitacion" class="training-row">
+                  <div class="training-data">
+                    <strong>{{ relation.conexiones }} conexiones</strong>
+                    <span>{{ relation.horas_capacitacion }} h de capacitación</span>
+                  </div>
                   <div class="actions">
                     <button class="icon-btn" type="button" @click="openEditTrainingConnection(relation)">✏️</button>
                     <button class="icon-btn danger" type="button" @click="deleteTrainingConnection(relation)">🗑️</button>
                   </div>
                 </li>
               </ul>
-            </div>
+            </section>
           </div>
         </section>
 
@@ -809,13 +810,13 @@ onMounted(loadData)
   justify-content: center;
   gap: 10px;
   color: #61758e;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 500;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 .tab-icon {
   color: #96a3b5;
-  font-size: 33px;
+  font-size: 26px;
   line-height: 1;
 }
 .tab.active {
@@ -849,36 +850,40 @@ onMounted(loadData)
   font-size: 15px;
 }
 .icon-btn.danger { background: #f43f5e; color: #fff; }
-.prices-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.prices-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.prices-section {
+  display: grid;
+  gap: 10px;
+}
 .prices-header { margin-bottom: 16px; }
 .prices-cards-list {
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
 }
 .price-card {
-  border: 3px solid #56bdf1;
-  border-radius: 20px;
+  border: 2px solid #56bdf1;
+  border-radius: 14px;
   background: #fff;
-  padding: 12px 14px;
+  padding: 10px;
   display: grid;
-  gap: 7px;
+  gap: 6px;
   align-content: start;
 }
-.price-card h4 { margin: 0; text-align: center; font-size: 20px; color: #1f2d3d; }
+.price-card h4 { margin: 0; text-align: center; font-size: 16px; color: #1f2d3d; }
 .price-field {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
 }
 .price-field span { color: #4b5e77; }
 .price-field strong { color: #1a2430; font-weight: 700; }
 .price-card small {
   margin: 0;
-  min-height: 28px;
+  min-height: 24px;
   color: #6f8197;
-  font-size: 12px;
+  font-size: 11px;
   border-radius: 8px;
   padding: 4px 8px;
   background: #f6f8fb;
@@ -886,6 +891,35 @@ onMounted(loadData)
 .price-card .actions {
   justify-content: space-between;
   margin-top: 4px;
+}
+.training-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.training-row {
+  border: 1px solid #d7e2ef;
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: #fbfdff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.training-data {
+  display: grid;
+  gap: 2px;
+}
+.training-data strong {
+  color: #243447;
+  font-size: 13px;
+}
+.training-data span {
+  color: #5d7188;
+  font-size: 12px;
 }
 .iva-tab-panel {
   display: flex;
@@ -905,7 +939,7 @@ onMounted(loadData)
 }
 .iva-card h3 {
   margin: 0;
-  font-size: 34px;
+  font-size: 28px;
   line-height: 1.12;
   text-align: center;
   color: #243449;
@@ -917,7 +951,7 @@ onMounted(loadData)
   justify-items: center;
   color: #3c4f67;
   font-weight: 600;
-  font-size: 23px;
+  font-size: 18px;
 }
 .iva-input { display: flex; gap: 10px; align-items: center; }
 .iva-input input {
@@ -926,13 +960,13 @@ onMounted(loadData)
   border: 1px solid #cad1dc;
   border-radius: 8px;
   padding: 8px 12px;
-  font-size: 24px;
+  font-size: 20px;
   text-align: left;
   color: #3d4c5f;
   background: #fff;
 }
 .iva-input span {
-  font-size: 29px;
+  font-size: 24px;
   color: #73859c;
 }
 .iva-actions {
@@ -979,7 +1013,7 @@ onMounted(loadData)
 .price-modal-title {
   margin: 0;
   text-align: center;
-  font-size: 46px;
+  font-size: 34px;
   line-height: 1.1;
   font-weight: 500;
 }
@@ -990,7 +1024,7 @@ onMounted(loadData)
 .price-modal-subtitle {
   text-align: center;
   color: #919eae;
-  font-size: 34px;
+  font-size: 24px;
   margin: 0;
   line-height: 1;
 }
@@ -1001,16 +1035,16 @@ onMounted(loadData)
   align-items: center;
 }
 .price-modal-row span {
-  font-size: 40px;
+  font-size: 22px;
   color: #2b333f;
 }
 .price-modal-row input,
 .price-modal-row select,
 .price-modal-row textarea {
   border: 2px solid #a9adb3;
-  border-radius: 24px;
-  min-height: 56px;
-  font-size: 34px;
+  border-radius: 14px;
+  min-height: 44px;
+  font-size: 18px;
   padding: 8px 18px;
 }
 .price-modal-row select {
@@ -1023,19 +1057,19 @@ onMounted(loadData)
   padding-right: 44px;
 }
 .price-modal-row textarea {
-  min-height: 82px;
+  min-height: 68px;
   resize: none;
 }
 .price-modal-actions {
   display: flex;
   justify-content: center;
-  gap: 78px;
+  gap: 36px;
   margin-top: 2px;
 }
 .price-modal .icon-btn {
-  width: 82px;
-  height: 82px;
-  font-size: 48px;
+  width: 58px;
+  height: 58px;
+  font-size: 32px;
   color: #fff;
 }
 .price-modal .icon-btn.success { background: #35d34f; }
@@ -1058,24 +1092,23 @@ onMounted(loadData)
 
 @media (max-width: 1200px) {
   .price-modal { width: min(92vw, 620px); padding: 24px 28px 20px; }
-  .price-modal-title { font-size: 38px; }
-  .price-modal-subtitle { font-size: 28px; }
-  .price-modal-row span { font-size: 30px; }
+  .price-modal-title { font-size: 30px; }
+  .price-modal-subtitle { font-size: 22px; }
+  .price-modal-row span { font-size: 20px; }
   .price-modal-row input,
   .price-modal-row select,
-  .price-modal-row textarea { font-size: 24px; min-height: 48px; }
+  .price-modal-row textarea { font-size: 17px; min-height: 42px; }
 }
 
 @media (max-width: 960px) {
-  .prices-grid { grid-template-columns: 1fr; }
-  .price-modal-title { font-size: 32px; }
-  .price-modal-subtitle { font-size: 24px; }
-  .price-modal-row span { font-size: 22px; }
+  .price-modal-title { font-size: 28px; }
+  .price-modal-subtitle { font-size: 20px; }
+  .price-modal-row span { font-size: 18px; }
   .price-modal-row input,
   .price-modal-row select,
-  .price-modal-row textarea { font-size: 18px; }
-  .iva-card h3 { font-size: 28px; }
-  .iva-card label { font-size: 20px; }
+  .price-modal-row textarea { font-size: 16px; }
+  .iva-card h3 { font-size: 24px; }
+  .iva-card label { font-size: 16px; }
 }
 
 @media (max-width: 680px) {
