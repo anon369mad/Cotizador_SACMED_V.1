@@ -607,7 +607,7 @@ onMounted(() => {
     <header class="topbar">
       <div class="topbar-left">
         <h2 class="brand">Sistema de Cotizaciones</h2>
-        <div class="subtitle">Panel De</div>
+        <div class="subtitle">Panel de Ventas</div>
       </div>
       <div class="topbar-right">
         <div class="user">
