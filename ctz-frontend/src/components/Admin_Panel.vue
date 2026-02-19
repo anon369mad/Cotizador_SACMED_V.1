@@ -55,7 +55,7 @@ const planForm = reactive({
 const trainingModal = ref({ open: false, mode: 'create', id: null })
 const trainingForm = reactive({
   conexiones: 1,
-  horas_capacitacion: 0
+  gigabytes_almacenamiento: 0
 })
 
 const ivaForm = reactive({
@@ -394,7 +394,7 @@ function openCreateTrainingConnection() {
   trainingModal.value = { open: true, mode: 'create', id: null }
   Object.assign(trainingForm, {
     conexiones: 1,
-    horas_capacitacion: 0
+    gigabytes_almacenamiento: 0
   })
 }
 
@@ -402,7 +402,7 @@ function openEditTrainingConnection(entry) {
   trainingModal.value = { open: true, mode: 'edit', id: entry.id_conexion_capacitacion }
   Object.assign(trainingForm, {
     conexiones: Number(entry.conexiones || 1),
-    horas_capacitacion: Number(entry.horas_capacitacion || 0)
+    gigabytes_almacenamiento: Number(entry.gigabytes_almacenamiento || 0)
   })
 }
 
@@ -417,15 +417,15 @@ async function submitTrainingConnection() {
     return
   }
 
-  if (Number(trainingForm.horas_capacitacion || 0) < 0) {
-    showFeedback('Las horas de capacitación no pueden ser negativas', 'error')
+  if (Number(trainingForm.gigabytes_almacenamiento || 0) < 0) {
+    showFeedback('Los gigabytes de almacenamiento no pueden ser negativos', 'error')
     return
   }
 
   try {
     const payload = {
       conexiones: Number(trainingForm.conexiones || 0),
-      horas_capacitacion: Number(trainingForm.horas_capacitacion || 0)
+      gigabytes_almacenamiento: Number(trainingForm.gigabytes_almacenamiento || 0)
     }
 
     const endpoint = trainingModal.value.mode === 'create'
@@ -447,7 +447,7 @@ async function submitTrainingConnection() {
 }
 
 async function deleteTrainingConnection(entry) {
-  if (!window.confirm(`¿Eliminar la relación ${entry.conexiones} conexiones / ${entry.horas_capacitacion} horas?`)) return
+  if (!window.confirm(`¿Eliminar la relación ${entry.conexiones} conexiones / ${entry.gigabytes_almacenamiento} GB?`)) return
 
   try {
     await request(`/conexiones-capacitacion/${entry.id_conexion_capacitacion}`, { method: 'DELETE' })
@@ -617,14 +617,14 @@ onMounted(loadData)
 
             <section class="prices-section training-section">
               <div class="section-header prices-header">
-                <h3>Capacitación plataforma</h3>
+                <h3>Almacenamiento por conexión</h3>
                 <button class="btn-primary add-price-btn" type="button" @click="openCreateTrainingConnection">+ Nueva relación</button>
               </div>
               <ul class="training-list">
                 <li v-for="relation in trainingConnections" :key="relation.id_conexion_capacitacion" class="training-row">
                   <div class="training-data">
                     <strong>{{ relation.conexiones }} conexiones</strong>
-                    <span>{{ relation.horas_capacitacion }} h de capacitación</span>
+                    <span>{{ relation.gigabytes_almacenamiento }} GB de almacenamiento</span>
                   </div>
                   <div class="actions">
                     <button class="icon-btn" type="button" @click="openEditTrainingConnection(relation)">✏️</button>
@@ -763,14 +763,14 @@ onMounted(loadData)
 
     <div v-if="trainingModal.open" class="modal-backdrop">
       <div class="modal">
-        <h3>{{ trainingModal.mode === 'create' ? 'Nueva relación de capacitación' : 'Editar relación de capacitación' }}</h3>
+        <h3>{{ trainingModal.mode === 'create' ? 'Nueva relación de almacenamiento' : 'Editar relación de almacenamiento' }}</h3>
         <label>
           Conexiones
           <input v-model.number="trainingForm.conexiones" type="number" min="1" />
         </label>
         <label>
-          Horas de capacitación
-          <input v-model.number="trainingForm.horas_capacitacion" type="number" min="0" />
+          Gigabytes de almacenamiento
+          <input v-model.number="trainingForm.gigabytes_almacenamiento" type="number" min="0" />
         </label>
         <div class="modal-actions">
           <button class="btn-link" type="button" @click="closeTrainingModal">Cancelar</button>

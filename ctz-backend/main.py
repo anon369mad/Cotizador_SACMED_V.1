@@ -30,8 +30,29 @@ def ensure_conexiones_capacitacion_table():
         ConexionCapacitacion.__table__.create(bind=engine)
 
 
+def ensure_conexiones_capacitacion_storage_column():
+    inspector = inspect(engine)
+    if "conexiones_capacitacion" not in inspector.get_table_names():
+        return
+
+    with engine.begin() as connection:
+        columns = {column["name"] for column in inspector.get_columns("conexiones_capacitacion")}
+
+        if "gigabytes_almacenamiento" not in columns:
+            connection.execute(
+                text(
+                    "ALTER TABLE conexiones_capacitacion "
+                    "ADD COLUMN gigabytes_almacenamiento INTEGER NOT NULL DEFAULT 0"
+                )
+            )
+
+        if "horas_capacitacion" in columns:
+            connection.execute(text("ALTER TABLE conexiones_capacitacion DROP COLUMN horas_capacitacion"))
+
+
 ensure_plan_whatsapp_column()
 ensure_conexiones_capacitacion_table()
+ensure_conexiones_capacitacion_storage_column()
 
 app.add_middleware(
     CORSMiddleware,
