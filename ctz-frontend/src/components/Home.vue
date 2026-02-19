@@ -601,7 +601,7 @@ onMounted(() => {
   loadHistory()
 })
 </script>
-
+ 
 <template>
   <div class="page">
     <header class="topbar">
