@@ -8,9 +8,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion import Cotizacion
+from models.conexion_capacitacion import ConexionCapacitacion
+from models.plan import Plan
 from models.usuario import Usuario
 from models.iva import Iva
-from models.prestacion import Prestacion
 from schemas.cotizacion import (
     CotizacionCreate,
     CotizacionResponse,
@@ -138,13 +139,51 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         "En caso de que la cantidad de conexiones a contratar sea de una o dos, el primer pago debe ser trimestral (Total Mensual * 3) luego de pasar los 3 meses se genera facturación mensual.",
     ]
 
+    gigabytes_incluidos = 0
+    relacion_almacenamiento = (
+        db.query(ConexionCapacitacion)
+        .filter(
+            ConexionCapacitacion.activo.is_(True),
+            ConexionCapacitacion.conexiones <= conexiones,
+        )
+        .order_by(ConexionCapacitacion.conexiones.desc())
+        .first()
+    )
+    if not relacion_almacenamiento:
+        relacion_almacenamiento = (
+            db.query(ConexionCapacitacion)
+            .filter(ConexionCapacitacion.activo.is_(True))
+            .order_by(ConexionCapacitacion.conexiones.asc())
+            .first()
+        )
+    if relacion_almacenamiento:
+        gigabytes_incluidos = int(relacion_almacenamiento.gigabytes_almacenamiento or 0)
+
+    mensajes_incluidos = 0
+    plan_referencia = (
+        db.query(Plan)
+        .filter(Plan.activo.is_(True), Plan.conexiones_incluidas <= conexiones)
+        .order_by(Plan.conexiones_incluidas.desc())
+        .first()
+    )
+    if not plan_referencia:
+        plan_referencia = (
+            db.query(Plan)
+            .filter(Plan.activo.is_(True))
+            .order_by(Plan.conexiones_incluidas.asc())
+            .first()
+        )
+    if plan_referencia:
+        mensajes_incluidos = int(plan_referencia.mensajes_whatsapp or 0)
+
     capacitacion_base_pdf = [
-        "Este presupuesto incluye 10 GB de almacenamiento en disco por conexión.",
+        f"Este presupuesto incluye {gigabytes_incluidos} GB de almacenamiento en disco por conexión.",
     ]
 
     cobros_adicionales_base_pdf = [
         "La activación de SMS/WhatsApp, pueden generar costos adicionales, que se facturarán según su uso.",
-        "El presupuesto incluye 10 GB de almacenamiento en disco. Cualquier uso que exceda este límite se cobrará automáticamente a un valor de $5.000 más IVA por cada 5 GB adicionales.",
+        f"El presupuesto incluye {mensajes_incluidos} mensajes WhatsApp para esta cantidad de conexiones. Si se supera ese límite, se generará un cobro adicional por mensaje.",
+        f"El presupuesto incluye {gigabytes_incluidos} GB de almacenamiento en disco. Cualquier uso que exceda este límite se cobrará automáticamente a un valor de $5.000 más IVA por cada 5 GB adicionales.",
     ]
 
     condiciones_pdf = condiciones_generales + condiciones_base_pdf
@@ -175,7 +214,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     )
 
 
-def _build_weasy_html(payload: CotizacionJasperPayload, prestaciones: list[Prestacion]) -> str:
+def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     # Try to embed the logo as a base64 data URI so WeasyPrint can load it
     img_data_uri = ""
     try:
@@ -238,24 +277,6 @@ def _build_weasy_html(payload: CotizacionJasperPayload, prestaciones: list[Prest
         else "SACMED"
     )
 
-    prestaciones_rows = ""
-    for prestacion in prestaciones:
-        nombre = escape(prestacion.nombre or "Prestación")
-        condiciones = escape((prestacion.condiciones or "").strip())
-        prestaciones_rows += f"""
-        <tr>
-          <td>{nombre}</td>
-          <td>{condiciones or '-'}</td>
-        </tr>
-        """
-
-    if not prestaciones_rows:
-        prestaciones_rows = """
-        <tr>
-          <td colspan="2">No hay prestaciones activas configuradas.</td>
-        </tr>
-        """
-
     # Prepare IVA percentage display (always compute so the template can use it)
     iva_pct_value = getattr(payload, 'iva_porcentaje', None) or 19.0
     try:
@@ -306,9 +327,6 @@ def _build_weasy_html(payload: CotizacionJasperPayload, prestaciones: list[Prest
         .additional-list {{ margin-left: 18px; line-height:1.45; }}
         .additional-list > li {{ margin-bottom: 12px; }}
         .additional-list ul {{ margin-top: 4px; }}
-        .prestaciones-table {{ width:100%; border-collapse: collapse; margin-top: 8px; font-size:11px; }}
-        .prestaciones-table th {{ border:1px solid #777; background:#efefef; text-align:left; padding:6px; }}
-        .prestaciones-table td {{ border:1px solid #888; padding:6px; vertical-align:top; }}
         .nota-iva {{ margin-top: 10px; font-weight:700; }}
         .fea-table {{ width:100%; border-collapse: collapse; margin-top: 8px; }}
         .fea-table th, .fea-table td {{ border:1px solid #777; padding:6px; font-size:11px; }}
@@ -372,16 +390,6 @@ def _build_weasy_html(payload: CotizacionJasperPayload, prestaciones: list[Prest
         </div>
 
         <div class="additional-title">Servicios adicionales</div>
-
-        <div class="additional-subtitle">Prestaciones activas en plataforma</div>
-        <table class="prestaciones-table">
-          <thead>
-            <tr><th>Prestación</th><th>Condiciones</th></tr>
-          </thead>
-          <tbody>
-            {prestaciones_rows}
-          </tbody>
-        </table>
 
         <ol class="additional-list">
           <li><strong style="color:#2f78c4;">Integración con Flow (Pagos en línea)</strong>
@@ -510,8 +518,7 @@ def generar_pdf_jasper(id_cotizacion: int, db: Session = Depends(get_db)):
         ) from exc
 
     payload = _build_jasper_payload(cotizacion, db)
-    prestaciones_activas = db.query(Prestacion).filter(Prestacion.activo.is_(True)).order_by(Prestacion.nombre.asc()).all()
-    html = _build_weasy_html(payload, prestaciones_activas)
+    html = _build_weasy_html(payload)
 
     try:
         pdf_content = HTML(string=html).write_pdf()
