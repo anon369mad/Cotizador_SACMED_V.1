@@ -117,7 +117,10 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         total_mensual = subtotal + iva
 
     meses = max(1, int(cotizacion.meses or 1))
-    total_periodo = total_mensual if (cotizacion.tipo or '').strip() == 'Única' else (total_mensual * meses)
+    conexiones = int(cotizacion.conexiones or 0)
+    es_pago_trimestral = (cotizacion.tipo or '').strip() != 'Única' and conexiones in (1, 2)
+    meses_cobro = 3 if es_pago_trimestral else meses
+    total_periodo = total_mensual if (cotizacion.tipo or '').strip() == 'Única' else (total_mensual * meses_cobro)
 
     condiciones_texto = (cotizacion.condiciones_adicionales or "").strip()
     condiciones_generales = []
@@ -225,6 +228,8 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     total_label = "Total (Pago único)"
     if payload.total_periodo != payload.total_mensual:
         total_label = "Total (Período)"
+        if (payload.conexiones_simultaneas or 0) in (1, 2):
+            total_label = "Total (Trimestral)"
 
     logo_html = (
         f'<img src="{img_data_uri}" alt="SACMED" style="height: 90px; vertical-align: middle;" />'
@@ -314,6 +319,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
                     <table class=\"summary-right\">\
                         <tr><td>Subtotal mensual</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
                         <tr><td>IVA mensual ({iva_pct_text})</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
+                        <tr><td>Total mensual</td><td class=\"money\">$ {_format_currency(payload.total_mensual)}</td></tr>
                         <tr><td>{total_label}</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
                     </table>
         </div>
