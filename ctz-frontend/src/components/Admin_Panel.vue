@@ -156,6 +156,67 @@ function buildAdditionalAttributesPayload() {
   return payload
 }
 
+function buildPlanPayloadFromEntry(entry, attributes) {
+  return {
+    nombre: String(entry?.nombre || '').trim(),
+    conexiones_incluidas: Number(entry?.conexiones_incluidas || 0),
+    valor_plan_mensual: Number(entry?.valor_plan_mensual || 0),
+    valor_conexion_adicional: Number(entry?.valor_conexion_adicional || 0),
+    condiciones: entry?.condiciones || '',
+    activo: entry?.activo !== false,
+    atributos_adicionales: attributes
+  }
+}
+
+function buildServicePayloadFromEntry(entry, attributes) {
+  return {
+    nombre: String(entry?.nombre || '').trim(),
+    valor_unitario: Number(entry?.valor_unitario || 0),
+    condiciones: entry?.condiciones || '',
+    activo: entry?.activo !== false,
+    clp: entry?.clp !== false,
+    atributos_adicionales: attributes
+  }
+}
+
+async function syncAdditionalAttributeKeys(type, sourceAttributes) {
+  const expectedKeys = Object.keys(sourceAttributes || {})
+  if (!expectedKeys.length) return 0
+
+  const source = type === 'plan' ? plans.value : services.value
+  let updatedCount = 0
+
+  for (const entry of source) {
+    const currentAttributes = {
+      ...(entry?.atributos_adicionales && typeof entry.atributos_adicionales === 'object'
+        ? entry.atributos_adicionales
+        : {})
+    }
+
+    let changed = false
+    for (const key of expectedKeys) {
+      if (Object.prototype.hasOwnProperty.call(currentAttributes, key)) continue
+      currentAttributes[key] = ''
+      changed = true
+    }
+
+    if (!changed) continue
+
+    const endpoint = type === 'plan' ? `/planes/${entry.id_plan}` : `/prestaciones/${entry.id_prestacion}`
+    const payload = type === 'plan'
+      ? buildPlanPayloadFromEntry(entry, currentAttributes)
+      : buildServicePayloadFromEntry(entry, currentAttributes)
+
+    await request(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    })
+    updatedCount += 1
+  }
+
+  return updatedCount
+}
+
 function resetFeedback() {
   feedback.value = ''
 }
@@ -397,6 +458,8 @@ async function submitPrice() {
   }
 
   try {
+    const additionalAttributes = buildAdditionalAttributesPayload()
+
     if (planModal.value.type === 'plan') {
       const payload = {
         nombre: planForm.nombre.trim(),
@@ -405,7 +468,7 @@ async function submitPrice() {
         valor_conexion_adicional: Number(planForm.valor_conexion_adicional || 0),
         condiciones: planForm.condiciones,
         activo: planForm.activo,
-        atributos_adicionales: buildAdditionalAttributesPayload()
+        atributos_adicionales: additionalAttributes
       }
 
       const endpoint = planModal.value.mode === 'create'
@@ -424,7 +487,7 @@ async function submitPrice() {
         condiciones: planForm.condiciones,
         activo: planForm.activo,
         clp: planForm.clp,
-        atributos_adicionales: buildAdditionalAttributesPayload()
+        atributos_adicionales: additionalAttributes
       }
 
       const endpoint = planModal.value.mode === 'create'
@@ -438,8 +501,18 @@ async function submitPrice() {
       })
     }
 
-    showFeedback(planModal.value.mode === 'create' ? 'Registro creado correctamente' : 'Registro actualizado correctamente')
     await loadPrices()
+
+    const updatedCount = await syncAdditionalAttributeKeys(planModal.value.type, additionalAttributes)
+    if (updatedCount > 0) {
+      await loadPrices()
+    }
+
+    const baseMessage = planModal.value.mode === 'create' ? 'Registro creado correctamente' : 'Registro actualizado correctamente'
+    const syncMessage = updatedCount > 0
+      ? ` Se propagaron ${updatedCount} registro${updatedCount === 1 ? '' : 's'} para mantener los atributos alineados.`
+      : ''
+    showFeedback(`${baseMessage}.${syncMessage}`)
     closePriceModal()
   } catch (error) {
     showFeedback(error instanceof Error ? error.message : 'No se pudo guardar la información', 'error')
