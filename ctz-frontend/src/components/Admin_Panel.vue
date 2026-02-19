@@ -522,7 +522,7 @@ onMounted(loadData)
                 <li v-for="service in services" :key="service.id_prestacion" class="price-card">
                   <h4>{{ service.nombre }}</h4>
                   <div class="price-field"><span>Valor unitario</span><strong>{{ Number(service.valor_unitario || 0).toLocaleString('es-CL') }}</strong></div>
-                  <div class="price-field"><span>Tipo moneda</span><strong>{{ service.clp ? 'SLP (1)' : 'UF (0)' }}</strong></div>
+                  <div class="price-field"><span>Tipo moneda</span><strong>{{ service.clp ? 'CLP' : 'UF' }}</strong></div>
                   <small>{{ service.condiciones || 'Sin condiciones' }}</small>
                   <div class="actions">
                     <button class="icon-btn" type="button" @click="openEditPrice('servicio', service)">✏️</button>
@@ -635,8 +635,8 @@ onMounted(loadData)
             <label class="price-modal-row">
               <span>Tipo moneda</span>
               <select v-model="planForm.clp">
-                <option :value="true">SLP (1)</option>
-                <option :value="false">UF (0)</option>
+                <option :value="true">CLP</option>
+                <option :value="false">UF</option>
               </select>
             </label>
           </template>
