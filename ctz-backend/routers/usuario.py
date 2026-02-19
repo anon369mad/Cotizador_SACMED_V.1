@@ -53,7 +53,7 @@ def login(data: UsuarioLogin, db: Session = Depends(get_db)):
 
 @router.get("/usuarios", response_model=list[UsuarioResponse])
 def listar_usuarios(db: Session = Depends(get_db)):
-    return db.query(Usuario).all()
+    return db.query(Usuario).filter(Usuario.activo.is_(True)).all()
 
 @router.get("/usuarios/{id_usuario}", response_model=UsuarioResponse)
 def obtener_usuario(id_usuario: int, db: Session = Depends(get_db)):
