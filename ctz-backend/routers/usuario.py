@@ -82,9 +82,9 @@ def eliminar_usuario(id_usuario: int, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).get(id_usuario)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    db.delete(usuario)
+    usuario.activo = False
     db.commit()
-    return {"ok": True}
+    return {"ok": True, "message": "Usuario desactivado correctamente"}
 
 
 @router.post("/password-recovery", response_model=PasswordRecoveryTokenResponse)
