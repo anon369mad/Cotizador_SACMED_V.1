@@ -237,6 +237,29 @@ function getMonthsValidationError() {
   return ''
 }
 
+function getClientValidationError() {
+  const clientName = String(props.baseData.cliente ?? '').trim()
+  if (!clientName) {
+    return 'Rellene el nombre del cliente antes de continuar.'
+  }
+
+  const clientRut = String(props.baseData.rut ?? '').trim()
+  if (!clientRut) {
+    return 'Rellene el RUT del cliente antes de continuar.'
+  }
+
+  return ''
+}
+
+function validateRequiredClientData() {
+  const clientValidationError = getClientValidationError()
+  if (!clientValidationError) return true
+
+  errorMessage.value = clientValidationError
+  alert(clientValidationError)
+  return false
+}
+
 const periodTotalLabel = computed(() => {
   if (props.baseData.planType !== 'Período') return `Total (${periodDescriptor.value})`
   return isReducedConnectionPlan.value ? 'Total trimestral' : `Total (${periodDescriptor.value})`
@@ -544,6 +567,10 @@ async function openWeasyPreview(idCotizacion) {
 async function downloadWeasyPdf() {
   if (!weasyPdfUrl.value) return
 
+  if (!validateRequiredClientData()) {
+    return
+  }
+
   if (!pendingConfirmationId.value) {
     errorMessage.value = 'Primero debes confirmar la cotización antes de descargar el PDF.'
     return
@@ -587,6 +614,10 @@ async function downloadWeasyPdf() {
 }
 
 async function confirmQuote() {
+  if (!validateRequiredClientData()) {
+    return
+  }
+
   const monthsError = getMonthsValidationError()
   if (monthsError) {
     errorMessage.value = monthsError
