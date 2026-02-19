@@ -164,13 +164,24 @@ onMounted(async () => {
 
 const iva = computed(() => Math.round(subtotal.value * (Number(ivaPct.value || 19) / 100)))
 const total = computed(() => roundAmount(subtotal.value + iva.value))
+const isReducedConnectionPlan = computed(() => {
+  if (props.baseData.planType !== 'Período') return false
+  const conexiones = Number(props.baseData.conexiones ?? 0)
+  return conexiones === 1 || conexiones === 2
+})
+
+const periodMonthsForTotal = computed(() => {
+  if (props.baseData.planType !== 'Período') return 1
+  if (isReducedConnectionPlan.value) return 3
+  return Math.max(1, Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1))
+})
+
 const totalPeriod = computed(() => {
   if (props.baseData.planType === 'Única') {
     return total.value
   }
 
-  const months = Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1)
-  return roundAmount(total.value * Math.max(1, months))
+  return roundAmount(total.value * periodMonthsForTotal.value)
 })
 
 const periodDescriptor = computed(() => {
@@ -208,12 +219,17 @@ function getMonthsValidationError() {
     return 'El período de contratación no puede ser cero ni negativo.'
   }
 
-  if ((conexiones === 1 || conexiones === 2) && meses <= 3) {
-    return 'Para 1 o 2 conexiones, el período debe ser mayor a 3 meses.'
+  if ((conexiones === 1 || conexiones === 2) && meses < 3) {
+    return 'Para 1 o 2 conexiones, el período debe ser mayor o igual a 3 meses.'
   }
 
   return ''
 }
+
+const periodTotalLabel = computed(() => {
+  if (props.baseData.planType !== 'Período') return `Total (${periodDescriptor.value})`
+  return isReducedConnectionPlan.value ? 'Total trimestral' : `Total (${periodDescriptor.value})`
+})
 
 function isDbItem(it) {
   return it?.source === 'db' || it?.autoPlan || it?.id_prestacion || it?.id_plan
@@ -699,8 +715,12 @@ async function discardQuote() {
       <span>IVA mensual ({{ Number(ivaPct) % 1 === 0 ? Number(ivaPct).toFixed(0) : Number(ivaPct).toFixed(1) }}%)</span>
       <strong>${{ iva.toFixed(0) }}</strong>
     </div>
+    <div>
+      <span>Total mensual</span>
+      <strong>${{ total.toFixed(0) }}</strong>
+    </div>
     <div class="grand-total">
-      <span>Total ({{ periodDescriptor }})</span>
+      <span>{{ periodTotalLabel }}</span>
       <strong>${{ totalPeriod.toFixed(0) }}</strong>
     </div>
   </div>
