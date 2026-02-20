@@ -54,11 +54,13 @@ const planForm = reactive({
   mensajes_whatsapp: 0
 })
 const trainingModal = ref({ open: false, mode: 'create', id: null })
+const trainingConnectionsCollapsed = ref(true)
 const trainingForm = reactive({
   conexiones: 1,
   gigabytes_almacenamiento: 0
 })
 const platformTrainingModal = ref({ open: false, mode: 'create', id: null })
+const platformTrainingCollapsed = ref(true)
 const platformTrainingForm = reactive({
   conexiones_desde: 1,
   conexiones_hasta: null,
@@ -476,6 +478,14 @@ function formatTrainingInterval(rule) {
   return `${rule.conexiones_desde} a ${rule.conexiones_hasta} conexiones`
 }
 
+function toggleTrainingConnections() {
+  trainingConnectionsCollapsed.value = !trainingConnectionsCollapsed.value
+}
+
+function togglePlatformTraining() {
+  platformTrainingCollapsed.value = !platformTrainingCollapsed.value
+}
+
 function openCreatePlatformTrainingRule() {
   platformTrainingModal.value = { open: true, mode: 'create', id: null }
   Object.assign(platformTrainingForm, {
@@ -718,11 +728,19 @@ onMounted(loadData)
             </section>
 
             <section class="prices-section training-section">
-              <div class="section-header prices-header">
-                <h3>Almacenamiento por conexión</h3>
+              <div class="section-header prices-header collapsible-header">
+                <button
+                  class="collapse-toggle"
+                  type="button"
+                  :aria-expanded="!trainingConnectionsCollapsed"
+                  @click="toggleTrainingConnections"
+                >
+                  <h3>Almacenamiento por conexión</h3>
+                  <span class="collapse-arrow" :class="{ collapsed: trainingConnectionsCollapsed }" aria-hidden="true">▾</span>
+                </button>
                 <button class="btn-primary add-price-btn" type="button" @click="openCreateTrainingConnection">+ Nueva relación</button>
               </div>
-              <ul class="training-list">
+              <ul v-show="!trainingConnectionsCollapsed" class="training-list">
                 <li v-for="relation in trainingConnections" :key="relation.id_conexion_capacitacion" class="training-row">
                   <div class="training-data">
                     <strong>{{ relation.conexiones }} conexiones</strong>
@@ -737,11 +755,19 @@ onMounted(loadData)
             </section>
 
             <section class="prices-section training-section">
-              <div class="section-header prices-header">
-                <h3>Capacitaciones plataforma</h3>
+              <div class="section-header prices-header collapsible-header">
+                <button
+                  class="collapse-toggle"
+                  type="button"
+                  :aria-expanded="!platformTrainingCollapsed"
+                  @click="togglePlatformTraining"
+                >
+                  <h3>Capacitaciones plataforma</h3>
+                  <span class="collapse-arrow" :class="{ collapsed: platformTrainingCollapsed }" aria-hidden="true">▾</span>
+                </button>
                 <button class="btn-primary add-price-btn" type="button" @click="openCreatePlatformTrainingRule">+ Nueva relación</button>
               </div>
-              <ul class="training-list">
+              <ul v-show="!platformTrainingCollapsed" class="training-list">
                 <li v-for="rule in platformTrainingRules" :key="rule.id_capacitacion_plataforma" class="training-row">
                   <div class="training-data">
                     <strong>{{ formatTrainingInterval(rule) }}</strong>
@@ -937,29 +963,30 @@ onMounted(loadData)
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  margin-bottom: 14px;
-  padding: 8px;
-  border-radius: 14px;
+  margin: 0 auto 14px;
+  padding: 6px;
+  border-radius: 12px;
   background: #dce1e6;
+  width: min(680px, 100%);
 }
 .tab {
   border: 1px solid transparent;
   background: transparent;
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   color: #61758e;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 500;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 .tab-icon {
   color: #96a3b5;
-  font-size: 26px;
+  font-size: 20px;
   line-height: 1;
 }
 .tab.active {
@@ -973,6 +1000,35 @@ onMounted(loadData)
   color: #506377;
 }
 .card { background: #fff; border: 1px solid #dfe5ef; border-radius: 12px; padding: 16px; }
+
+.collapsible-header {
+  gap: 10px;
+}
+
+.collapse-toggle {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.collapse-toggle h3 {
+  margin: 0;
+}
+
+.collapse-arrow {
+  display: inline-flex;
+  color: #4c5f74;
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.collapse-arrow.collapsed {
+  transform: rotate(-90deg);
+}
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .section-header h3 { margin: 0; }
 .search { width: 100%; margin-bottom: 12px; padding: 10px; border: 1px solid #ced7e4; border-radius: 8px; }
@@ -1265,8 +1321,8 @@ onMounted(loadData)
 
 @media (max-width: 680px) {
   .tab-row { padding: 6px; }
-  .tab { font-size: 16px; padding: 10px 8px; gap: 6px; }
-  .tab-icon { font-size: 22px; }
+  .tab { font-size: 14px; padding: 8px 6px; gap: 6px; }
+  .tab-icon { font-size: 18px; }
   .price-modal { padding: 18px; border-radius: 26px; }
   .price-modal-row { grid-template-columns: 1fr; gap: 6px; }
   .price-modal-actions { gap: 20px; }
