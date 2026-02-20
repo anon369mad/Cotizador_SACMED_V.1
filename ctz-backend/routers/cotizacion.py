@@ -176,7 +176,17 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     conexiones = int(cotizacion.conexiones or 0)
     es_pago_trimestral = (not es_cotizacion_unica) and conexiones in (1, 2)
     meses_cobro = 3 if es_pago_trimestral else meses
-    total_periodo = total_mensual if es_cotizacion_unica else (total_mensual * meses_cobro)
+
+    descuento_periodo_pct = 0.0
+    if not es_cotizacion_unica:
+        if meses >= 12:
+            descuento_periodo_pct = 10.0
+        elif meses >= 6:
+            descuento_periodo_pct = 5.0
+
+    total_periodo_base = total_mensual if es_cotizacion_unica else (total_mensual * meses_cobro)
+    descuento_periodo_monto = total_periodo_base * (descuento_periodo_pct / 100.0)
+    total_periodo = total_periodo_base - descuento_periodo_monto
 
     condiciones_texto = (cotizacion.condiciones_adicionales or "").strip()
     condiciones_generales = []
@@ -275,6 +285,8 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         iva_porcentaje=porcentaje,
         total_mensual=total_mensual,
         total_periodo=total_periodo,
+        descuento_periodo_pct=descuento_periodo_pct,
+        descuento_periodo_monto=descuento_periodo_monto,
         condiciones_generales=condiciones_pdf,
         capacitacion=capacitacion_base_pdf,
         cobros_adicionales=cobros_adicionales_base_pdf,
@@ -340,6 +352,15 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         if (payload.conexiones_simultaneas or 0) in (1, 2):
             total_label = "Total trimestral"
 
+    period_discount_pct = max(0.0, float(getattr(payload, 'descuento_periodo_pct', 0.0) or 0.0))
+    period_discount_amount = max(0.0, float(getattr(payload, 'descuento_periodo_monto', 0.0) or 0.0))
+    discount_summary_row = ""
+    if (not is_unique_quote) and period_discount_pct > 0 and period_discount_amount > 0:
+        discount_summary_row = (
+            f'<tr><td>Descuento período ({_format_currency(period_discount_pct)}% sobre total del período)</td>'
+            f'<td class="money">- $ {_format_currency(period_discount_amount)}</td></tr>'
+        )
+
     logo_html = (
         f'<img src="{img_data_uri}" alt="SACMED" style="height: 90px; vertical-align: middle;" />'
         if img_data_uri
@@ -359,7 +380,10 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
 
     period_info_html = ""
     if not is_unique_quote:
-        period_info_html = f'<div><strong>Período de contratación:</strong> {payload.meses} mes' + ("" if payload.meses == 1 else "es") + '</div>'
+        period_discount_info = ""
+        if period_discount_pct > 0:
+            period_discount_info = f' (descuento {int(period_discount_pct) if period_discount_pct.is_integer() else round(period_discount_pct, 1)}% sobre total del período)'
+        period_info_html = f'<div><strong>Período de contratación:</strong> {payload.meses} mes' + ("" if payload.meses == 1 else "es") + f'{period_discount_info}</div>'
 
     return f"""
     <!doctype html>
@@ -446,6 +470,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
                         <tr><td>Subtotal</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
                         <tr><td>IVA ({iva_pct_text})</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
                         <tr><td>Total mensual</td><td class=\"money\">$ {_format_currency(payload.total_mensual)}</td></tr>
+                        {discount_summary_row}
                         <tr><td>{total_label}</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
                     </table>
         </div>

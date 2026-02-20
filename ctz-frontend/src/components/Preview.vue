@@ -68,6 +68,10 @@
             <span>Total mensual</span>
             <strong class="mono">{{ formatMoney(monthlyTotal) }}</strong>
           </div>
+          <div v-if="periodDiscountPct > 0">
+            <span>Descuento período ({{ periodDiscountPct }}% sobre total del período)</span>
+            <strong class="mono">-{{ formatMoney(periodDiscountAmount) }}</strong>
+          </div>
           <div class="grand-total">
             <span>{{ periodTotalLabel }}</span>
             <strong class="mono">{{ formatMoney(periodTotal) }}</strong>
@@ -243,6 +247,21 @@ const monthlyTotal = computed(() => {
   return subtotal.value + iva.value
 })
 
+const periodDiscountPct = computed(() => {
+  if (!showMonths.value) return 0
+  const months = Math.max(1, Number(props.quote.periodMonths ?? props.quote.periods ?? 1))
+  if (months >= 12) return 10
+  if (months >= 6) return 5
+  return 0
+})
+
+const basePeriodTotal = computed(() => {
+  if (!showMonths.value) return monthlyTotal.value
+  return Math.round(monthlyTotal.value * periodMonthsForTotal.value)
+})
+
+const periodDiscountAmount = computed(() => Math.round(basePeriodTotal.value * (periodDiscountPct.value / 100)))
+
 const periodTotal = computed(() => {
   const explicitTotal = Number(
     props.quote.totalHistorial ?? props.quote.total_historial ?? props.quote.price
@@ -252,12 +271,14 @@ const periodTotal = computed(() => {
   }
 
   if (!showMonths.value) return monthlyTotal.value
-  return Math.round(monthlyTotal.value * periodMonthsForTotal.value)
+  return Math.round(basePeriodTotal.value - periodDiscountAmount.value)
 })
 
 const periodTotalLabel = computed(() => {
   if (!showMonths.value) return 'Total'
-  return isReducedConnectionPlan.value ? 'Total trimestral' : 'Total período'
+  const label = isReducedConnectionPlan.value ? 'Total trimestral' : 'Total período'
+  if (periodDiscountPct.value > 0) return `${label} con descuento`
+  return label
 })
 
 const showMonths = computed(() => {
@@ -267,7 +288,8 @@ const showMonths = computed(() => {
 
 const periodDescriptor = computed(() => {
   const months = Math.max(1, Number(props.quote.periodMonths ?? props.quote.periods ?? 1))
-  return `${months} mes${months === 1 ? '' : 'es'}`
+  const discountText = periodDiscountPct.value > 0 ? ` (descuento ${periodDiscountPct.value}% sobre total del período)` : ''
+  return `${months} mes${months === 1 ? '' : 'es'}${discountText}`
 })
 
 function formatMoney(value) {

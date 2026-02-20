@@ -176,12 +176,26 @@ const periodMonthsForTotal = computed(() => {
   return Math.max(1, Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1))
 })
 
-const totalPeriod = computed(() => {
-  if (props.baseData.planType === 'Única') {
-    return total.value
-  }
+const periodDiscountPct = computed(() => {
+  if (props.baseData.planType !== 'Período') return 0
+  const months = Math.max(1, Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1))
+  if (months >= 12) return 10
+  if (months >= 6) return 5
+  return 0
+})
 
+const periodBaseTotal = computed(() => {
+  if (props.baseData.planType === 'Única') return total.value
   return roundAmount(total.value * periodMonthsForTotal.value)
+})
+
+const periodDiscountAmount = computed(() =>
+  roundAmount(periodBaseTotal.value * (periodDiscountPct.value / 100))
+)
+
+const totalPeriod = computed(() => {
+  if (props.baseData.planType === 'Única') return total.value
+  return roundAmount(periodBaseTotal.value - periodDiscountAmount.value)
 })
 
 const periodDescriptor = computed(() => {
@@ -261,7 +275,9 @@ function validateRequiredClientData() {
 
 const periodTotalLabel = computed(() => {
   if (props.baseData.planType !== 'Período') return `Total (${periodDescriptor.value})`
-  return isReducedConnectionPlan.value ? 'Total trimestral' : `Total (${periodDescriptor.value})`
+  const baseLabel = isReducedConnectionPlan.value ? 'Total trimestral' : `Total (${periodDescriptor.value})`
+  if (periodDiscountPct.value > 0) return `${baseLabel} con descuento`
+  return baseLabel
 })
 
 function isDbItem(it) {
@@ -762,6 +778,10 @@ async function discardQuote() {
     <div>
       <span>Total mensual</span>
       <strong>${{ total.toFixed(0) }}</strong>
+    </div>
+    <div v-if="periodDiscountPct > 0">
+      <span>Descuento período ({{ periodDiscountPct }}% sobre total del período)</span>
+      <strong>-${{ periodDiscountAmount.toFixed(0) }}</strong>
     </div>
     <div class="grand-total">
       <span>{{ periodTotalLabel }}</span>

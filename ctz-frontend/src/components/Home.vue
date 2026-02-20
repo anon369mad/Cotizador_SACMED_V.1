@@ -417,9 +417,12 @@ function getHistoryTotal(item) {
   const isUniquePlan = String(item.tipo || '').toUpperCase().includes('UNICA')
 
   if (isUniquePlan) return monthlyTotal
-  if (connections === 1 || connections === 2) return monthlyTotal * 3
 
-  return monthlyTotal * months
+  const billedMonths = (connections === 1 || connections === 2) ? 3 : months
+  const basePeriodTotal = monthlyTotal * billedMonths
+  const discountPct = months >= 12 ? 10 : (months >= 6 ? 5 : 0)
+
+  return basePeriodTotal * (1 - discountPct / 100)
 }
 
 function mapHistoryItem(item){
