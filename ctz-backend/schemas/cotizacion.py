@@ -65,6 +65,8 @@ class CotizacionJasperPayload(BaseModel):
     iva_porcentaje: float = 19.0
     total_mensual: float
     total_periodo: float
+    descuento_periodo_pct: float = 0.0
+    descuento_periodo_monto: float = 0.0
     condiciones_generales: list[str] = Field(default_factory=list)
     capacitacion: list[str] = Field(default_factory=list)
     cobros_adicionales: list[str] = Field(default_factory=list)
