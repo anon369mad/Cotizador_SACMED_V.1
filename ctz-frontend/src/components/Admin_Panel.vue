@@ -137,10 +137,12 @@ async function loadPrices() {
 
 async function loadIva() {
   const allIva = await request('/iva')
-  ivaConfig.value = Array.isArray(allIva) ? allIva : []
+  ivaConfig.value = Array.isArray(allIva)
+    ? [...allIva].sort((a, b) => Number(b?.id_iva || 0) - Number(a?.id_iva || 0))
+    : []
 
   if (ivaConfig.value.length) {
-    const current = ivaConfig.value[0]
+    const current = ivaConfig.value.find((entry) => entry?.activo) || ivaConfig.value[0]
     ivaForm.id_iva = current.id_iva
     ivaForm.nombre = current.nombre || 'IVA'
     ivaForm.porcentaje = Number(current.porcentaje || 0)

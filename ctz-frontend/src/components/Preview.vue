@@ -127,12 +127,14 @@ async function loadIvaPct() {
     const list = await res.json()
     if (!Array.isArray(list) || !list.length) return
 
+    const orderedIva = [...list].sort((a, b) => Number(b?.id_iva || 0) - Number(a?.id_iva || 0))
+
     let selected = null
     if (isConfirmedQuote.value && props.quote?.id_iva != null) {
-      selected = list.find((entry) => Number(entry.id_iva) === Number(props.quote.id_iva))
+      selected = orderedIva.find((entry) => Number(entry.id_iva) === Number(props.quote.id_iva))
     }
 
-    if (!selected) selected = list.find((entry) => entry.activo) || list[0]
+    if (!selected) selected = orderedIva.find((entry) => entry?.activo) || orderedIva[0]
     if (selected?.porcentaje != null) ivaPctFromDb.value = Number(selected.porcentaje)
   } catch (e) {
     // keep fallback
