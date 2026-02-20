@@ -102,6 +102,14 @@ def _format_date(value: date | None) -> str:
     return value.strftime("%d-%m-%Y")
 
 
+def _normalize_quote_type(raw_type: str | None) -> tuple[str, bool]:
+    normalized = (raw_type or "").strip().upper()
+    is_unique = normalized in {"UNICA", "ÚNICA"}
+    if is_unique:
+        return "Única", True
+    return "Período", False
+
+
 def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasperPayload:
     detalles = (
         db.query(CotizacionDetalle)
@@ -162,11 +170,13 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     if total_mensual == 0:
         total_mensual = subtotal + iva
 
+    tipo_cotizacion, es_cotizacion_unica = _normalize_quote_type(cotizacion.tipo)
+
     meses = max(1, int(cotizacion.meses or 1))
     conexiones = int(cotizacion.conexiones or 0)
-    es_pago_trimestral = (cotizacion.tipo or '').strip() != 'Única' and conexiones in (1, 2)
+    es_pago_trimestral = (not es_cotizacion_unica) and conexiones in (1, 2)
     meses_cobro = 3 if es_pago_trimestral else meses
-    total_periodo = total_mensual if (cotizacion.tipo or '').strip() == 'Única' else (total_mensual * meses_cobro)
+    total_periodo = total_mensual if es_cotizacion_unica else (total_mensual * meses_cobro)
 
     condiciones_texto = (cotizacion.condiciones_adicionales or "").strip()
     condiciones_generales = []
@@ -247,8 +257,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
 
     condiciones_pdf = condiciones_generales + condiciones_base_pdf
 
-    tipo_cotizacion = (cotizacion.tipo or "").strip() or "-"
-    modalidad_pago = "Pago único" if tipo_cotizacion == "Única" else f"Cada {meses} mes" + ("" if meses == 1 else "es")
+    modalidad_pago = "Pago único" if es_cotizacion_unica else f"Cada {meses} mes" + ("" if meses == 1 else "es")
 
     return CotizacionJasperPayload(
         cliente=cotizacion.nombre_cliente or "Cliente",
@@ -324,11 +333,12 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     condiciones_section = _render_section("Condiciones Generales:", payload.condiciones_generales)
     capacitacion_section = _render_section("Capacitación plataforma:", payload.capacitacion)
     cobros_adicionales_section = _render_section("Cobros Adicionales:", payload.cobros_adicionales)
-    total_label = "Total (Pago único)"
-    if payload.total_periodo != payload.total_mensual:
-        total_label = "Total (Período)"
+    is_unique_quote = (payload.tipo_cotizacion or "").strip().lower() == "única"
+    total_label = "Total"
+    if not is_unique_quote:
+        total_label = "Total período"
         if (payload.conexiones_simultaneas or 0) in (1, 2):
-            total_label = "Total (Trimestral)"
+            total_label = "Total trimestral"
 
     logo_html = (
         f'<img src="{img_data_uri}" alt="SACMED" style="height: 90px; vertical-align: middle;" />'
@@ -346,6 +356,10 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
             iva_pct_text = f"{round(iva_pct_num, 1)}%"
     except Exception:
         iva_pct_text = "19%"
+
+    period_info_html = ""
+    if not is_unique_quote:
+        period_info_html = f'<div><strong>Período de contratación:</strong> {payload.meses} mes' + ("" if payload.meses == 1 else "es") + '</div>'
 
     return f"""
     <!doctype html>
@@ -408,7 +422,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
           <div><strong>Cliente:</strong> {escape(payload.cliente)}</div>
           <div><strong>RUT:</strong> {escape(payload.rut)}</div>
           <div><strong>Tipo de cotización:</strong> {escape(payload.tipo_cotizacion or '-')}</div>
-          <div><strong>Período (meses):</strong> {payload.meses}</div>
+          {period_info_html}
           <div><strong>Modalidad de pago:</strong> {escape(payload.modalidad_pago)}</div>
         </div>
 
@@ -428,9 +442,9 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
             <div>Total de conexiones solicitadas: {payload.conexiones_simultaneas or 0}</div>
             <div>Usuarios: {escape(payload.usuarios or 'Ilimitados')}</div>
           </div>
-                    <table class=\"summary-right\">\
-                        <tr><td>Subtotal mensual</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
-                        <tr><td>IVA mensual ({iva_pct_text})</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
+                    <table class=\"summary-right\">
+                        <tr><td>Subtotal</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
+                        <tr><td>IVA ({iva_pct_text})</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
                         <tr><td>Total mensual</td><td class=\"money\">$ {_format_currency(payload.total_mensual)}</td></tr>
                         <tr><td>{total_label}</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
                     </table>
