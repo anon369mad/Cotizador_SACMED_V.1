@@ -567,10 +567,11 @@ async function submitIva() {
     }
 
     if (ivaForm.id_iva) {
-      await request(`/iva/${ivaForm.id_iva}`, {
+      const updated = await request(`/iva/${ivaForm.id_iva}`, {
         method: 'PUT',
         body: JSON.stringify(payload)
       })
+      ivaForm.id_iva = updated?.id_iva ?? ivaForm.id_iva
     } else {
       const created = await request('/iva', {
         method: 'POST',

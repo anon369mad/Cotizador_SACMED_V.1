@@ -153,7 +153,8 @@ const previewQuote = reactive({
   totalMensual: null,
   totalHistorial: null,
   idCotizacion: null,
-  estado: null
+  estado: null,
+  id_iva: null
 })
 
 function normalizeDetailItem(detail) {
@@ -346,6 +347,7 @@ async function selectHistory(h){
   previewQuote.totalHistorial = h.price ?? null
   previewQuote.idCotizacion = h.id
   previewQuote.estado = h.status
+  previewQuote.id_iva = h.id_iva ?? null
 
   try {
     const [detailItems, prestaciones, planes] = await Promise.all([
@@ -444,7 +446,8 @@ function mapHistoryItem(item){
     items: [],
     conditions: parseConditionLines(item.condiciones_adicionales),
     rawConditions: item.condiciones_adicionales || '',
-    status: item.estado
+    status: item.estado,
+    id_iva: item.id_iva ?? null
   }
 }
 
@@ -464,6 +467,7 @@ async function deleteHistoryQuote(h) {
       Object.assign(previewQuote, {
         idCotizacion: null,
         estado: null,
+        id_iva: null,
         name: '—',
         rut: '',
         planType: 'Período',
