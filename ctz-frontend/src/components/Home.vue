@@ -130,13 +130,7 @@ const filteredHistory = computed(() => {
 })
 
 
-const draftHistory = computed(() =>
-  filteredHistory.value.filter((item) => statusLabel(item.status) !== 'Confirmada')
-)
-
-const confirmedHistory = computed(() =>
-  filteredHistory.value.filter((item) => statusLabel(item.status) === 'Confirmada')
-)
+const mixedHistory = computed(() => filteredHistory.value)
 
 const previewQuote = reactive({
   idUsuario: props.userId != null ? Number(props.userId) : null,
@@ -611,15 +605,6 @@ async function loadHistory(){
   }
 }
 
-
-function openConfirmedView() {
-  currentView.value = 'confirmed'
-}
-
-function returnToDraftsView() {
-  currentView.value = 'home'
-}
-
 async function handleQuoteFinalized() {
   await loadHistory()
 }
@@ -679,20 +664,20 @@ onMounted(() => {
       <template v-if="currentView === 'home'">
         <section class="main-area">
           <div class="hist-card">
-            <h4>Borradores en Cotizador</h4>
+            <h4>Historial de cotizaciones</h4>
             <input
               v-model="historySearch"
               class="search"
-              placeholder="Buscar por cliente o ejecutivo..."
+              placeholder="Buscar por cliente, ejecutivo o estado..."
             />
 
             <div v-if="isLoadingHistory" class="list-empty">Cargando historial...</div>
             <div v-else-if="historyError" class="list-empty error">{{ historyError }}</div>
-            <div v-else-if="!draftHistory.length" class="list-empty">
-              {{ history.length ? 'No se encontraron borradores para la búsqueda.' : 'No hay borradores registrados.' }}
+            <div v-else-if="!mixedHistory.length" class="list-empty">
+              {{ history.length ? 'No se encontraron cotizaciones para la búsqueda.' : 'No hay cotizaciones registradas.' }}
             </div>
             <ul v-else class="list">
-              <li class="list-item" v-for="h in draftHistory" :key="h.id">
+              <li class="list-item" v-for="h in mixedHistory" :key="h.id">
                 <div class="list-left">
                   <div class="company">{{ h.company }}</div>
                   <div class="meta">{{ h.user }} · {{ h.date }}<br/><small>{{ h.plan }} · {{ h.connections }} conexiones</small></div>
@@ -704,6 +689,12 @@ onMounted(() => {
                       type="button"
                       @click="editDraftQuote(h)"
                     >Editar borrador</button>
+                    <button
+                      v-else
+                      class="action-btn"
+                      type="button"
+                      @click="openConfirmedQuote(h)"
+                    >Abrir cotización</button>
                     <button class="action-btn secondary" type="button" @click="duplicateQuote(h)">Duplicar</button>
                     <button
                       v-if="statusLabel(h.status) !== 'Confirmada'"
@@ -711,48 +702,8 @@ onMounted(() => {
                       type="button"
                       @click="deleteHistoryQuote(h)"
                     >Eliminar borrador</button>
-                  </div>
-                </div>
-                <div class="list-right">
-                  <div class="status" :class="statusClass(h.status)">{{ statusLabel(h.status) }}</div>
-                  <div class="price">{{ formatMoney(h.price) }}</div>
-                </div>
-              </li>
-            </ul>
-            <button class="action-btn secondary" type="button" @click="openConfirmedView">Ver cotizaciones confirmadas</button>
-          </div>
-          <aside class="sidebar">
-            <Preview :quote="previewQuote" />
-          </aside>
-        </section>
-      </template>
-
-      
-      <template v-if="currentView === 'confirmed'">
-        <section class="main-area">
-          <div class="hist-card">
-            <h4>Cotizaciones confirmadas</h4>
-            <input
-              v-model="historySearch"
-              class="search"
-              placeholder="Buscar confirmadas..."
-            />
-
-            <div v-if="isLoadingHistory" class="list-empty">Cargando historial...</div>
-            <div v-else-if="historyError" class="list-empty error">{{ historyError }}</div>
-            <div v-else-if="!confirmedHistory.length" class="list-empty">
-              No hay cotizaciones confirmadas para mostrar.
-            </div>
-            <ul v-else class="list">
-              <li class="list-item" v-for="h in confirmedHistory" :key="h.id">
-                <div class="list-left">
-                  <div class="company">{{ h.company }}</div>
-                  <div class="meta">{{ h.user }} · {{ h.date }}<br/><small>{{ h.plan }} · {{ h.connections }} conexiones</small></div>
-                  <div class="list-actions">
-                    <button class="action-btn" type="button" @click="selectHistory(h)">Visualizar</button>
-                    <button class="action-btn" type="button" @click="openConfirmedQuote(h)">Abrir cotización</button>
-                    <button class="action-btn secondary" type="button" @click="duplicateQuote(h)">Duplicar</button>
                     <button
+                      v-else
                       class="action-btn danger"
                       type="button"
                       @click="deleteHistoryQuote(h)"
@@ -765,7 +716,6 @@ onMounted(() => {
                 </div>
               </li>
             </ul>
-            <button class="action-btn" type="button" @click="returnToDraftsView">Volver a borradores</button>
           </div>
           <aside class="sidebar">
             <Preview :quote="previewQuote" />
@@ -910,6 +860,16 @@ onMounted(() => {
 }
 
 .list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.list {
+  max-height: min(68vh, 680px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.list::-webkit-scrollbar { width: 8px; }
+.list::-webkit-scrollbar-thumb {
+  background: rgba(15, 33, 64, 0.2);
+  border-radius: 999px;
+}
 .list-item {
   display: flex;
   justify-content: space-between;
