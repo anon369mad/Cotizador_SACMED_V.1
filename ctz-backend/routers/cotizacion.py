@@ -257,7 +257,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
 
     if conexiones in (1, 2):
         capacitacion_base_pdf = [
-            "Configuración inicial: una o dos horas según la cantidad de conexiones contratadas.",
+            "Configuración inicial: aproximadamente 2 horas según la cantidad de conexiones contratadas.",
         ]
     else:
         capacitacion_base_pdf = [
@@ -275,8 +275,8 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     modalidad_pago = "Pago único" if es_cotizacion_unica else f"Cada {meses} mes" + ("" if meses == 1 else "es")
 
     return CotizacionJasperPayload(
-        cliente=cotizacion.nombre_cliente or "Cliente",
-        rut=cotizacion.rut_cliente or "",
+        cliente=(cotizacion.nombre_cliente or "").strip() or "-",
+        rut=(cotizacion.rut_cliente or "").strip() or "-",
         ejecutivo=usuario.nombre if usuario else "",
         tipo_cotizacion=tipo_cotizacion,
         modalidad_pago=modalidad_pago,

@@ -632,19 +632,18 @@ watch(
         </div>
         <div class="row two">
           <div class="field">
-            <label>RUT Persona/Empresa *</label>
+            <label>RUT Persona/Empresa</label>
             <input
               v-model="form.rut"
               placeholder="Ej: 12.345.678-5"
               @input="formatRut"
               maxlength="12"
-              required
             />
             <small v-if="rutError" class="error">RUT inválido</small>
           </div>
           <div class="field">
-            <label>Nombre/Razón Social *</label>
-            <input v-model="form.cliente" placeholder="Ej: Empresa ABC Ltda." required />
+            <label>Nombre/Razón Social</label>
+            <input v-model="form.cliente" placeholder="Ej: Empresa ABC Ltda." />
           </div>
         </div>
       </div>
