@@ -351,6 +351,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         total_label = "Total período"
         if (payload.conexiones_simultaneas or 0) in (1, 2):
             total_label = "Total trimestral"
+        total_label += f" (Total período: {payload.meses} mes" + ("" if payload.meses == 1 else "es") + ")"
 
     period_discount_pct = max(0.0, float(getattr(payload, 'descuento_periodo_pct', 0.0) or 0.0))
     period_discount_amount = max(0.0, float(getattr(payload, 'descuento_periodo_monto', 0.0) or 0.0))
@@ -377,13 +378,6 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
             iva_pct_text = f"{round(iva_pct_num, 1)}%"
     except Exception:
         iva_pct_text = "19%"
-
-    period_info_html = ""
-    if not is_unique_quote:
-        period_discount_info = ""
-        if period_discount_pct > 0:
-            period_discount_info = f' (descuento {int(period_discount_pct) if period_discount_pct.is_integer() else round(period_discount_pct, 1)}% sobre total del período)'
-        period_info_html = f'<div><strong>Período de contratación:</strong> {payload.meses} mes' + ("" if payload.meses == 1 else "es") + f'{period_discount_info}</div>'
 
     return f"""
     <!doctype html>
@@ -414,7 +408,6 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         ul {{ margin: 4px 0 8px 18px; padding:0; line-height:1.45; }}
         li {{ margin: 0 0 6px; }}
         .footer {{ margin-top:24px; display:flex; justify-content:space-between; }}
-        .sign {{ margin-top:40px; font-weight:700; text-align:right; }}
         .additional-page {{ page-break-before: always; border:1px solid #b6ab7a; padding:24px; min-height: 255mm; box-sizing:border-box; }}
         .additional-logo {{ text-align:center; margin: 8px 0 18px; }}
         .additional-logo img {{ height: 58px; }}
@@ -445,9 +438,6 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         <div class="client">
           <div><strong>Cliente:</strong> {escape(payload.cliente)}</div>
           <div><strong>RUT:</strong> {escape(payload.rut)}</div>
-          <div><strong>Tipo de cotización:</strong> {escape(payload.tipo_cotizacion or '-')}</div>
-          {period_info_html}
-          <div><strong>Modalidad de pago:</strong> {escape(payload.modalidad_pago)}</div>
         </div>
 
         <table class=\"main\">
@@ -463,7 +453,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
 
         <div class=\"summary-wrap\">
           <div class=\"summary-left\">
-            <div>Total de conexiones solicitadas: {payload.conexiones_simultaneas or 0}</div>
+            <div>Total de conexiones simultáneas: {payload.conexiones_simultaneas or 0}</div>
             <div>Usuarios: {escape(payload.usuarios or 'Ilimitados')}</div>
           </div>
                     <table class=\"summary-right\">
@@ -478,9 +468,12 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         {condiciones_section}
         {capacitacion_section}
         {cobros_adicionales_section}
+        <div class="section-title">Observación:</div>
+        <ul>
+          <li>Todos los planes contratados llevan como servicio agenda médica, ficha clínica multiespecialista, telemedicina y herramientas administrativas.</li>
+        </ul>
 
-        <div class=\"footer\">Documento generado por: {escape(payload.ejecutivo or 'Usuario')}</div>
-        <div class=\"sign\">Firma Cliente ________________________</div>
+        <div class="footer">Documento generado por: {escape(payload.ejecutivo or 'Usuario')}</div>
       </div>
 
     </body>
