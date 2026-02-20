@@ -198,7 +198,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const weasyPdfUrl = ref('')
 const showWeasyPreview = ref(false)
-const pendingConfirmationId = ref(null)
+const isQuoteConfirmed = computed(() => props.baseData.estado === 'CONFIRMADA')
 
 function roundAmount(value) {
   return Math.round(Number(value) || 0)
@@ -563,50 +563,25 @@ async function openWeasyPreview(idCotizacion) {
   showWeasyPreview.value = true
 }
 
-async function downloadWeasyPdf() {
-  if (!weasyPdfUrl.value) return
-
+async function printQuote() {
   if (!validateRequiredClientData()) {
     return
   }
 
-  if (!pendingConfirmationId.value) {
-    errorMessage.value = 'Primero debes confirmar la cotización antes de descargar el PDF.'
+  if (!props.baseData.idCotizacion) {
+    errorMessage.value = 'No se encontró una cotización confirmada para imprimir.'
     return
   }
 
   isSaving.value = true
   errorMessage.value = ''
 
-  const link = document.createElement('a')
-  link.href = weasyPdfUrl.value
-  link.download = `cotizacion-${props.baseData.idCotizacion || 'confirmada'}.pdf`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-
   try {
-    const statusResponse = await fetch(`${apiBaseUrl}/cotizaciones/${pendingConfirmationId.value}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado: 'CONFIRMADA' })
-    })
-
-    if (!statusResponse.ok) {
-      throw new Error('No se pudo confirmar el estado después de descargar el PDF')
-    }
-
-    props.baseData.estado = 'CONFIRMADA'
-    emit('quote-saved', { idCotizacion: pendingConfirmationId.value, estado: 'CONFIRMADA' })
-    emit('history-changed')
-    emit('quote-finalized', { idCotizacion: pendingConfirmationId.value })
-    successMessage.value = 'Cotización descargada y confirmada. Fue movida a la pantalla de confirmadas.'
-    pendingConfirmationId.value = null
-    showWeasyPreview.value = false
+    await openWeasyPreview(props.baseData.idCotizacion)
   } catch (error) {
     errorMessage.value = error instanceof Error
       ? error.message
-      : 'Ocurrió un error al confirmar la cotización descargada'
+      : 'Ocurrió un error al abrir la vista de impresión de la cotización'
   } finally {
     isSaving.value = false
   }
@@ -634,11 +609,22 @@ async function confirmQuote() {
       ? await updatePersistedDraft()
       : await buildAndPersistQuote()
 
-    pendingConfirmationId.value = idCotizacion
-    await openWeasyPreview(idCotizacion)
-    successMessage.value = 'Cotización lista. Para confirmarla definitivamente debes descargar el PDF.'
+    const statusResponse = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado: 'CONFIRMADA' })
+    })
+
+    if (!statusResponse.ok) {
+      throw new Error('No se pudo confirmar la cotización')
+    }
+
+    props.baseData.estado = 'CONFIRMADA'
+    emit('quote-saved', { idCotizacion, estado: 'CONFIRMADA' })
+    emit('history-changed')
+    emit('quote-finalized', { idCotizacion })
+    successMessage.value = 'Cotización confirmada correctamente.'
   } catch (error) {
-    pendingConfirmationId.value = null
     errorMessage.value = error instanceof Error
       ? error.message
       : 'Ocurrió un error inesperado al confirmar la cotización'
@@ -835,7 +821,6 @@ async function discardQuote() {
     <div class="weasy-preview-header">
       <h5>Vista previa PDF (WeasyPrint)</h5>
       <div class="weasy-preview-actions">
-        <button class="btn-download" @click="downloadWeasyPdf">Descargar PDF</button>
         <button class="btn-close" @click="closeWeasyPreview">Cerrar</button>
       </div>
     </div>
@@ -857,8 +842,12 @@ async function discardQuote() {
     {{ isSaving ? 'Guardando...' : 'Guardar borrador' }}
   </button>
 
-  <button class="btn-confirm" :disabled="isSaving" @click="confirmQuote">
-    {{ isSaving ? 'Guardando...' : 'Confirmar cotización' }}
+  <button
+    class="btn-confirm"
+    :disabled="isSaving"
+    @click="isQuoteConfirmed ? printQuote() : confirmQuote()"
+  >
+    {{ isSaving ? 'Guardando...' : (isQuoteConfirmed ? 'Imprimir' : 'Confirmar cotización') }}
   </button>
 </div>
 <p v-if="errorMessage" class="status-message error">{{ errorMessage }}</p>
