@@ -1,10 +1,11 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from html import escape
 import base64
+from io import BytesIO
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion import Cotizacion
@@ -23,6 +24,48 @@ from schemas.cotizacion import (
 from models.cotizacion_detalle import CotizacionDetalle
 
 router = APIRouter(tags=["Cotizaciones"])
+
+ANNEX_STORAGE_DIR = Path(__file__).resolve().parents[1] / "storage"
+ANNEX_PDF_PATH = ANNEX_STORAGE_DIR / "servicios-adicionales.pdf"
+ANNEX_META_PATH = ANNEX_STORAGE_DIR / "servicios-adicionales.meta"
+
+
+def _ensure_annex_storage():
+    ANNEX_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _get_annex_metadata() -> dict:
+    if not ANNEX_META_PATH.exists():
+        return {}
+
+    try:
+        raw = ANNEX_META_PATH.read_text(encoding="utf-8").split("|", maxsplit=1)
+        return {
+            "filename": raw[0] or ANNEX_PDF_PATH.name,
+            "uploaded_at": raw[1] if len(raw) > 1 else None,
+        }
+    except Exception:
+        return {"filename": ANNEX_PDF_PATH.name, "uploaded_at": None}
+
+
+def _merge_pdfs(main_pdf: bytes, annex_pdf_path: Path) -> bytes:
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Falta la dependencia pypdf para anexar el documento adicional.",
+        ) from exc
+
+    writer = PdfWriter()
+    for page in PdfReader(BytesIO(main_pdf)).pages:
+        writer.add_page(page)
+    for page in PdfReader(str(annex_pdf_path)).pages:
+        writer.add_page(page)
+
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
 
 
 def attach_user_names(cotizaciones: list[Cotizacion], db: Session):
@@ -400,75 +443,64 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         <div class=\"footer\">Documento generado por: {escape(payload.ejecutivo or 'Usuario')}</div>
         <div class=\"sign\">Firma Cliente ________________________</div>
       </div>
-      <div class="additional-page">
-        <div class="additional-logo">
-          {f'<img src="{img_data_uri}" alt="SACMED" />' if img_data_uri else '<div class="text-logo">SACMED</div>'}
-        </div>
-
-        <div class="additional-title">Servicios adicionales</div>
-
-        <ol class="additional-list">
-          <li><strong style="color:#2f78c4;">Integración con Flow (Pagos en línea)</strong>
-            <ul>
-              <li>La contratación se realiza <strong>directamente a través de su sitio web</strong>: www.flow.cl.</li>
-              <li>Configuración sin costo adicional por parte de SACMED.</li>
-              <li>Factura emitida por Flow.</li>
-            </ul>
-          </li>
-          <li><strong style="color:#2f78c4;">Integración con Boleta Electrónica</strong>
-            <ul>
-              <li>Empresa (RUT): 1 UF + IVA mensual (hasta 50 millones en facturación).</li>
-              <li>Boletas de honorarios (RUN de médicos): 25.000 + IVA mensual por profesional.</li>
-              <li>Factura emitida por SACMED.</li>
-            </ul>
-          </li>
-          <li><strong style="color:#2f78c4;">Confirmación de Citas (WhatsApp y SMS)</strong>
-            <ul>
-              <li>WhatsApp: $50 + IVA por mensaje (válido por 24 horas).</li>
-              <li>SMS: $49 + IVA por mensaje.</li>
-              <li><strong>Nota:</strong> Funcionalidad desactivada por defecto. Debe ser <strong>activada por el usuario</strong>, quien debe aceptar los términos del servicio. Se notificará al administrador una vez activada.</li>
-              <li><strong>WhatsApp manual:</strong> Confirmación sin costo adicional.</li>
-            </ul>
-          </li>
-          <li><strong style="color:#2f78c4;">Almacenamiento en disco</strong>
-            <div>Al sobrepasar el límite de GB otorgados en el presupuesto, se aplicará un cargo de $5.000 más IVA por cada tramo de <strong>5 GB adicionales</strong>.</div>
-          </li>
-          <li><strong style="color:#2f78c4;">Venta de Bonos Fonasa en agendamiento en Línea.</strong>
-            <ul>
-              <li>Integración a través de Snabb.</li>
-              <li>Para información y tarifas, contactar a <strong>Samuel Barrientos al +56 9 7926 0485</strong>.</li>
-            </ul>
-          </li>
-          <li><strong style="color:#2f78c4;">Firma electrónica avanzada (FEA)</strong>
-            <ul>
-              <li>Solución segura y sin token externo para firmar recetas simples y retenidas, cumpliendo con el Decreto 466 (reglamento).</li>
-              <li>Factura emitida por SACMED.</li>
-            </ul>
-          </li>
-        </ol>
-
-        <div class="nota-iva">El IVA no está incluido en los valores señalados, por lo que debe ser sumado al total.</div>
-
-        <table class="fea-table">
-          <thead>
-            <tr>
-              <th>Planes</th><th>Cantidad de firmas</th><th>Precio Anual</th><th>Precio por Firma Adicional</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Básico</td><td>400</td><td>$ 40.000</td><td>$ 150</td></tr>
-            <tr><td>Medio</td><td>1200</td><td>$ 60.000</td><td>$100</td></tr>
-            <tr><td>Avanzado</td><td>4000</td><td>$ 80.000</td><td>$50</td></tr>
-            <tr><td>Ilimitado</td><td>ILIMITADAS</td><td>$120.000</td><td>SIN COSTO</td></tr>
-          </tbody>
-        </table>
-
-        <div class="footer-address">1 PONIENTE # 123 EDIFICIO PIEDRA AZUL – OFICINA # 303, VIÑA DEL MAR, CHILE</div>
-      </div>
 
     </body>
     </html>
     """
+
+
+@router.get("/configuraciones/servicios-adicionales/pdf")
+def obtener_pdf_servicios_adicionales():
+    if not ANNEX_PDF_PATH.exists():
+        raise HTTPException(status_code=404, detail="No hay un PDF configurado")
+
+    metadata = _get_annex_metadata()
+    download_name = metadata.get("filename") or ANNEX_PDF_PATH.name
+    return FileResponse(
+        ANNEX_PDF_PATH,
+        media_type="application/pdf",
+        filename=download_name,
+    )
+
+
+@router.get("/configuraciones/servicios-adicionales")
+def obtener_configuracion_servicios_adicionales():
+    if not ANNEX_PDF_PATH.exists():
+        return {"has_file": False, "filename": None, "uploaded_at": None}
+
+    metadata = _get_annex_metadata()
+    return {
+        "has_file": True,
+        "filename": metadata.get("filename") or ANNEX_PDF_PATH.name,
+        "uploaded_at": metadata.get("uploaded_at"),
+    }
+
+
+@router.post("/configuraciones/servicios-adicionales")
+async def subir_pdf_servicios_adicionales(file: UploadFile = File(...)):
+    filename = (file.filename or "").lower()
+    if not filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Solo se permite subir archivos PDF")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="El archivo está vacío")
+
+    if not content.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="El archivo no tiene un formato PDF válido")
+
+    _ensure_annex_storage()
+    ANNEX_PDF_PATH.write_bytes(content)
+
+    uploaded_at = datetime.utcnow().isoformat()
+    original_name = file.filename or ANNEX_PDF_PATH.name
+    ANNEX_META_PATH.write_text(f"{original_name}|{uploaded_at}", encoding="utf-8")
+
+    return {
+        "ok": True,
+        "filename": original_name,
+        "uploaded_at": uploaded_at,
+    }
 
 
 @router.post("/cotizaciones", response_model=CotizacionResponse)
@@ -543,6 +575,9 @@ def generar_pdf_jasper(id_cotizacion: int, db: Session = Depends(get_db)):
             status_code=500,
             detail=f"No se pudo generar el PDF con WeasyPrint: {exc}",
         ) from exc
+
+    if ANNEX_PDF_PATH.exists():
+        pdf_content = _merge_pdfs(pdf_content, ANNEX_PDF_PATH)
 
     file_name = f"cotizacion-{id_cotizacion}.pdf"
     return StreamingResponse(
