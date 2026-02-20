@@ -206,7 +206,16 @@ const subtotal = computed(() => {
   return normalizedItems.value.reduce((sum, item) => sum + item.total, 0)
 })
 
+const historicalIvaPct = computed(() => {
+  const pct = Number(props.quote.iva_porcentaje ?? props.quote.porcentaje)
+  return Number.isFinite(pct) ? pct : null
+})
+
 const iva = computed(() => {
+  if (isConfirmedQuote.value && historicalIvaPct.value != null) {
+    return Math.round(subtotal.value * (historicalIvaPct.value / 100))
+  }
+
   const explicitIva = Number(props.quote.ivaMonto ?? props.quote.iva_monto)
   if (Number.isFinite(explicitIva) && explicitIva > 0) {
     return Math.round(explicitIva)
