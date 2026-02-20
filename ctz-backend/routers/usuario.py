@@ -71,7 +71,14 @@ def actualizar_usuario(id_usuario: int, data: UsuarioUpdate, db: Session = Depen
         existe = db.query(Usuario).filter(Usuario.email == data.email, Usuario.id_usuario != id_usuario).first()
         if existe:
             raise HTTPException(status_code=400, detail="Email ya registrado")
+
+    if data.password is not None and len(data.password.strip()) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+
     for campo, valor in data.dict(exclude_unset=True).items():
+        if campo == "password":
+            usuario.password_hash = valor.strip()
+            continue
         setattr(usuario, campo, valor)
     db.commit()
     db.refresh(usuario)

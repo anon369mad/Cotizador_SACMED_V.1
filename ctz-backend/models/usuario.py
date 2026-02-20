@@ -12,3 +12,11 @@ class Usuario(Base):
     activo = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP)
     updated_at = Column(TIMESTAMP)
+
+    @property
+    def password(self):
+        return self.password_hash
+
+    @password.setter
+    def password(self, value):
+        self.password_hash = value
