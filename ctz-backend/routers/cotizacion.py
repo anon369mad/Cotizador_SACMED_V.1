@@ -179,9 +179,9 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
 
     descuento_periodo_pct = 0.0
     if not es_cotizacion_unica:
-        if meses >= 12:
+        if meses == 12:
             descuento_periodo_pct = 10.0
-        elif meses >= 6:
+        elif meses == 6:
             descuento_periodo_pct = 5.0
 
     total_periodo_base = total_mensual if es_cotizacion_unica else (total_mensual * meses_cobro)
@@ -344,14 +344,15 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
 
     condiciones_section = _render_section("Condiciones Generales:", payload.condiciones_generales)
     capacitacion_section = _render_section("Capacitación plataforma:", payload.capacitacion)
-    cobros_adicionales_section = _render_section("Cobros Adicionales:", payload.cobros_adicionales)
+    cobros_adicionales_section = _render_section("Cobro adicional:", payload.cobros_adicionales)
     is_unique_quote = (payload.tipo_cotizacion or "").strip().lower() == "única"
     total_label = "Total"
     if not is_unique_quote:
         total_label = "Total período"
         if (payload.conexiones_simultaneas or 0) in (1, 2):
             total_label = "Total trimestral"
-        total_label += f" (Total período: {payload.meses} mes" + ("" if payload.meses == 1 else "es") + ")"
+        else:
+            total_label = f"Total ({payload.meses} mes" + ("" if payload.meses == 1 else "es") + ")"
 
     period_discount_pct = max(0.0, float(getattr(payload, 'descuento_periodo_pct', 0.0) or 0.0))
     period_discount_amount = max(0.0, float(getattr(payload, 'descuento_periodo_monto', 0.0) or 0.0))
@@ -465,13 +466,13 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
                     </table>
         </div>
 
-        {condiciones_section}
-        {capacitacion_section}
-        {cobros_adicionales_section}
         <div class="section-title">Observación:</div>
         <ul>
           <li>Todos los planes contratados llevan como servicio agenda médica, ficha clínica multiespecialista, telemedicina y herramientas administrativas.</li>
         </ul>
+        {condiciones_section}
+        {capacitacion_section}
+        {cobros_adicionales_section}
 
         <div class="footer">Documento generado por: {escape(payload.ejecutivo or 'Usuario')}</div>
       </div>
