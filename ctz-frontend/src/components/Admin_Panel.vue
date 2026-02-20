@@ -890,24 +890,25 @@ onMounted(loadData)
         </section>
 
         <section v-else class="iva-tab-panel">
-          <div class="card iva-card">
+          <div class="card iva-card services-pdf-card">
             <h3>PDF de servicios adicionales</h3>
-            <p>Este PDF se anexará automáticamente al documento de cotización al confirmar y descargar.</p>
+            <p class="services-pdf-description">Este PDF se anexará automáticamente al documento de cotización al confirmar y descargar.</p>
 
-            <p v-if="additionalServicesPdf.has_file">
+            <p v-if="additionalServicesPdf.has_file" class="services-pdf-status">
               Archivo actual: <strong>{{ additionalServicesPdf.filename }}</strong>
             </p>
-            <p v-else>No hay archivo cargado actualmente.</p>
+            <p v-else class="services-pdf-status">No hay archivo cargado actualmente.</p>
 
-            <label for="additional-services-pdf">Seleccionar PDF</label>
+            <label class="services-pdf-label" for="additional-services-pdf">Seleccionar PDF</label>
             <input
               id="additional-services-pdf"
+              class="services-pdf-input"
               type="file"
               accept="application/pdf,.pdf"
               @change="onAdditionalServicesPdfChange"
             />
 
-            <div class="modal-actions">
+            <div class="modal-actions services-pdf-actions">
               <button
                 class="btn-primary"
                 type="button"
@@ -1057,13 +1058,13 @@ onMounted(loadData)
 .content { padding: 20px 24px; }
 .tab-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   margin: 0 auto 14px;
   padding: 6px;
   border-radius: 12px;
   background: #dce1e6;
-  width: min(680px, 100%);
+  width: min(880px, 100%);
 }
 .tab {
   border: 1px solid transparent;
@@ -1084,6 +1085,9 @@ onMounted(loadData)
   color: #96a3b5;
   font-size: 20px;
   line-height: 1;
+}
+.tab span:last-child {
+  white-space: nowrap;
 }
 .tab.active {
   background: #f8f8f9;
@@ -1285,6 +1289,27 @@ onMounted(loadData)
   height: 54px;
   font-size: 30px;
 }
+.services-pdf-card {
+  justify-items: stretch;
+}
+.services-pdf-card h3,
+.services-pdf-description,
+.services-pdf-status,
+.services-pdf-label {
+  text-align: left;
+}
+.services-pdf-description,
+.services-pdf-status {
+  margin: 0;
+}
+.services-pdf-input {
+  width: 100%;
+}
+.services-pdf-actions {
+  width: 100%;
+  justify-content: flex-end;
+  margin-top: 0;
+}
 .icon-btn.success { background: #34d058; color: #fff; }
 
 .btn-primary { border: none; background: #0ea5e9; color: #fff; border-radius: 8px; padding: 9px 14px; cursor: pointer; }
@@ -1416,7 +1441,10 @@ onMounted(loadData)
 }
 
 @media (max-width: 680px) {
-  .tab-row { padding: 6px; }
+  .tab-row {
+    padding: 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .tab { font-size: 14px; padding: 8px 6px; gap: 6px; }
   .tab-icon { font-size: 18px; }
   .price-modal { padding: 18px; border-radius: 26px; }
