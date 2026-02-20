@@ -522,6 +522,17 @@ async function duplicateQuote(h){
 async function editDraftQuote(h) {
   if (statusLabel(h.status) === 'Confirmada') return
 
+  await openQuoteInTab(h, `Borrador ${h.company}`)
+}
+
+async function openConfirmedQuote(h) {
+  if (statusLabel(h.status) !== 'Confirmada') return
+
+  await openQuoteInTab(h, `Confirmada ${h.company}`)
+}
+
+async function openQuoteInTab(h, tabTitle) {
+
   historyError.value = ''
   try {
     const existingDraftTab = tabs.value.find(
@@ -543,7 +554,7 @@ async function editDraftQuote(h) {
 
     tabs.value.push({
       id,
-      title: `Borrador ${h.company}`,
+      title: tabTitle,
       data: {
         idCotizacion: h.id,
         estado: h.status,
@@ -567,7 +578,7 @@ async function editDraftQuote(h) {
   } catch (error) {
     historyError.value = error instanceof Error
       ? error.message
-      : 'Error inesperado al preparar la edición del borrador'
+      : 'Error inesperado al abrir la cotización'
   }
 }
 
@@ -611,7 +622,6 @@ function returnToDraftsView() {
 
 async function handleQuoteFinalized() {
   await loadHistory()
-  currentView.value = 'confirmed'
 }
 
 onMounted(() => {
@@ -740,6 +750,7 @@ onMounted(() => {
                   <div class="meta">{{ h.user }} · {{ h.date }}<br/><small>{{ h.plan }} · {{ h.connections }} conexiones</small></div>
                   <div class="list-actions">
                     <button class="action-btn" type="button" @click="selectHistory(h)">Visualizar</button>
+                    <button class="action-btn" type="button" @click="openConfirmedQuote(h)">Abrir cotización</button>
                     <button class="action-btn secondary" type="button" @click="duplicateQuote(h)">Duplicar</button>
                     <button
                       class="action-btn danger"
