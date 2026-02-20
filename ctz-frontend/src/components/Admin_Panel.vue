@@ -674,9 +674,15 @@ onMounted(loadData)
         <p>Gestión de precios y reglas comerciales</p>
       </div>
       <div class="topbar-user">
-        <span>{{ userName }}</span>
-        <span class="badge">Admin</span>
-        <button class="btn-link" type="button" @click="logout">Salir</button>
+        <div class="admin-user-pill">
+          <span class="admin-user-icon" aria-hidden="true">👤</span>
+          <span class="admin-user-name">{{ userName }}</span>
+          <span class="badge">Admin</span>
+        </div>
+        <button class="admin-exit-btn" type="button" @click="logout">
+          <span class="admin-exit-icon" aria-hidden="true">🚪</span>
+          <span>Salir</span>
+        </button>
       </div>
     </header>
 
@@ -1063,7 +1069,57 @@ onMounted(loadData)
 .topbar h2 { margin: 0; font-size: 24px; }
 .topbar p { margin: 4px 0 0; font-size: 13px; color: #66798f; }
 .topbar-user { display: flex; align-items: center; gap: 10px; }
-.badge { background: #0ea5e9; color: #fff; border-radius: 999px; padding: 2px 10px; font-size: 12px; }
+.admin-user-pill {
+  background: linear-gradient(135deg, rgba(26,163,255,0.08), rgba(2,22,66,0.04));
+  padding: 8px 12px;
+  border-radius: 20px;
+  color: #0f2140;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  border: 1px solid rgba(26,163,255,0.15);
+  transition: all 0.2s ease;
+}
+.admin-user-pill:hover {
+  background: linear-gradient(135deg, rgba(26,163,255,0.12), rgba(2,22,66,0.06));
+  border-color: rgba(26,163,255,0.25);
+}
+.admin-user-icon {
+  font-size: 16px;
+  min-width: 16px;
+}
+.admin-user-name {
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.badge { background: #0ea5e9; color: #fff; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+.admin-exit-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(255,107,107,0.2);
+}
+.admin-exit-btn:hover {
+  background: linear-gradient(135deg, #ff5252, #dd4e63);
+  box-shadow: 0 4px 12px rgba(255,107,107,0.3);
+  transform: translateY(-1px);
+}
+.admin-exit-icon {
+  font-size: 16px;
+}
 
 .content { padding: 20px 24px; }
 .tab-row {
