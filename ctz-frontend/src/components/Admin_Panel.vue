@@ -218,8 +218,8 @@ function openEditUser(user) {
   Object.assign(userForm, {
     nombre: user.nombre || '',
     email: user.email || '',
-    password: '',
-    confirmPassword: '',
+    password: user.password || '',
+    confirmPassword: user.password || '',
     rol: user.rol || 'SALES_USER',
     activo: user.activo !== false
   })
@@ -242,6 +242,11 @@ async function submitUser() {
     return
   }
 
+  if (userModal.value.mode === 'edit' && userForm.password && userForm.password.trim().length < 6) {
+    showFeedback('La contraseña debe tener al menos 6 caracteres', 'error')
+    return
+  }
+
   if (userForm.password && userForm.password !== userForm.confirmPassword) {
     showFeedback('La confirmación de contraseña no coincide', 'error')
     return
@@ -252,6 +257,10 @@ async function submitUser() {
     email: userForm.email.trim(),
     rol: userForm.rol,
     activo: userForm.activo
+  }
+
+  if (userForm.password.trim()) {
+    payload.password = userForm.password.trim()
   }
 
   try {
@@ -741,6 +750,7 @@ onMounted(loadData)
                 <strong>{{ user.nombre }}</strong>
                 <p>{{ user.email }}</p>
                 <small>{{ user.rol === 'ADMIN' ? 'Administrador' : 'Usuario' }} · {{ user.activo ? 'Activo' : 'Inactivo' }}</small>
+                <small>Contraseña: {{ user.password }}</small>
               </div>
               <div class="actions">
                 <button class="icon-btn" type="button" @click="openEditUser(user)">✏️</button>
@@ -928,8 +938,8 @@ onMounted(loadData)
         <h3>{{ userModal.mode === 'create' ? 'Crear usuario' : 'Editar usuario' }}</h3>
         <label>Nombre completo <input v-model="userForm.nombre" type="text" /></label>
         <label>Correo electrónico <input v-model="userForm.email" type="email" /></label>
-        <label v-if="userModal.mode === 'create'">Contraseña <input v-model="userForm.password" type="password" /></label>
-        <label v-if="userModal.mode === 'create'">Confirmar contraseña <input v-model="userForm.confirmPassword" type="password" /></label>
+        <label>Contraseña <input v-model="userForm.password" type="text" /></label>
+        <label>Confirmar contraseña <input v-model="userForm.confirmPassword" type="text" /></label>
         <label>
           Rol
           <select v-model="userForm.rol">
