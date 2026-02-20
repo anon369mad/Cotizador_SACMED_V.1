@@ -250,27 +250,8 @@ function getMonthsValidationError() {
   return ''
 }
 
-function getClientValidationError() {
-  const clientName = String(props.baseData.cliente ?? '').trim()
-  if (!clientName) {
-    return 'Rellene el nombre del cliente antes de continuar.'
-  }
-
-  const clientRut = String(props.baseData.rut ?? '').trim()
-  if (!clientRut) {
-    return 'Rellene el RUT del cliente antes de continuar.'
-  }
-
-  return ''
-}
-
 function validateRequiredClientData() {
-  const clientValidationError = getClientValidationError()
-  if (!clientValidationError) return true
-
-  errorMessage.value = clientValidationError
-  alert(clientValidationError)
-  return false
+  return true
 }
 
 const periodTotalLabel = computed(() => {
