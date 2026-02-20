@@ -20,7 +20,7 @@ def crear_iva(data: IvaCreate, db: Session = Depends(get_db)):
 
 @router.get("/iva", response_model=list[IvaResponse])
 def listar_iva(db: Session = Depends(get_db)):
-    return db.query(Iva).all()
+    return db.query(Iva).order_by(Iva.id_iva.desc()).all()
 
 @router.get("/iva/{id_iva}", response_model=IvaResponse)
 def obtener_iva(id_iva: int, db: Session = Depends(get_db)):

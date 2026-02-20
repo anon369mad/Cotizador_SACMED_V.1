@@ -149,7 +149,8 @@ onMounted(async () => {
     if (res.ok) {
       const list = await res.json()
       if (Array.isArray(list) && list.length) {
-        const active = list.find((x) => x.activo) || list[0]
+        const orderedIva = [...list].sort((a, b) => Number(b?.id_iva || 0) - Number(a?.id_iva || 0))
+        const active = orderedIva.find((x) => x?.activo) || orderedIva[0]
         if (active) {
           if (active.porcentaje != null) ivaPct.value = Number(active.porcentaje)
           if (active.id_iva != null) activeIvaId.value = Number(active.id_iva)
