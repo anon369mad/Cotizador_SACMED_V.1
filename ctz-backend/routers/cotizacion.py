@@ -255,13 +255,18 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     if regla_capacitacion:
         horas_capacitacion = int(regla_capacitacion.horas_capacitacion or 0)
 
-    capacitacion_base_pdf = [
-        f"Capacitación de plataforma: {horas_capacitacion} horas según el intervalo de conexiones contratado.",
-    ]
+    if conexiones in (1, 2):
+        capacitacion_base_pdf = [
+            "Configuración inicial: una o dos horas según la cantidad de conexiones contratadas.",
+        ]
+    else:
+        capacitacion_base_pdf = [
+            f"Capacitación de plataforma: {horas_capacitacion} horas según el intervalo de conexiones contratado.",
+        ]
 
     cobros_adicionales_base_pdf = [
         "La activación de SMS/WhatsApp, pueden generar costos adicionales, que se facturarán según su uso.",
-        f"El presupuesto incluye {mensajes_incluidos} mensajes WhatsApp para esta cantidad de conexiones. Si se supera ese límite, se generará un cobro adicional por mensaje.",
+        f"El presupuesto incluye una bolsa mensual de {mensajes_incluidos} mensajes de WhatsApp para confirmación de citas. En caso de exceder esta cantidad, los mensajes adicionales tendrán un costo de $50 + IVA mensual.",
         f"El presupuesto incluye {gigabytes_incluidos} GB de almacenamiento en disco. Cualquier uso que exceda este límite se cobrará automáticamente a un valor de $5.000 más IVA por cada 5 GB adicionales.",
     ]
 
@@ -344,7 +349,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
 
     condiciones_section = _render_section("Condiciones Generales:", payload.condiciones_generales)
     capacitacion_section = _render_section("Capacitación plataforma:", payload.capacitacion)
-    cobros_adicionales_section = _render_section("Cobro adicional:", payload.cobros_adicionales)
+    cobros_adicionales_section = _render_section("Cobros adicionales:", payload.cobros_adicionales)
     is_unique_quote = (payload.tipo_cotizacion or "").strip().lower() == "única"
     total_label = "Total"
     if not is_unique_quote:
@@ -408,6 +413,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         .section-title {{ margin:16px 0 7px; font-weight:700; text-decoration:underline; color:#325f8d; }}
         ul {{ margin: 4px 0 8px 18px; padding:0; line-height:1.45; }}
         li {{ margin: 0 0 6px; }}
+        .observacion-list li {{ font-weight: 700; }}
         .footer {{ margin-top:24px; display:flex; justify-content:space-between; }}
         .additional-page {{ page-break-before: always; border:1px solid #b6ab7a; padding:24px; min-height: 255mm; box-sizing:border-box; }}
         .additional-logo {{ text-align:center; margin: 8px 0 18px; }}
@@ -467,7 +473,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         </div>
 
         <div class="section-title">Observación:</div>
-        <ul>
+        <ul class="observacion-list">
           <li>Todos los planes contratados llevan como servicio agenda médica, ficha clínica multiespecialista, telemedicina y herramientas administrativas.</li>
         </ul>
         {condiciones_section}
