@@ -28,6 +28,9 @@ const services = ref([])
 const trainingConnections = ref([])
 const platformTrainingRules = ref([])
 const ivaConfig = ref([])
+const additionalServicesPdf = ref({ has_file: false, filename: null, uploaded_at: null })
+const additionalServicesFile = ref(null)
+const isUploadingAdditionalPdf = ref(false)
 
 const userSearch = ref('')
 
@@ -185,7 +188,7 @@ async function loadData() {
   isLoading.value = true
   resetFeedback()
   try {
-    await Promise.all([loadUsers(), loadPrices(), loadIva()])
+    await Promise.all([loadUsers(), loadPrices(), loadIva(), loadAdditionalServicesPdf()])
   } catch (error) {
     showFeedback(error instanceof Error ? error.message : 'No se pudo cargar el panel', 'error')
   } finally {
@@ -569,6 +572,57 @@ async function deletePlatformTrainingRule(rule) {
   }
 }
 
+async function loadAdditionalServicesPdf() {
+  additionalServicesPdf.value = await request('/configuraciones/servicios-adicionales')
+}
+
+function onAdditionalServicesPdfChange(event) {
+  const [file] = event?.target?.files || []
+  additionalServicesFile.value = file || null
+}
+
+async function uploadAdditionalServicesPdf() {
+  resetFeedback()
+
+  if (!additionalServicesFile.value) {
+    showFeedback('Selecciona un archivo PDF para subir', 'error')
+    return
+  }
+
+  if (!String(additionalServicesFile.value.name || '').toLowerCase().endsWith('.pdf')) {
+    showFeedback('Solo se permiten archivos con extensión .pdf', 'error')
+    return
+  }
+
+  isUploadingAdditionalPdf.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', additionalServicesFile.value)
+
+    const response = await fetch(`${apiBaseUrl}/configuraciones/servicios-adicionales`, {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      throw new Error(payload?.detail || 'No se pudo subir el PDF')
+    }
+
+    additionalServicesFile.value = null
+    const fileInput = document.getElementById('additional-services-pdf')
+    if (fileInput) fileInput.value = ''
+
+    await loadAdditionalServicesPdf()
+    showFeedback('PDF de servicios adicionales actualizado correctamente')
+  } catch (error) {
+    showFeedback(error instanceof Error ? error.message : 'No se pudo subir el PDF', 'error')
+  } finally {
+    isUploadingAdditionalPdf.value = false
+  }
+}
+
+
 async function submitIva() {
   resetFeedback()
   try {
@@ -656,6 +710,17 @@ onMounted(loadData)
           >
             <span class="tab-icon" aria-hidden="true">%</span>
             <span>IVA</span>
+          </button>
+          <button
+            class="tab"
+            :class="{ active: activeTab === 'serviciosPdf' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === 'serviciosPdf'"
+            @click="activeTab = 'serviciosPdf'"
+          >
+            <span class="tab-icon" aria-hidden="true">📎</span>
+            <span>Servicios PDF</span>
           </button>
         </div>
 
@@ -783,7 +848,7 @@ onMounted(loadData)
           </div>
         </section>
 
-        <section v-else class="iva-tab-panel">
+        <section v-else-if="activeTab === 'iva'" class="iva-tab-panel">
           <div class="card iva-card">
             <h3>Configuración de Impuestos</h3>
             <label>
@@ -819,6 +884,37 @@ onMounted(loadData)
                 @click="startIvaEdit"
               >
                 ✏️
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section v-else class="iva-tab-panel">
+          <div class="card iva-card">
+            <h3>PDF de servicios adicionales</h3>
+            <p>Este PDF se anexará automáticamente al documento de cotización al confirmar y descargar.</p>
+
+            <p v-if="additionalServicesPdf.has_file">
+              Archivo actual: <strong>{{ additionalServicesPdf.filename }}</strong>
+            </p>
+            <p v-else>No hay archivo cargado actualmente.</p>
+
+            <label for="additional-services-pdf">Seleccionar PDF</label>
+            <input
+              id="additional-services-pdf"
+              type="file"
+              accept="application/pdf,.pdf"
+              @change="onAdditionalServicesPdfChange"
+            />
+
+            <div class="modal-actions">
+              <button
+                class="btn-primary"
+                type="button"
+                :disabled="isUploadingAdditionalPdf"
+                @click="uploadAdditionalServicesPdf"
+              >
+                {{ isUploadingAdditionalPdf ? 'Subiendo...' : 'Subir PDF' }}
               </button>
             </div>
           </div>
