@@ -542,6 +542,10 @@ const showRestrictedPeriodHint = computed(() => {
   return conexiones === 1 || conexiones === 2
 })
 
+const isManualServiceMode = computed(() => (
+  form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION
+))
+
 function buildPreview() {
   return {
     idUsuario: form.idUsuario ?? null,
@@ -596,7 +600,7 @@ watch(
 
 
 <template>
-  <section class="cotizador-card">
+  <section class="cotizador-card" :class="{ 'manual-service-active': isManualServiceMode }">
     <div class="card-header">
       <div>
         <h3>Datos de la Cotización</h3>
@@ -673,7 +677,7 @@ watch(
         </div>
 
         <div class="items-list">
-          <div class="item">
+          <div class="item" :class="{ 'manual-service-active': isManualServiceMode }">
             <div class="svc-main">
                 <select v-model="form.seleccionado" class="svc-name" @change="onSelectPrestacion">
                   <option disabled value="">Selecciona un servicio</option>
@@ -769,6 +773,10 @@ watch(
   padding: clamp(14px, 1.8vw, 20px);
 }
 
+.cotizador-card.manual-service-active {
+  width: min(860px, 100%);
+}
+
 /* header */
 .card-header {
   display: flex;
@@ -814,6 +822,7 @@ watch(
 .svc-name {  width: 100%; padding: 10px 12px;margin: 0 0 10px 0 ; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.24); background: white;color: black;}
 .manual-service-input { width: 100%; padding: 10px 12px; margin: 0 0 10px 0; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.24); background: white; color: black; }
 .svc-controls { display: flex; gap: 12px; }
+.item.manual-service-active .svc-controls { flex-wrap: wrap; }
 .mini-field { display: flex; flex-direction: column; gap: 6px; }
 .mini-field label { font-size: 11px; color: #6b747a }
 .small { width: 90px; padding: 8px; border-radius: 8px; border: 1px solid rgba(15, 21, 64, 0.24);background-color: transparent;color: black; }
