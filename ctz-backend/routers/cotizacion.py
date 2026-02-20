@@ -475,7 +475,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
 def crear_cotizacion(data: CotizacionCreate, db: Session = Depends(get_db)):
     cotizacion = Cotizacion(**data.dict())
     cotizacion.fecha_emision = date.today()
-    cotizacion.fecha_vencimiento = date.today() + timedelta(days=30)
+    cotizacion.fecha_vencimiento = date.today() + timedelta(days=15)
     db.add(cotizacion)
     db.commit()
     db.refresh(cotizacion)
