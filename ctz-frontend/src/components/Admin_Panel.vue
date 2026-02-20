@@ -677,7 +677,6 @@ onMounted(loadData)
         <div class="admin-user-pill">
           <span class="admin-user-icon" aria-hidden="true">👤</span>
           <span class="admin-user-name">{{ userName }}</span>
-          <span class="badge">Admin</span>
         </div>
         <button class="admin-exit-btn" type="button" @click="logout">
           <span class="admin-exit-icon" aria-hidden="true">🚪</span>
@@ -745,7 +744,7 @@ onMounted(loadData)
         <section v-else-if="activeTab === 'usuarios'" class="card">
           <div class="section-header">
             <h3>Gestión de usuarios</h3>
-            <button class="btn-primary" type="button" @click="openCreateUser">+ Nuevo usuario</button>
+            <button class="btn-primary add-price-btn" type="button" @click="openCreateUser">+ Nuevo usuario</button>
           </div>
           <input v-model="userSearch" class="search" placeholder="Buscar por nombre o correo..." />
 
@@ -1096,7 +1095,6 @@ onMounted(loadData)
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.badge { background: #0ea5e9; color: #fff; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
 .admin-exit-btn {
   background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
   border: none;
