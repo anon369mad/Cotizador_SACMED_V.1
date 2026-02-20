@@ -979,10 +979,15 @@ onMounted(loadData)
 .entity-list, .cards-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .entity-row { display: flex; justify-content: space-between; align-items: center; border: 1px solid #e1e6ef; border-radius: 10px; padding: 12px; }
 .entity-row p { margin: 4px 0; color: #4d627d; }
-.actions { display: flex; gap: 8px; }
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
 .icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border: none;
   background: #d0d3d8;
   border-radius: 50%;
@@ -1002,15 +1007,18 @@ onMounted(loadData)
 .prices-cards-list {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
+  grid-auto-rows: 1fr;
+  align-items: stretch;
 }
 .price-card {
   border: 2px solid #56bdf1;
   border-radius: 14px;
   background: #fff;
   padding: 10px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  align-content: start;
+  height: 100%;
 }
 .price-card h4 { margin: 0; text-align: center; font-size: 16px; color: #1f2d3d; }
 .price-field {
@@ -1032,8 +1040,9 @@ onMounted(loadData)
   background: #f6f8fb;
 }
 .price-card .actions {
-  justify-content: space-between;
-  margin-top: 4px;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 4px;
 }
 .training-list {
   list-style: none;
