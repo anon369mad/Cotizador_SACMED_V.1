@@ -108,6 +108,10 @@ const props = defineProps({
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const ivaPctFromDb = ref(null)
 
+const isConfirmedQuote = computed(() =>
+  String(props.quote?.estado || "").toUpperCase() === "CONFIRMADA"
+)
+
 const ivaPct = computed(() => Number(
   props.quote.iva_porcentaje
   ?? props.quote.porcentaje
@@ -124,7 +128,7 @@ async function loadIvaPct() {
     if (!Array.isArray(list) || !list.length) return
 
     let selected = null
-    if (props.quote?.id_iva != null) {
+    if (isConfirmedQuote.value && props.quote?.id_iva != null) {
       selected = list.find((entry) => Number(entry.id_iva) === Number(props.quote.id_iva))
     }
 
@@ -137,7 +141,7 @@ async function loadIvaPct() {
 
 onMounted(loadIvaPct)
 
-watch(() => props.quote?.id_iva, loadIvaPct)
+watch(() => [props.quote?.id_iva, props.quote?.estado], loadIvaPct)
 
 function normalizeConditionEntry(entry) {
   if (entry && typeof entry === 'object') {

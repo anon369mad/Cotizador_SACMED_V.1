@@ -8,10 +8,11 @@ router = APIRouter(tags=["IVA"])
 
 @router.post("/iva", response_model=IvaResponse)
 def crear_iva(data: IvaCreate, db: Session = Depends(get_db)):
-    existe = db.query(Iva).filter(Iva.nombre == data.nombre).first()
-    if existe:
-        raise HTTPException(status_code=400, detail="IVA ya existe")
-    iva = Iva(**data.dict())
+    payload = data.dict()
+    if payload.get("activo", True):
+        db.query(Iva).filter(Iva.activo.is_(True)).update({"activo": False})
+
+    iva = Iva(**payload)
     db.add(iva)
     db.commit()
     db.refresh(iva)
@@ -30,14 +31,27 @@ def obtener_iva(id_iva: int, db: Session = Depends(get_db)):
 
 @router.put("/iva/{id_iva}", response_model=IvaResponse)
 def actualizar_iva(id_iva: int, data: IvaUpdate, db: Session = Depends(get_db)):
-    iva = db.query(Iva).get(id_iva)
-    if not iva:
+    iva_actual = db.query(Iva).get(id_iva)
+    if not iva_actual:
         raise HTTPException(status_code=404, detail="IVA no encontrado")
-    for campo, valor in data.dict(exclude_unset=True).items():
-        setattr(iva, campo, valor)
+
+    payload = data.dict(exclude_unset=True)
+    nuevo_porcentaje = payload.get("porcentaje", iva_actual.porcentaje)
+    nuevo_activo = payload.get("activo", True)
+
+    if nuevo_activo:
+        db.query(Iva).filter(Iva.activo.is_(True)).update({"activo": False})
+    else:
+        iva_actual.activo = False
+
+    nuevo_iva = Iva(
+        porcentaje=nuevo_porcentaje,
+        activo=nuevo_activo,
+    )
+    db.add(nuevo_iva)
     db.commit()
-    db.refresh(iva)
-    return iva
+    db.refresh(nuevo_iva)
+    return nuevo_iva
 
 @router.delete("/iva/{id_iva}")
 def eliminar_iva(id_iva: int, db: Session = Depends(get_db)):

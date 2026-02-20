@@ -141,25 +141,23 @@ const subtotal = computed(() =>
 )
 
 const ivaPct = ref(Number(props.baseData.ivaPorcentaje ?? props.baseData.porcentajeIva ?? 19))
+const activeIvaId = ref(Number(props.baseData.idIva ?? 1))
 
 onMounted(async () => {
-  if (!props.baseData?.ivaPorcentaje) {
-    try {
-      const res = await fetch(`${apiBaseUrl}/iva`)
-      if (res.ok) {
-        const list = await res.json()
-        if (Array.isArray(list) && list.length) {
-          let sel = null
-          if (props.baseData?.idIva) {
-            sel = list.find((x) => Number(x.id_iva) === Number(props.baseData.idIva))
-          }
-          if (!sel) sel = list.find((x) => x.activo) || list[0]
-          if (sel && sel.porcentaje != null) ivaPct.value = Number(sel.porcentaje)
+  try {
+    const res = await fetch(`${apiBaseUrl}/iva`)
+    if (res.ok) {
+      const list = await res.json()
+      if (Array.isArray(list) && list.length) {
+        const active = list.find((x) => x.activo) || list[0]
+        if (active) {
+          if (active.porcentaje != null) ivaPct.value = Number(active.porcentaje)
+          if (active.id_iva != null) activeIvaId.value = Number(active.id_iva)
         }
       }
-    } catch (e) {
-      // ignore and keep default
     }
+  } catch (e) {
+    // ignore and keep default
   }
 })
 
@@ -408,7 +406,7 @@ async function buildAndPersistQuote() {
     nombre_cliente: props.baseData.cliente ?? null,
     rut_cliente: props.baseData.rut ?? null,
     id_usuario: Number(props.baseData.idUsuario ?? 1),
-    id_iva: Number(props.baseData.idIva ?? 1),
+    id_iva: Number(activeIvaId.value || 1),
     meses: props.baseData.planType === 'Única' ? null : props.baseData.periodMonths,
     conexiones: props.baseData.conexiones ?? 0,
     subtotal: subtotal.value,
@@ -474,7 +472,7 @@ async function updatePersistedDraft() {
     nombre_cliente: props.baseData.cliente ?? null,
     rut_cliente: props.baseData.rut ?? null,
     id_usuario: Number(props.baseData.idUsuario ?? 1),
-    id_iva: Number(props.baseData.idIva ?? 1),
+    id_iva: Number(activeIvaId.value || 1),
     meses: props.baseData.planType === 'Única' ? null : props.baseData.periodMonths,
     conexiones: props.baseData.conexiones ?? 0,
     subtotal: subtotal.value,
