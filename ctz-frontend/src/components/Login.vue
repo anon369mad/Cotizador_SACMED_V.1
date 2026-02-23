@@ -3,15 +3,15 @@
     <div class="login-card">
       <h1 class="title">Sistema de Cotizaciones</h1>
       <p class="subtitle">Ingresa tus credenciales para continuar</p>
-      
+
       <form @submit.prevent="login" novalidate>
         <div class="form-group">
           <label for="email">Correo Electrónico</label>
-          <input 
+          <input
             id="email"
-            v-model="email" 
+            v-model="email"
             type="email"
-            placeholder="tu@sacmed.cl" 
+            placeholder="tu@sacmed.cl"
             required
             @input="clearFieldError('email')"
           />
@@ -20,10 +20,10 @@
 
         <div class="form-group">
           <label for="password">Contraseña</label>
-          <input 
+          <input
             id="password"
-            v-model="password" 
-            type="password" 
+            v-model="password"
+            type="password"
             placeholder="Ingresa tu contraseña"
             required
             @input="clearFieldError('password')"
@@ -31,48 +31,13 @@
           <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
         </div>
 
-        <button type="button" class="btn-link" @click="toggleRecoveryForm">
+        <button type="button" class="btn-link" @click="openRecoveryModal">
           ¿Olvidaste tu contraseña?
         </button>
 
-        <div v-if="showRecovery" class="recovery-panel">
-          <p class="recovery-title">Recuperar contraseña</p>
-          <div class="form-group">
-            <label for="recovery-email">Correo de recuperación</label>
-            <input
-              id="recovery-email"
-              v-model="recoveryEmail"
-              type="email"
-              placeholder="tu@sacmed.cl"
-            />
-          </div>
-
-          <button class="btn-secondary" type="button" :disabled="recoveryLoading" @click="requestRecoveryToken">
-            {{ recoveryLoading ? 'Generando token...' : 'Generar token' }}
-          </button>
-
-          <div class="form-group">
-            <label for="reset-token">Token</label>
-            <input id="reset-token" v-model="resetToken" type="text" placeholder="Pega aquí tu token" />
-          </div>
-
-          <div class="form-group">
-            <label for="new-password">Nueva contraseña</label>
-            <input
-              id="new-password"
-              v-model="newPassword"
-              type="password"
-              placeholder="Mínimo 6 caracteres"
-            />
-          </div>
-
-          <button class="btn-secondary" type="button" :disabled="resetLoading" @click="resetPassword">
-            {{ resetLoading ? 'Actualizando...' : 'Actualizar contraseña' }}
-          </button>
-
-          <p v-if="recoveryMessage" class="success-message">{{ recoveryMessage }}</p>
-          <p v-if="recoveryError" class="form-error">{{ recoveryError }}</p>
-        </div>
+        <button type="button" class="btn-link" @click="openFirstAccessModal">
+          ¿Tienes código de primer acceso?
+        </button>
 
         <p v-if="formError" class="form-error">{{ formError }}</p>
         <button class="btn-login" type="submit" :disabled="loading">
@@ -80,18 +45,118 @@
         </button>
       </form>
     </div>
+
+    <div v-if="showRecovery" class="modal-overlay" @click.self="closeRecoveryModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <p class="recovery-title">Recuperar contraseña</p>
+          <button type="button" class="modal-close" @click="closeRecoveryModal">×</button>
+        </div>
+
+        <div class="form-group">
+          <label for="recovery-email">Correo de recuperación</label>
+          <input
+            id="recovery-email"
+            v-model="recoveryEmail"
+            type="email"
+            placeholder="tu@sacmed.cl"
+          />
+        </div>
+
+        <button class="btn-secondary" type="button" :disabled="recoveryLoading" @click="requestRecoveryToken">
+          {{ recoveryLoading ? 'Generando token...' : 'Generar token' }}
+        </button>
+
+        <div class="form-group">
+          <label for="reset-token">Token</label>
+          <input id="reset-token" v-model="resetToken" type="text" placeholder="Pega aquí tu token" />
+        </div>
+
+        <div class="form-group">
+          <label for="new-password">Nueva contraseña</label>
+          <input
+            id="new-password"
+            v-model="newPassword"
+            type="password"
+            placeholder="Mínimo 6 caracteres"
+          />
+        </div>
+
+        <button class="btn-secondary" type="button" :disabled="resetLoading" @click="resetPassword">
+          {{ resetLoading ? 'Actualizando...' : 'Actualizar contraseña' }}
+        </button>
+
+        <p v-if="recoveryMessage" class="success-message">{{ recoveryMessage }}</p>
+        <p v-if="recoveryError" class="form-error">{{ recoveryError }}</p>
+      </div>
+    </div>
+
+    <div v-if="showFirstAccess" class="modal-overlay" @click.self="closeFirstAccessModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <p class="recovery-title">Primer acceso</p>
+          <button type="button" class="modal-close" @click="closeFirstAccessModal">×</button>
+        </div>
+
+        <p class="subtitle-small">
+          Ingresa el código enviado por administración y crea tu contraseña definitiva.
+        </p>
+
+        <div class="form-group">
+          <label for="first-access-email">Correo</label>
+          <input id="first-access-email" v-model="firstAccessEmail" type="email" placeholder="tu@sacmed.cl" />
+        </div>
+
+        <div class="form-group">
+          <label for="first-access-code">Código de validación</label>
+          <input id="first-access-code" v-model="firstAccessCode" type="text" placeholder="Código de 6 dígitos" />
+        </div>
+
+        <button class="btn-secondary" type="button" :disabled="firstAccessValidationLoading" @click="validateFirstAccessCode">
+          {{ firstAccessValidationLoading ? 'Validando...' : 'Validar código' }}
+        </button>
+
+        <div class="form-group">
+          <label for="first-access-password">Nueva contraseña</label>
+          <input id="first-access-password" v-model="firstAccessPassword" type="password" placeholder="Mínimo 6 caracteres" />
+        </div>
+
+        <div class="form-group">
+          <label for="first-access-password-confirm">Confirmar contraseña</label>
+          <input id="first-access-password-confirm" v-model="firstAccessPasswordConfirm" type="password" placeholder="Repite tu contraseña" />
+        </div>
+
+        <button class="btn-secondary" type="button" :disabled="firstAccessSetPasswordLoading" @click="setFirstAccessPassword">
+          {{ firstAccessSetPasswordLoading ? 'Guardando...' : 'Crear contraseña' }}
+        </button>
+
+        <p v-if="firstAccessMessage" class="success-message">{{ firstAccessMessage }}</p>
+        <p v-if="firstAccessError" class="form-error">{{ firstAccessError }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
   data() {
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     return {
+      apiBaseUrl,
       email: '',
       password: '',
       errors: {},
       formError: '',
       loading: false,
+      showFirstAccess: false,
+      firstAccessEmail: '',
+      firstAccessCode: '',
+      firstAccessPassword: '',
+      firstAccessPasswordConfirm: '',
+      firstAccessValidationLoading: false,
+      firstAccessSetPasswordLoading: false,
+      firstAccessError: '',
+      firstAccessMessage: '',
       showRecovery: false,
       recoveryEmail: '',
       resetToken: '',
@@ -108,10 +173,23 @@ export default {
         this.errors = { ...this.errors, [field]: '' }
       }
     },
-    toggleRecoveryForm() {
-      this.showRecovery = !this.showRecovery
+    openRecoveryModal() {
+      this.showRecovery = true
+      this.showFirstAccess = false
       this.recoveryError = ''
       this.recoveryMessage = ''
+    },
+    closeRecoveryModal() {
+      this.showRecovery = false
+    },
+    openFirstAccessModal() {
+      this.showFirstAccess = true
+      this.showRecovery = false
+      this.firstAccessError = ''
+      this.firstAccessMessage = ''
+    },
+    closeFirstAccessModal() {
+      this.showFirstAccess = false
     },
     validateForm() {
       const errors = {}
@@ -144,7 +222,7 @@ export default {
 
       this.recoveryLoading = true
       try {
-        const res = await fetch('http://localhost:8000/password-recovery', {
+        const res = await fetch(`${this.apiBaseUrl}/password-recovery`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -182,7 +260,7 @@ export default {
 
       this.resetLoading = true
       try {
-        const res = await fetch('http://localhost:8000/password-reset', {
+        const res = await fetch(`${this.apiBaseUrl}/password-reset`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -208,6 +286,84 @@ export default {
         this.resetLoading = false
       }
     },
+    async validateFirstAccessCode() {
+      this.firstAccessError = ''
+      this.firstAccessMessage = ''
+
+      if (!this.firstAccessEmail.trim() || !this.firstAccessCode.trim()) {
+        this.firstAccessError = 'Debes ingresar correo y código de validación.'
+        return
+      }
+
+      this.firstAccessValidationLoading = true
+      try {
+        const res = await fetch(`${this.apiBaseUrl}/first-access/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: this.firstAccessEmail.trim(),
+            access_code: this.firstAccessCode.trim()
+          })
+        })
+
+        const data = await res.json()
+        if (!res.ok) {
+          this.firstAccessError = data?.detail || 'No se pudo validar el código de primer acceso.'
+          return
+        }
+
+        this.firstAccessMessage = data.message
+      } catch (error) {
+        this.firstAccessError = 'No fue posible conectar con el servicio de primer acceso.'
+      } finally {
+        this.firstAccessValidationLoading = false
+      }
+    },
+    async setFirstAccessPassword() {
+      this.firstAccessError = ''
+      this.firstAccessMessage = ''
+
+      if (!this.firstAccessEmail.trim() || !this.firstAccessCode.trim()) {
+        this.firstAccessError = 'Debes ingresar correo y código de validación.'
+        return
+      }
+
+      if (this.firstAccessPassword.trim().length < 6) {
+        this.firstAccessError = 'La contraseña debe tener al menos 6 caracteres.'
+        return
+      }
+
+      if (this.firstAccessPassword.trim() !== this.firstAccessPasswordConfirm.trim()) {
+        this.firstAccessError = 'Las contraseñas no coinciden.'
+        return
+      }
+
+      this.firstAccessSetPasswordLoading = true
+      try {
+        const res = await fetch(`${this.apiBaseUrl}/first-access/set-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: this.firstAccessEmail.trim(),
+            access_code: this.firstAccessCode.trim(),
+            new_password: this.firstAccessPassword.trim()
+          })
+        })
+
+        const data = await res.json()
+        if (!res.ok) {
+          this.firstAccessError = data?.detail || 'No se pudo crear la contraseña de primer acceso.'
+          return
+        }
+
+        this.firstAccessMessage = data.message
+        this.password = ''
+      } catch (error) {
+        this.firstAccessError = 'No fue posible conectar con el servicio de primer acceso.'
+      } finally {
+        this.firstAccessSetPasswordLoading = false
+      }
+    },
     async login() {
       this.formError = ''
 
@@ -218,8 +374,7 @@ export default {
       this.loading = true
 
       try {
-        // Se valida el usuario contra el sistema existente.
-        const res = await fetch('http://localhost:8000/login', {
+        const res = await fetch(`${this.apiBaseUrl}/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -233,6 +388,15 @@ export default {
         if (!res.ok) {
           if (res.status === 401) {
             this.formError = 'Credenciales inválidas.'
+            return
+          }
+
+          if (res.status === 403) {
+            const payload = await res.json().catch(() => null)
+            this.formError = payload?.detail || 'Debes completar el flujo de primer acceso.'
+            this.showFirstAccess = true
+            this.showRecovery = false
+            this.firstAccessEmail = this.email.trim()
             return
           }
 
@@ -282,6 +446,12 @@ export default {
   color: #666;
   text-align: center;
   margin: 0 0 20px;
+}
+
+.subtitle-small {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
 }
 
 form {
@@ -379,15 +549,6 @@ input:focus {
   padding: 0;
 }
 
-.recovery-panel {
-  border: 1px solid #7ec3ff;
-  border-radius: 8px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 .recovery-title {
   color: #0073ff;
   font-weight: 700;
@@ -402,6 +563,46 @@ input:focus {
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-card {
+  width: min(100%, 520px);
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 12px;
+  border: 1px solid #7ec3ff;
+  background: #fff;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-close {
+  border: none;
+  background: transparent;
+  color: #0073ff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
 }
 
 @media (max-width: 520px) {
