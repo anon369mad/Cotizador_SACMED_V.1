@@ -8,7 +8,7 @@ class UsuarioBase(BaseModel):
     activo: bool = True
 
 class UsuarioCreate(UsuarioBase):
-    password: str
+    password: Optional[str] = None
 
 class UsuarioLogin(BaseModel):
     email: EmailStr
@@ -36,7 +36,6 @@ class UsuarioUpdate(BaseModel):
 
 class UsuarioResponse(UsuarioBase):
     id_usuario: int
-    password: str
 
     class Config:
         from_attributes = True

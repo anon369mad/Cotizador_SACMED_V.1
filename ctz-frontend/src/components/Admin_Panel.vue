@@ -38,8 +38,6 @@ const userModal = ref({ open: false, mode: 'create', id: null })
 const userForm = reactive({
   nombre: '',
   email: '',
-  password: '',
-  confirmPassword: '',
   rol: 'SALES_USER',
   activo: true
 })
@@ -206,8 +204,6 @@ function openCreateUser() {
   Object.assign(userForm, {
     nombre: '',
     email: '',
-    password: '',
-    confirmPassword: '',
     rol: 'SALES_USER',
     activo: true
   })
@@ -218,8 +214,6 @@ function openEditUser(user) {
   Object.assign(userForm, {
     nombre: user.nombre || '',
     email: user.email || '',
-    password: user.password || '',
-    confirmPassword: user.password || '',
     rol: user.rol || 'SALES_USER',
     activo: user.activo !== false
   })
@@ -237,20 +231,6 @@ async function submitUser() {
     return
   }
 
-  if (userModal.value.mode === 'create' && userForm.password.trim().length < 6) {
-    showFeedback('La contraseña debe tener al menos 6 caracteres', 'error')
-    return
-  }
-
-  if (userModal.value.mode === 'edit' && userForm.password && userForm.password.trim().length < 6) {
-    showFeedback('La contraseña debe tener al menos 6 caracteres', 'error')
-    return
-  }
-
-  if (userForm.password && userForm.password !== userForm.confirmPassword) {
-    showFeedback('La confirmación de contraseña no coincide', 'error')
-    return
-  }
 
   const payload = {
     nombre: userForm.nombre.trim(),
@@ -259,17 +239,14 @@ async function submitUser() {
     activo: userForm.activo
   }
 
-  if (userForm.password.trim()) {
-    payload.password = userForm.password.trim()
-  }
 
   try {
     if (userModal.value.mode === 'create') {
       await request('/usuarios', {
         method: 'POST',
-        body: JSON.stringify({ ...payload, password: userForm.password.trim() })
+        body: JSON.stringify(payload)
       })
-      showFeedback('Usuario creado correctamente')
+      showFeedback('Usuario creado correctamente. Se envió una clave temporal al correo del usuario')
     } else {
       await request(`/usuarios/${userModal.value.id}`, {
         method: 'PUT',
@@ -755,7 +732,6 @@ onMounted(loadData)
                 <strong>{{ user.nombre }}</strong>
                 <p>{{ user.email }}</p>
                 <small>{{ user.rol === 'ADMIN' ? 'Administrador' : 'Usuario' }} · {{ user.activo ? 'Activo' : 'Inactivo' }}</small>
-                <small>Contraseña: {{ user.password }}</small>
               </div>
               <div class="actions">
                 <button class="icon-btn" type="button" @click="openEditUser(user)">✏️</button>
@@ -943,8 +919,9 @@ onMounted(loadData)
         <h3>{{ userModal.mode === 'create' ? 'Crear usuario' : 'Editar usuario' }}</h3>
         <label>Nombre completo <input v-model="userForm.nombre" type="text" /></label>
         <label>Correo electrónico <input v-model="userForm.email" type="email" /></label>
-        <label>Contraseña <input v-model="userForm.password" type="text" /></label>
-        <label>Confirmar contraseña <input v-model="userForm.confirmPassword" type="text" /></label>
+        <p v-if="userModal.mode === 'create'" class="helper-text">
+          Al crear el usuario se generará una clave temporal automática y será enviada a su correo.
+        </p>
         <label>
           Rol
           <select v-model="userForm.rol">
@@ -1466,6 +1443,12 @@ onMounted(loadData)
   color: #fff;
 }
 .price-modal .icon-btn.success { background: #35d34f; }
+
+.helper-text {
+  margin: -2px 0 4px;
+  font-size: 14px;
+  color: #4c5a67;
+}
 
 .dynamic-attribute-row {
   display: grid;

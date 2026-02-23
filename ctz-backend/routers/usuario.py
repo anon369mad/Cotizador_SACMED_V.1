@@ -7,6 +7,8 @@ import hmac
 from smtplib import SMTP, SMTPException, SMTP_SSL
 import os
 from uuid import uuid4
+import secrets
+import string
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -89,8 +91,56 @@ def usuario_to_response(usuario: Usuario) -> dict:
         "email": usuario.email,
         "rol": usuario.rol,
         "activo": usuario.activo,
-        "password": decrypt_password(usuario.password_hash),
     }
+
+
+def generate_temporary_password(length: int = 10) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def send_temporary_password_email(recipient_email: str, temporary_password: str):
+    smtp_host = _env_first("SMTP_HOST", "MAIL_HOST")
+    smtp_port_raw = _env_first("SMTP_PORT", "MAIL_PORT", default="587")
+    smtp_user = _env_first("SMTP_USER", "MAIL_USERNAME")
+    smtp_password = _env_first("SMTP_PASSWORD", "MAIL_PASSWORD")
+    smtp_sender = _env_first("SMTP_SENDER", "MAIL_FROM_ADDRESS", default=smtp_user)
+    smtp_use_tls = _env_first("SMTP_USE_TLS", "MAIL_USE_TLS", default="true").lower() == "true"
+    smtp_use_ssl = _env_first("SMTP_USE_SSL", "MAIL_USE_SSL", default="false").lower() == "true"
+
+    if not smtp_host:
+        raise ValueError("Falta configurar SMTP_HOST (o MAIL_HOST).")
+
+    try:
+        smtp_port = int(smtp_port_raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("SMTP_PORT debe ser un número válido.") from exc
+
+    if not smtp_sender:
+        raise ValueError("Falta configurar SMTP_SENDER (o MAIL_FROM_ADDRESS).")
+
+    message = EmailMessage()
+    message["Subject"] = "Clave temporal de acceso"
+    message["From"] = smtp_sender
+    message["To"] = recipient_email
+    message.set_content(
+        "Hola,\n\n"
+        "Se creó tu usuario en Cotizador.\n"
+        f"Tu clave temporal es: {temporary_password}\n\n"
+        "Por seguridad, cambia esta clave usando la opción de recuperar contraseña.\n"
+        "La clave temporal es para el primer acceso y se recomienda cambiarla de inmediato.\n"
+    )
+
+    smtp_client = SMTP_SSL if smtp_use_ssl else SMTP
+
+    with smtp_client(host=smtp_host, port=smtp_port, timeout=15) as smtp:
+        if smtp_use_tls and not smtp_use_ssl:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+        if smtp_user and smtp_password:
+            smtp.login(smtp_user, smtp_password)
+        smtp.send_message(message)
 
 
 def send_recovery_email(recipient_email: str, token: str):
@@ -139,16 +189,32 @@ def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
     existe = db.query(Usuario).filter(Usuario.email == data.email).first()
     if existe:
         raise HTTPException(status_code=400, detail="Email ya registrado")
-    if len(data.password.strip()) < 6:
+
+    plain_password = (data.password or "").strip() or generate_temporary_password()
+    if len(plain_password) < 6:
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
 
     usuario = Usuario(
         **data.dict(exclude={"password"}),
-        password_hash=encrypt_password(data.password.strip()),
+        password_hash=encrypt_password(plain_password),
     )
     db.add(usuario)
     db.commit()
     db.refresh(usuario)
+
+    try:
+        send_temporary_password_email(usuario.email, plain_password)
+    except (SMTPException, OSError, ValueError) as exc:
+        logger.exception("Error enviando clave temporal para %s", usuario.email)
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Usuario creado, pero no fue posible enviar la clave temporal al correo. "
+                "Revisa la configuración SMTP (host, puerto, remitente, usuario, contraseña y TLS/SSL). "
+                f"Detalle técnico: {exc}"
+            ),
+        )
+
     return usuario_to_response(usuario)
 
 @router.post("/login", response_model=UsuarioResponse)
