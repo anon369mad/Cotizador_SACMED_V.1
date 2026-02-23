@@ -679,7 +679,6 @@ async function discardQuote() {
       <tr>
         <th>Cant.</th>
         <th>Servicio</th>
-        <th>Moneda</th>
         <th>Unitario</th>
         <th>Desc.</th>
         <th>Total</th>
@@ -696,13 +695,6 @@ async function discardQuote() {
         <input v-model.number="editQty" type="number" min="1" class="edit-input" />
       </td>
       <td>{{ it.name }}</td>
-      <td>
-        <template v-if="isDbItem(it)">{{ it.currency || 'CLP' }}</template>
-        <select v-else v-model="editCurrency" class="edit-input">
-          <option value="CLP">CLP</option>
-          <option value="UF">UF</option>
-        </select>
-      </td>
       <td>
         <template v-if="isDbItem(it)">${{ roundAmount(it.unitValue) }}</template>
         <input
@@ -725,7 +717,6 @@ async function discardQuote() {
     <template v-else>
       <td>{{ it.qty }}</td>
       <td>{{ it.name }}</td>
-      <td>{{ it.currency || 'CLP' }}</td>
       <td>${{ roundAmount(it.unitValue) }}</td>
       <td>{{ it.discountPct }}%</td>
       <td class="bold">${{ rowTotal(it).toFixed(0) }}</td>
@@ -737,7 +728,7 @@ async function discardQuote() {
   </tr>
 
   <tr v-if="!items.length">
-    <td colspan="7" class="empty">
+    <td colspan="6" class="empty">
       No hay servicios agregados
     </td>
   </tr>
