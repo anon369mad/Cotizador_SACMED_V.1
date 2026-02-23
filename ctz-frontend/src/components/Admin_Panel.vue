@@ -656,7 +656,7 @@ onMounted(loadData)
           <span class="admin-user-name">{{ userName }}</span>
         </div>
         <button class="admin-exit-btn" type="button" @click="logout">
-          <span class="admin-exit-icon" aria-hidden="true">🚪</span>
+          <img src="/sign-out-option.png" alt="" class="admin-exit-icon" aria-hidden="true" />
           <span>Salir</span>
         </button>
       </div>
@@ -1093,7 +1093,9 @@ onMounted(loadData)
   transform: translateY(-1px);
 }
 .admin-exit-icon {
-  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 .content { padding: 20px 24px; }
