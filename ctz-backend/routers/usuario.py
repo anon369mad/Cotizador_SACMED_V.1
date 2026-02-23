@@ -186,7 +186,11 @@ def send_recovery_email(recipient_email: str, token: str):
 
 @router.post("/usuarios", response_model=UsuarioResponse)
 def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
-    existe = db.query(Usuario).filter(Usuario.email == data.email).first()
+    existe = (
+        db.query(Usuario)
+        .filter(Usuario.email == data.email, Usuario.activo.is_(True))
+        .first()
+    )
     if existe:
         raise HTTPException(status_code=400, detail="Email ya registrado")
 
@@ -246,7 +250,15 @@ def actualizar_usuario(id_usuario: int, data: UsuarioUpdate, db: Session = Depen
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     if data.email:
-        existe = db.query(Usuario).filter(Usuario.email == data.email, Usuario.id_usuario != id_usuario).first()
+        existe = (
+            db.query(Usuario)
+            .filter(
+                Usuario.email == data.email,
+                Usuario.id_usuario != id_usuario,
+                Usuario.activo.is_(True),
+            )
+            .first()
+        )
         if existe:
             raise HTTPException(status_code=400, detail="Email ya registrado")
 
