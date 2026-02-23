@@ -412,13 +412,18 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         .dates td:first-child {{ font-weight:700; width:60%; }}
         .client {{ margin: 16px 0 18px; }}
         .client strong {{ margin-right:8px; }}
-        table.main {{ width:100%; border-collapse: collapse; font-size:12px; }}
+        table.main {{ width:100%; border-collapse: collapse; font-size:12px; table-layout: fixed; }}
         table.main th {{ background:#b7d1eb; border:1px solid #787878; padding:6px; text-align:center; }}
         table.main td {{ border:1px solid #909090; padding:5px 7px; }}
+        table.main col.col-cantidad {{ width:10%; }}
+        table.main col.col-servicio {{ width:44%; }}
+        table.main col.col-unitario {{ width:16%; }}
+        table.main col.col-descuento {{ width:15%; }}
+        table.main col.col-total {{ width:15%; }}
         .money {{ text-align:right; white-space:nowrap; }}
         .summary-wrap {{ display:flex; justify-content:flex-end; align-items:flex-start; gap:12px; margin-top:8px; }}
         .summary-left {{ width:auto; min-width:280px; font-weight:600; line-height:1.7; text-align:right; padding-top:4px; }}
-        .summary-right {{ width:300px; border-collapse: collapse; }}
+        .summary-right {{ width:30%; margin-left:auto; border-collapse: collapse; table-layout: fixed; }}
         .summary-right td {{ border:1px solid #909090; padding:4px 6px; }}
         .summary-right tr:last-child td {{ background:#9ec3e8; font-weight:700; }}
         .section-title {{ margin:16px 0 7px; font-weight:700; text-decoration:underline; color:#325f8d; }}
@@ -458,7 +463,14 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
           <div><strong>RUT:</strong> {escape(payload.rut)}</div>
         </div>
 
-        <table class=\"main\">
+        <table class="main">
+          <colgroup>
+            <col class="col-cantidad" />
+            <col class="col-servicio" />
+            <col class="col-unitario" />
+            <col class="col-descuento" />
+            <col class="col-total" />
+          </colgroup>
           <thead>
             <tr>
               <th>Cantidad</th><th>Servicio</th><th>Unitario</th><th>Desc.</th><th>Total</th>
