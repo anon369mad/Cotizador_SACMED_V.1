@@ -37,11 +37,19 @@ ENCRYPTED_PREFIX = "enc::"
 logger = logging.getLogger(__name__)
 
 
+def build_inactive_email(user_id: int) -> str:
+    return f"inactivo+{user_id}@disabled.local"
+
+
 def clear_email_for_inactive_users(db: Session):
-    db.query(Usuario).filter(Usuario.activo.is_(False), Usuario.email.isnot(None)).update(
-        {Usuario.email: None},
-        synchronize_session=False,
+    inactive_users = (
+        db.query(Usuario)
+        .filter(Usuario.activo.is_(False), Usuario.email.isnot(None))
+        .all()
     )
+
+    for inactive_user in inactive_users:
+        inactive_user.email = build_inactive_email(inactive_user.id_usuario)
 
 
 def clear_tokens_for_email(email: str | None):
@@ -330,7 +338,7 @@ def actualizar_usuario(id_usuario: int, data: UsuarioUpdate, db: Session = Depen
         setattr(usuario, campo, valor)
 
     if usuario.activo is False:
-        usuario.email = None
+        usuario.email = build_inactive_email(usuario.id_usuario)
         clear_tokens_for_email(previous_email)
 
     db.commit()
@@ -344,7 +352,7 @@ def eliminar_usuario(id_usuario: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     clear_tokens_for_email(usuario.email)
     usuario.activo = False
-    usuario.email = None
+    usuario.email = build_inactive_email(usuario.id_usuario)
     db.commit()
     return {"ok": True, "message": "Usuario desactivado correctamente"}
 
