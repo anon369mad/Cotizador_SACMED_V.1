@@ -632,7 +632,7 @@ onMounted(() => {
           <span class="user-name">{{ userName }}</span>
         </div>
         <button class="btn-exit" @click="logout">
-          <span class="exit-icon">🚪</span>
+          <img src="/sign-out-option.png" alt="" class="exit-icon" aria-hidden="true" />
           <span class="exit-text">Salir</span>
         </button>
       </div>
@@ -821,7 +821,9 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 .exit-icon {
-  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 .exit-text {
   line-height: 1;
