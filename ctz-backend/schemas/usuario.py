@@ -27,6 +27,17 @@ class PasswordResetConfirm(BaseModel):
     token: str
     new_password: str
 
+
+class FirstAccessValidationRequest(BaseModel):
+    email: EmailStr
+    access_code: str
+
+
+class FirstAccessSetPasswordRequest(BaseModel):
+    email: EmailStr
+    access_code: str
+    new_password: str
+
 class UsuarioUpdate(BaseModel):
     nombre: Optional[str]
     email: Optional[EmailStr]

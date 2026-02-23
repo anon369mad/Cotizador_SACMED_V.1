@@ -15,6 +15,8 @@ from sqlalchemy.orm import Session
 from database.session import get_db
 from models.usuario import Usuario
 from schemas.usuario import (
+    FirstAccessSetPasswordRequest,
+    FirstAccessValidationRequest,
     PasswordRecoveryRequest,
     PasswordRecoveryTokenResponse,
     PasswordResetConfirm,
@@ -30,6 +32,7 @@ router = APIRouter(tags=["Usuarios"])
 # Almacenamiento temporal en memoria para tokens de recuperación.
 # Estructura: {token: {"email": str, "expires_at": datetime}}
 recovery_tokens: dict[str, dict[str, datetime | str]] = {}
+first_access_tokens: dict[str, dict[str, datetime | str]] = {}
 ENCRYPTED_PREFIX = "enc::"
 logger = logging.getLogger(__name__)
 
@@ -99,7 +102,22 @@ def generate_temporary_password(length: int = 10) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def send_temporary_password_email(recipient_email: str, temporary_password: str):
+def generate_first_access_code(length: int = 6) -> str:
+    digits = string.digits
+    return "".join(secrets.choice(digits) for _ in range(length))
+
+
+def get_first_access_token(email: str) -> tuple[str | None, dict[str, datetime | str] | None]:
+    for token, token_data in list(first_access_tokens.items()):
+        if token_data["email"] == email:
+            if datetime.utcnow() > token_data["expires_at"]:
+                first_access_tokens.pop(token, None)
+                continue
+            return token, token_data
+    return None, None
+
+
+def send_temporary_password_email(recipient_email: str, temporary_password: str, first_access_code: str):
     smtp_host = _env_first("SMTP_HOST", "MAIL_HOST")
     smtp_port_raw = _env_first("SMTP_PORT", "MAIL_PORT", default="587")
     smtp_user = _env_first("SMTP_USER", "MAIL_USERNAME")
@@ -127,8 +145,10 @@ def send_temporary_password_email(recipient_email: str, temporary_password: str)
         "Hola,\n\n"
         "Se creó tu usuario en Cotizador.\n"
         f"Tu clave temporal es: {temporary_password}\n\n"
-        "Por seguridad, cambia esta clave usando la opción de recuperar contraseña.\n"
-        "La clave temporal es para el primer acceso y se recomienda cambiarla de inmediato.\n"
+        "Tu código de validación para primer acceso es: "
+        f"{first_access_code}\n\n"
+        "Debes ingresar a la pantalla de Primer acceso y crear tu contraseña definitiva.\n"
+        "Este flujo es distinto a Recuperar contraseña y aplica solo para tu primer ingreso.\n"
     )
 
     smtp_client = SMTP_SSL if smtp_use_ssl else SMTP
@@ -195,6 +215,7 @@ def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email ya registrado")
 
     plain_password = (data.password or "").strip() or generate_temporary_password()
+    first_access_code = generate_first_access_code()
     if len(plain_password) < 6:
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
 
@@ -206,8 +227,13 @@ def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(usuario)
 
+    first_access_tokens[first_access_code] = {
+        "email": usuario.email,
+        "expires_at": datetime.utcnow() + timedelta(hours=24),
+    }
+
     try:
-        send_temporary_password_email(usuario.email, plain_password)
+        send_temporary_password_email(usuario.email, plain_password, first_access_code)
     except (SMTPException, OSError, ValueError) as exc:
         logger.exception("Error enviando clave temporal para %s", usuario.email)
         raise HTTPException(
@@ -230,6 +256,14 @@ def login(data: UsuarioLogin, db: Session = Depends(get_db)):
     )
     if not usuario or not verify_password(usuario.password_hash, data.password.strip()):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
+
+    token, _ = get_first_access_token(usuario.email)
+    if token:
+        raise HTTPException(
+            status_code=403,
+            detail="Debes completar el flujo de primer acceso para crear tu contraseña definitiva.",
+        )
+
     return usuario_to_response(usuario)
 
 @router.get("/usuarios", response_model=list[UsuarioResponse])
@@ -282,6 +316,55 @@ def eliminar_usuario(id_usuario: int, db: Session = Depends(get_db)):
     usuario.activo = False
     db.commit()
     return {"ok": True, "message": "Usuario desactivado correctamente"}
+
+
+@router.post("/first-access/validate")
+def validate_first_access(data: FirstAccessValidationRequest, db: Session = Depends(get_db)):
+    token_data = first_access_tokens.get(data.access_code.strip())
+    if not token_data:
+        raise HTTPException(status_code=400, detail="Código de primer acceso inválido")
+
+    if datetime.utcnow() > token_data["expires_at"]:
+        first_access_tokens.pop(data.access_code.strip(), None)
+        raise HTTPException(status_code=400, detail="Código de primer acceso expirado")
+
+    if token_data["email"] != data.email.strip():
+        raise HTTPException(status_code=400, detail="El código no corresponde al correo ingresado")
+
+    usuario = db.query(Usuario).filter(Usuario.email == data.email.strip(), Usuario.activo.is_(True)).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    return {"message": "Código validado correctamente"}
+
+
+@router.post("/first-access/set-password")
+def set_first_access_password(data: FirstAccessSetPasswordRequest, db: Session = Depends(get_db)):
+    token = data.access_code.strip()
+    token_data = first_access_tokens.get(token)
+    if not token_data:
+        raise HTTPException(status_code=400, detail="Código de primer acceso inválido")
+
+    if datetime.utcnow() > token_data["expires_at"]:
+        first_access_tokens.pop(token, None)
+        raise HTTPException(status_code=400, detail="Código de primer acceso expirado")
+
+    email = data.email.strip()
+    if token_data["email"] != email:
+        raise HTTPException(status_code=400, detail="El código no corresponde al correo ingresado")
+
+    if len(data.new_password.strip()) < 6:
+        raise HTTPException(status_code=400, detail="La nueva contraseña debe tener al menos 6 caracteres")
+
+    usuario = db.query(Usuario).filter(Usuario.email == email, Usuario.activo.is_(True)).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    usuario.password_hash = encrypt_password(data.new_password.strip())
+    db.commit()
+    first_access_tokens.pop(token, None)
+
+    return {"message": "Contraseña creada correctamente. Ya puedes iniciar sesión."}
 
 
 @router.post("/password-recovery", response_model=PasswordRecoveryTokenResponse)
