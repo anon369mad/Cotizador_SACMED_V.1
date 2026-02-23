@@ -37,6 +37,26 @@ ENCRYPTED_PREFIX = "enc::"
 logger = logging.getLogger(__name__)
 
 
+def clear_email_for_inactive_users(db: Session):
+    db.query(Usuario).filter(Usuario.activo.is_(False), Usuario.email.isnot(None)).update(
+        {Usuario.email: None},
+        synchronize_session=False,
+    )
+
+
+def clear_tokens_for_email(email: str | None):
+    if not email:
+        return
+
+    for token, token_data in list(first_access_tokens.items()):
+        if token_data["email"] == email:
+            first_access_tokens.pop(token, None)
+
+    for token, token_data in list(recovery_tokens.items()):
+        if token_data["email"] == email:
+            recovery_tokens.pop(token, None)
+
+
 def _env_first(*keys: str, default: str | None = None) -> str | None:
     for key in keys:
         value = os.getenv(key)
@@ -206,6 +226,9 @@ def send_recovery_email(recipient_email: str, token: str):
 
 @router.post("/usuarios", response_model=UsuarioResponse)
 def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
+    clear_email_for_inactive_users(db)
+    db.flush()
+
     existe = (
         db.query(Usuario)
         .filter(Usuario.email == data.email, Usuario.activo.is_(True))
@@ -299,11 +322,17 @@ def actualizar_usuario(id_usuario: int, data: UsuarioUpdate, db: Session = Depen
     if data.password is not None and len(data.password.strip()) < 6:
         raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
 
+    previous_email = usuario.email
     for campo, valor in data.dict(exclude_unset=True).items():
         if campo == "password":
             usuario.password_hash = encrypt_password(valor.strip())
             continue
         setattr(usuario, campo, valor)
+
+    if usuario.activo is False:
+        usuario.email = None
+        clear_tokens_for_email(previous_email)
+
     db.commit()
     db.refresh(usuario)
     return usuario_to_response(usuario)
@@ -313,7 +342,9 @@ def eliminar_usuario(id_usuario: int, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).get(id_usuario)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    clear_tokens_for_email(usuario.email)
     usuario.activo = False
+    usuario.email = None
     db.commit()
     return {"ok": True, "message": "Usuario desactivado correctamente"}
 

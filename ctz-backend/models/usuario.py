@@ -6,7 +6,7 @@ class Usuario(Base):
 
     id_usuario = Column(Integer, primary_key=True)
     nombre = Column(String(100), nullable=False)
-    email = Column(String(120), nullable=False, unique=True)
+    email = Column(String(120), nullable=True, unique=True)
     password_hash = Column(String(255), nullable=False)
     rol = Column(Enum("ADMIN", "SALES_USER"))
     activo = Column(Boolean, default=True)
