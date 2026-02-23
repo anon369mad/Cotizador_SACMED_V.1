@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta
 from email.message import EmailMessage
+import base64
+import hashlib
+import hmac
 from smtplib import SMTP, SMTPException, SMTP_SSL
 import os
 from uuid import uuid4
@@ -24,6 +27,60 @@ router = APIRouter(tags=["Usuarios"])
 # Almacenamiento temporal en memoria para tokens de recuperación.
 # Estructura: {token: {"email": str, "expires_at": datetime}}
 recovery_tokens: dict[str, dict[str, datetime | str]] = {}
+ENCRYPTED_PREFIX = "enc::"
+
+
+def _encryption_key() -> bytes:
+    return os.getenv("PASSWORD_ENCRYPTION_KEY", "cotizador-dev-secret-key").encode("utf-8")
+
+
+def _build_keystream(length: int, key: bytes) -> bytes:
+    stream = b""
+    counter = 0
+    while len(stream) < length:
+        stream += hashlib.sha256(key + counter.to_bytes(4, "big")).digest()
+        counter += 1
+    return stream[:length]
+
+
+def encrypt_password(plain_password: str) -> str:
+    plain_bytes = plain_password.encode("utf-8")
+    key = _encryption_key()
+    keystream = _build_keystream(len(plain_bytes), key)
+    encrypted_bytes = bytes(byte ^ keystream[index] for index, byte in enumerate(plain_bytes))
+    token = base64.urlsafe_b64encode(encrypted_bytes).decode("utf-8")
+    return f"{ENCRYPTED_PREFIX}{token}"
+
+
+def decrypt_password(stored_password: str) -> str:
+    if not stored_password.startswith(ENCRYPTED_PREFIX):
+        return stored_password
+
+    token = stored_password[len(ENCRYPTED_PREFIX):]
+    encrypted_bytes = base64.urlsafe_b64decode(token.encode("utf-8"))
+    key = _encryption_key()
+    keystream = _build_keystream(len(encrypted_bytes), key)
+    plain_bytes = bytes(byte ^ keystream[index] for index, byte in enumerate(encrypted_bytes))
+    return plain_bytes.decode("utf-8")
+
+
+def verify_password(stored_password: str, plain_password: str) -> bool:
+    try:
+        decrypted = decrypt_password(stored_password)
+    except (ValueError, UnicodeDecodeError):
+        return False
+    return hmac.compare_digest(decrypted, plain_password)
+
+
+def usuario_to_response(usuario: Usuario) -> dict:
+    return {
+        "id_usuario": usuario.id_usuario,
+        "nombre": usuario.nombre,
+        "email": usuario.email,
+        "rol": usuario.rol,
+        "activo": usuario.activo,
+        "password": decrypt_password(usuario.password_hash),
+    }
 
 
 def send_recovery_email(recipient_email: str, token: str):
@@ -61,37 +118,40 @@ def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
     existe = db.query(Usuario).filter(Usuario.email == data.email).first()
     if existe:
         raise HTTPException(status_code=400, detail="Email ya registrado")
-    usuario = Usuario(**data.dict(exclude={"password"}), password_hash=data.password)
+    if len(data.password.strip()) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+
+    usuario = Usuario(
+        **data.dict(exclude={"password"}),
+        password_hash=encrypt_password(data.password.strip()),
+    )
     db.add(usuario)
     db.commit()
     db.refresh(usuario)
-    return usuario
+    return usuario_to_response(usuario)
 
 @router.post("/login", response_model=UsuarioResponse)
 def login(data: UsuarioLogin, db: Session = Depends(get_db)):
     usuario = (
         db.query(Usuario)
-        .filter(
-            Usuario.email == data.email,
-            Usuario.password_hash == data.password,
-            Usuario.activo.is_(True),
-        )
+        .filter(Usuario.email == data.email, Usuario.activo.is_(True))
         .first()
     )
-    if not usuario:
+    if not usuario or not verify_password(usuario.password_hash, data.password.strip()):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
-    return usuario
+    return usuario_to_response(usuario)
 
 @router.get("/usuarios", response_model=list[UsuarioResponse])
 def listar_usuarios(db: Session = Depends(get_db)):
-    return db.query(Usuario).filter(Usuario.activo.is_(True)).all()
+    usuarios = db.query(Usuario).filter(Usuario.activo.is_(True)).all()
+    return [usuario_to_response(usuario) for usuario in usuarios]
 
 @router.get("/usuarios/{id_usuario}", response_model=UsuarioResponse)
 def obtener_usuario(id_usuario: int, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).get(id_usuario)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return usuario
+    return usuario_to_response(usuario)
 
 @router.put("/usuarios/{id_usuario}", response_model=UsuarioResponse)
 def actualizar_usuario(id_usuario: int, data: UsuarioUpdate, db: Session = Depends(get_db)):
@@ -108,12 +168,12 @@ def actualizar_usuario(id_usuario: int, data: UsuarioUpdate, db: Session = Depen
 
     for campo, valor in data.dict(exclude_unset=True).items():
         if campo == "password":
-            usuario.password_hash = valor.strip()
+            usuario.password_hash = encrypt_password(valor.strip())
             continue
         setattr(usuario, campo, valor)
     db.commit()
     db.refresh(usuario)
-    return usuario
+    return usuario_to_response(usuario)
 
 @router.delete("/usuarios/{id_usuario}")
 def eliminar_usuario(id_usuario: int, db: Session = Depends(get_db)):
@@ -173,7 +233,7 @@ def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get
     if len(data.new_password.strip()) < 6:
         raise HTTPException(status_code=400, detail="La nueva contraseña debe tener al menos 6 caracteres")
 
-    usuario.password_hash = data.new_password.strip()
+    usuario.password_hash = encrypt_password(data.new_password.strip())
     db.commit()
     recovery_tokens.pop(data.token, None)
 
