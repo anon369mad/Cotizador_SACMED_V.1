@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from email.message import EmailMessage
-from smtplib import SMTP, SMTPException
+from smtplib import SMTP, SMTPException, SMTP_SSL
 import os
 from uuid import uuid4
 
@@ -24,6 +24,37 @@ router = APIRouter(tags=["Usuarios"])
 # Almacenamiento temporal en memoria para tokens de recuperación.
 # Estructura: {token: {"email": str, "expires_at": datetime}}
 recovery_tokens: dict[str, dict[str, datetime | str]] = {}
+
+
+def send_recovery_email(recipient_email: str, token: str):
+    smtp_host = os.getenv("SMTP_HOST", "localhost")
+    smtp_port = int(os.getenv("SMTP_PORT", "25"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_sender = os.getenv("SMTP_SENDER", smtp_user or "no-reply@cotizador.local")
+    smtp_use_tls = os.getenv("SMTP_USE_TLS", "false").lower() == "true"
+    smtp_use_ssl = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+
+    message = EmailMessage()
+    message["Subject"] = "Token de recuperación de contraseña"
+    message["From"] = smtp_sender
+    message["To"] = recipient_email
+    message.set_content(
+        f"Hola,\n\nTu token de recuperación es: {token}\n"
+        "Este token expira en 30 minutos.\n\n"
+        "Si no solicitaste este cambio, ignora este mensaje."
+    )
+
+    smtp_client = SMTP_SSL if smtp_use_ssl else SMTP
+
+    with smtp_client(host=smtp_host, port=smtp_port, timeout=15) as smtp:
+        if smtp_use_tls and not smtp_use_ssl:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+        if smtp_user and smtp_password:
+            smtp.login(smtp_user, smtp_password)
+        smtp.send_message(message)
 
 @router.post("/usuarios", response_model=UsuarioResponse)
 def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
@@ -106,35 +137,16 @@ def request_password_recovery(data: PasswordRecoveryRequest, db: Session = Depen
         "expires_at": datetime.utcnow() + timedelta(minutes=30),
     }
 
-    smtp_host = os.getenv("SMTP_HOST", "localhost")
-    smtp_port = int(os.getenv("SMTP_PORT", "25"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-    smtp_sender = os.getenv("SMTP_SENDER", smtp_user or "no-reply@cotizador.local")
-    smtp_use_tls = os.getenv("SMTP_USE_TLS", "false").lower() == "true"
-
-    message = EmailMessage()
-    message["Subject"] = "Token de recuperación de contraseña"
-    message["From"] = smtp_sender
-    message["To"] = usuario.email
-    message.set_content(
-        f"Hola,\n\nTu token de recuperación es: {token}\n"
-        "Este token expira en 30 minutos.\n\n"
-        "Si no solicitaste este cambio, ignora este mensaje."
-    )
-
     try:
-        with SMTP(host=smtp_host, port=smtp_port, timeout=10) as smtp:
-            if smtp_use_tls:
-                smtp.starttls()
-            if smtp_user and smtp_password:
-                smtp.login(smtp_user, smtp_password)
-            smtp.send_message(message)
+        send_recovery_email(usuario.email, token)
     except (SMTPException, OSError, ValueError):
         recovery_tokens.pop(token, None)
         raise HTTPException(
             status_code=500,
-            detail="No fue posible enviar el token al correo. Puede ser que el correo no exista.",
+            detail=(
+                "No fue posible enviar el token al correo. "
+                "Revisa la configuración SMTP (host, puerto, usuario, contraseña y TLS/SSL)."
+            ),
         )
 
     return PasswordRecoveryTokenResponse(
