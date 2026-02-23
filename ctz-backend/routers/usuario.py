@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from email.message import EmailMessage
+import logging
 import base64
 import hashlib
 import hmac
@@ -28,6 +29,15 @@ router = APIRouter(tags=["Usuarios"])
 # Estructura: {token: {"email": str, "expires_at": datetime}}
 recovery_tokens: dict[str, dict[str, datetime | str]] = {}
 ENCRYPTED_PREFIX = "enc::"
+logger = logging.getLogger(__name__)
+
+
+def _env_first(*keys: str, default: str | None = None) -> str | None:
+    for key in keys:
+        value = os.getenv(key)
+        if value is not None and value.strip() != "":
+            return value.strip()
+    return default
 
 
 def _encryption_key() -> bytes:
@@ -84,13 +94,24 @@ def usuario_to_response(usuario: Usuario) -> dict:
 
 
 def send_recovery_email(recipient_email: str, token: str):
-    smtp_host = os.getenv("SMTP_HOST", "localhost")
-    smtp_port = int(os.getenv("SMTP_PORT", "25"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-    smtp_sender = os.getenv("SMTP_SENDER", smtp_user or "no-reply@cotizador.local")
-    smtp_use_tls = os.getenv("SMTP_USE_TLS", "false").lower() == "true"
-    smtp_use_ssl = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+    smtp_host = _env_first("SMTP_HOST", "MAIL_HOST")
+    smtp_port_raw = _env_first("SMTP_PORT", "MAIL_PORT", default="587")
+    smtp_user = _env_first("SMTP_USER", "MAIL_USERNAME")
+    smtp_password = _env_first("SMTP_PASSWORD", "MAIL_PASSWORD")
+    smtp_sender = _env_first("SMTP_SENDER", "MAIL_FROM_ADDRESS", default=smtp_user)
+    smtp_use_tls = _env_first("SMTP_USE_TLS", "MAIL_USE_TLS", default="true").lower() == "true"
+    smtp_use_ssl = _env_first("SMTP_USE_SSL", "MAIL_USE_SSL", default="false").lower() == "true"
+
+    if not smtp_host:
+        raise ValueError("Falta configurar SMTP_HOST (o MAIL_HOST).")
+
+    try:
+        smtp_port = int(smtp_port_raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("SMTP_PORT debe ser un número válido.") from exc
+
+    if not smtp_sender:
+        raise ValueError("Falta configurar SMTP_SENDER (o MAIL_FROM_ADDRESS).")
 
     message = EmailMessage()
     message["Subject"] = "Token de recuperación de contraseña"
@@ -199,13 +220,15 @@ def request_password_recovery(data: PasswordRecoveryRequest, db: Session = Depen
 
     try:
         send_recovery_email(usuario.email, token)
-    except (SMTPException, OSError, ValueError):
+    except (SMTPException, OSError, ValueError) as exc:
+        logger.exception("Error enviando token de recuperación para %s", usuario.email)
         recovery_tokens.pop(token, None)
         raise HTTPException(
             status_code=500,
             detail=(
                 "No fue posible enviar el token al correo. "
-                "Revisa la configuración SMTP (host, puerto, usuario, contraseña y TLS/SSL)."
+                "Revisa la configuración SMTP (host, puerto, remitente, usuario, contraseña y TLS/SSL). "
+                f"Detalle técnico: {exc}"
             ),
         )
 
