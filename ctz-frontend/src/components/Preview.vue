@@ -5,7 +5,7 @@
         <img src="/sacmed.png" alt="logo" class="logo" />
         <div>
           <p class="doc-mark">Documento de cotización</p>
-          <h3>Cotización tipo {{ quote.planType || 'Período' }}</h3>
+          <h3>Cotización Tipo {{ quote.planType || 'Período' }}</h3>
           <p class="meta">Ejecutivo: {{ quote.ejecutivo || 'Usuario' }}</p>
         </div>
       </header>
