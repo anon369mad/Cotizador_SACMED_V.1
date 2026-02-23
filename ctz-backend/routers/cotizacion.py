@@ -3,6 +3,7 @@ from html import escape
 import base64
 from io import BytesIO
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
@@ -28,6 +29,11 @@ router = APIRouter(tags=["Cotizaciones"])
 ANNEX_STORAGE_DIR = Path(__file__).resolve().parents[1] / "storage"
 ANNEX_PDF_PATH = ANNEX_STORAGE_DIR / "servicios-adicionales.pdf"
 ANNEX_META_PATH = ANNEX_STORAGE_DIR / "servicios-adicionales.meta"
+CHILE_TIMEZONE = ZoneInfo("America/Santiago")
+
+
+def _today_in_chile() -> date:
+    return datetime.now(CHILE_TIMEZONE).date()
 
 
 def _ensure_annex_storage():
@@ -545,8 +551,9 @@ async def subir_pdf_servicios_adicionales(file: UploadFile = File(...)):
 @router.post("/cotizaciones", response_model=CotizacionResponse)
 def crear_cotizacion(data: CotizacionCreate, db: Session = Depends(get_db)):
     cotizacion = Cotizacion(**data.dict())
-    cotizacion.fecha_emision = date.today()
-    cotizacion.fecha_vencimiento = date.today() + timedelta(days=15)
+    fecha_emision = _today_in_chile()
+    cotizacion.fecha_emision = fecha_emision
+    cotizacion.fecha_vencimiento = fecha_emision + timedelta(days=15)
     db.add(cotizacion)
     db.commit()
     db.refresh(cotizacion)
