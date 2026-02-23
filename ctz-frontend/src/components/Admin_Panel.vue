@@ -246,7 +246,7 @@ async function submitUser() {
         method: 'POST',
         body: JSON.stringify(payload)
       })
-      showFeedback('Usuario creado correctamente. Se envió una clave temporal al correo del usuario')
+      showFeedback('Usuario creado correctamente. Se envió un código de validación al correo del usuario')
     } else {
       await request(`/usuarios/${userModal.value.id}`, {
         method: 'PUT',
@@ -920,7 +920,7 @@ onMounted(loadData)
         <label>Nombre completo <input v-model="userForm.nombre" type="text" /></label>
         <label>Correo electrónico <input v-model="userForm.email" type="email" /></label>
         <p v-if="userModal.mode === 'create'" class="helper-text">
-          Al crear el usuario se generará una clave temporal automática y será enviada a su correo.
+          Al crear el usuario se generará un código de validación automático y será enviado a su correo.
         </p>
         <label>
           Rol

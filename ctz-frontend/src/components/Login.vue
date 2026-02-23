@@ -105,7 +105,7 @@
         </div>
 
         <p class="subtitle-small">
-          Ingresa el código enviado por administración y crea tu contraseña definitiva.
+          Ingresa el código de validación enviado a tu correo y crea tu contraseña definitiva.
         </p>
 
         <div class="form-group">

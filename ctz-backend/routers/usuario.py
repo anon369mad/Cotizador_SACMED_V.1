@@ -145,7 +145,7 @@ def get_first_access_token(email: str) -> tuple[str | None, dict[str, datetime |
     return None, None
 
 
-def send_temporary_password_email(recipient_email: str, temporary_password: str, first_access_code: str):
+def send_first_access_code_email(recipient_email: str, first_access_code: str):
     smtp_host = _env_first("SMTP_HOST", "MAIL_HOST")
     smtp_port_raw = _env_first("SMTP_PORT", "MAIL_PORT", default="587")
     smtp_user = _env_first("SMTP_USER", "MAIL_USERNAME")
@@ -166,13 +166,12 @@ def send_temporary_password_email(recipient_email: str, temporary_password: str,
         raise ValueError("Falta configurar SMTP_SENDER (o MAIL_FROM_ADDRESS).")
 
     message = EmailMessage()
-    message["Subject"] = "Clave temporal de acceso"
+    message["Subject"] = "Código de validación para primer acceso"
     message["From"] = smtp_sender
     message["To"] = recipient_email
     message.set_content(
         "Hola,\n\n"
         "Se creó tu usuario en Cotizador.\n"
-        f"Tu clave temporal es: {temporary_password}\n\n"
         "Tu código de validación para primer acceso es: "
         f"{first_access_code}\n\n"
         "Debes ingresar a la pantalla de Primer acceso y crear tu contraseña definitiva.\n"
@@ -245,10 +244,8 @@ def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
     if existe:
         raise HTTPException(status_code=400, detail="Email ya registrado")
 
-    plain_password = (data.password or "").strip() or generate_temporary_password()
+    plain_password = generate_temporary_password()
     first_access_code = generate_first_access_code()
-    if len(plain_password) < 6:
-        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
 
     usuario = Usuario(
         **data.dict(exclude={"password"}),
@@ -264,13 +261,13 @@ def crear_usuario(data: UsuarioCreate, db: Session = Depends(get_db)):
     }
 
     try:
-        send_temporary_password_email(usuario.email, plain_password, first_access_code)
+        send_first_access_code_email(usuario.email, first_access_code)
     except (SMTPException, OSError, ValueError) as exc:
-        logger.exception("Error enviando clave temporal para %s", usuario.email)
+        logger.exception("Error enviando código de primer acceso para %s", usuario.email)
         raise HTTPException(
             status_code=500,
             detail=(
-                "Usuario creado, pero no fue posible enviar la clave temporal al correo. "
+                "Usuario creado, pero no fue posible enviar el código de primer acceso al correo. "
                 "Revisa la configuración SMTP (host, puerto, remitente, usuario, contraseña y TLS/SSL). "
                 f"Detalle técnico: {exc}"
             ),
