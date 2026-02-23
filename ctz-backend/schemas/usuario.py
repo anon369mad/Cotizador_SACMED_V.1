@@ -45,8 +45,12 @@ class UsuarioUpdate(BaseModel):
     rol: Optional[str]
     activo: Optional[bool]
 
-class UsuarioResponse(UsuarioBase):
+class UsuarioResponse(BaseModel):
     id_usuario: int
+    nombre: str
+    email: Optional[EmailStr] = None
+    rol: str
+    activo: bool = True
 
     class Config:
         from_attributes = True
