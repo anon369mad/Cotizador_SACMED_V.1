@@ -406,7 +406,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         body {{ font-family: Arial, sans-serif; color:#2f2f2f; font-size:12px; }}
         .sheet {{ border:1px solid #525252; padding:22px; min-height: 255mm; box-sizing:border-box; }}
         .logo {{ font-size:52px; font-weight:700; color:#1f76d0; letter-spacing:1px; margin-bottom:8px; }}
-        .title {{ font-size:33px; color:#666; font-weight:700; margin: 8px 0 20px; }}
+        .title {{ font-size:24px; color:#666; font-weight:700; margin: 8px 0 16px; }}
         .dates {{ width: 55%; margin-left:auto; border-collapse: collapse; font-size:12px; margin-bottom:26px; }}
         .dates td {{ border:1px solid #4f78a4; padding:5px 8px; background:#dce9f8; }}
         .dates td:first-child {{ font-weight:700; width:60%; }}
@@ -416,9 +416,9 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         table.main th {{ background:#b7d1eb; border:1px solid #787878; padding:6px; text-align:center; }}
         table.main td {{ border:1px solid #909090; padding:5px 7px; }}
         .money {{ text-align:right; white-space:nowrap; }}
-        .summary-wrap {{ display:flex; justify-content:space-between; margin-top:8px; }}
-        .summary-left {{ width:60%; font-weight:600; line-height:1.7; }}
-        .summary-right {{ width:40%; border-collapse: collapse; }}
+        .summary-wrap {{ display:flex; justify-content:flex-end; align-items:flex-start; gap:12px; margin-top:8px; }}
+        .summary-left {{ width:auto; min-width:280px; font-weight:600; line-height:1.7; text-align:right; padding-top:4px; }}
+        .summary-right {{ width:300px; border-collapse: collapse; }}
         .summary-right td {{ border:1px solid #909090; padding:4px 6px; }}
         .summary-right tr:last-child td {{ background:#9ec3e8; font-weight:700; }}
         .section-title {{ margin:16px 0 7px; font-weight:700; text-decoration:underline; color:#325f8d; }}
@@ -446,7 +446,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         <div class=\"logo\">
             {logo_html}
         </div>
-        <div class=\"title\">Documento de cotización</div>
+        <div class=\"title\">Cotización</div>
 
         <table class=\"dates\">
           <tr><td>Fecha de emisión</td><td>{_format_date(payload.fecha_emision)}</td></tr>
