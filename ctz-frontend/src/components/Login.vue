@@ -1,5 +1,11 @@
 <template>
   <div class="login-container">
+    <Transition name="toast-fade">
+      <div v-if="toast.visible" class="toast" :class="`toast--${toast.type}`" role="status" aria-live="polite">
+        {{ toast.message }}
+      </div>
+    </Transition>
+
     <div class="login-card">
       <h1 class="title">Sistema de Cotizaciones</h1>
       <p class="subtitle">Ingresa tus credenciales para continuar</p>
@@ -164,10 +170,36 @@ export default {
       recoveryLoading: false,
       resetLoading: false,
       recoveryError: '',
-      recoveryMessage: ''
+      recoveryMessage: '',
+      toast: {
+        visible: false,
+        message: '',
+        type: 'success'
+      },
+      toastTimeout: null
+    }
+  },
+  beforeUnmount() {
+    if (this.toastTimeout) {
+      clearTimeout(this.toastTimeout)
     }
   },
   methods: {
+    showToast(message, type = 'success') {
+      if (this.toastTimeout) {
+        clearTimeout(this.toastTimeout)
+      }
+
+      this.toast = {
+        visible: true,
+        message,
+        type
+      }
+
+      this.toastTimeout = setTimeout(() => {
+        this.toast.visible = false
+      }, 3200)
+    },
     clearFieldError(field) {
       if (this.errors[field]) {
         this.errors = { ...this.errors, [field]: '' }
@@ -238,6 +270,7 @@ export default {
         }
 
         this.recoveryMessage = data.message
+        this.showToast(data.message, 'success')
       } catch (error) {
         this.recoveryError = 'No fue posible conectar con el servicio de recuperación.'
       } finally {
@@ -280,6 +313,7 @@ export default {
 
         this.recoveryMessage = data.message
         this.password = ''
+        this.showToast(data.message, 'success')
       } catch (error) {
         this.recoveryError = 'No fue posible conectar con el servicio de recuperación.'
       } finally {
@@ -313,6 +347,7 @@ export default {
         }
 
         this.firstAccessMessage = data.message
+        this.showToast(data.message, 'success')
       } catch (error) {
         this.firstAccessError = 'No fue posible conectar con el servicio de primer acceso.'
       } finally {
@@ -358,6 +393,7 @@ export default {
 
         this.firstAccessMessage = data.message
         this.password = ''
+        this.showToast(data.message, 'success')
       } catch (error) {
         this.firstAccessError = 'No fue posible conectar con el servicio de primer acceso.'
       } finally {
@@ -387,6 +423,18 @@ export default {
 
         if (!res.ok) {
           if (res.status === 401) {
+            const trimmedPassword = this.password.trim()
+
+            if (/^\d{6}$/.test(trimmedPassword)) {
+              this.formError = 'Ese código corresponde al primer acceso. Debes usar "¿Tienes código de primer acceso?" para crear tu contraseña.'
+              this.showToast('Usa el flujo de primer acceso para validar tu código y crear contraseña.', 'warning')
+              this.showFirstAccess = true
+              this.showRecovery = false
+              this.firstAccessEmail = this.email.trim()
+              this.firstAccessCode = trimmedPassword
+              return
+            }
+
             this.formError = 'Credenciales inválidas.'
             return
           }
@@ -605,6 +653,40 @@ input:focus {
   padding: 0;
 }
 
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1200;
+  min-width: 260px;
+  max-width: min(92vw, 420px);
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.toast--success {
+  background: linear-gradient(135deg, #1d9f3a, #0f7e2a);
+}
+
+.toast--warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
 @media (max-width: 520px) {
   .login-card {
     padding: 18px;
@@ -613,6 +695,13 @@ input:focus {
 
   .btn-link {
     align-self: flex-start;
+  }
+
+  .toast {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    min-width: auto;
   }
 }
 </style>
