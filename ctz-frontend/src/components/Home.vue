@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, reactive, onMounted, watch } from 'vue'
+import { computed, ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import AddOrHist from './Add_or_Hist.vue'
 import Preview from './Preview.vue' 
 import Parent_Add from './Parent_Add.vue'
@@ -382,6 +382,23 @@ watch(
   }
 )
 
+let historyRefreshInterval = null
+
+function startHistoryAutoRefresh() {
+  if (historyRefreshInterval) return
+  historyRefreshInterval = window.setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      loadHistory({ silent: true })
+    }
+  }, 10000)
+}
+
+function stopHistoryAutoRefresh() {
+  if (!historyRefreshInterval) return
+  window.clearInterval(historyRefreshInterval)
+  historyRefreshInterval = null
+}
+
 
 function statusLabel(status){
   if (!status) return 'Borrador'
@@ -396,7 +413,15 @@ function statusClass(status){
 
 function formatDate(value){
   if (!value) return '—'
-  const date = new Date(value)
+
+  const textValue = String(value).trim()
+  const isoDateMatch = textValue.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (isoDateMatch) {
+    const [, year, month, day] = isoDateMatch
+    return `${day}/${month}/${year}`
+  }
+
+  const date = new Date(textValue)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleDateString('es-CL', {
     day: '2-digit',
@@ -579,8 +604,10 @@ async function openQuoteInTab(h, tabTitle) {
   }
 }
 
-async function loadHistory(){
-  isLoadingHistory.value = true
+async function loadHistory({ silent = false } = {}){
+  if (!silent) {
+    isLoadingHistory.value = true
+  }
   historyError.value = ''
   try {
     const normalizedUserId = props.userId != null ? Number(props.userId) : null
@@ -604,7 +631,9 @@ async function loadHistory(){
       ? error.message
       : 'Error inesperado al cargar el historial'
   } finally {
-    isLoadingHistory.value = false
+    if (!silent) {
+      isLoadingHistory.value = false
+    }
   }
 }
 
@@ -616,6 +645,11 @@ onMounted(() => {
   previewQuote.idUsuario = props.userId != null ? Number(props.userId) : null
   previewQuote.ejecutivo = props.userName || 'Usuario'
   loadHistory()
+  startHistoryAutoRefresh()
+})
+
+onUnmounted(() => {
+  stopHistoryAutoRefresh()
 })
 </script>
  
