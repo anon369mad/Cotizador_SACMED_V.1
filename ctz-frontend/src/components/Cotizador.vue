@@ -698,39 +698,38 @@ watch(
         </div>
       </div>
 
-      <div class="section" v-if="form.planType === 'Período'">
-        <div class="section-head">
-          <h4>Configuración del plan</h4>
-        </div>
-        <div class="row two">
-          <div class="field">
-            <label>Cantidad de Conexiones</label>
-            <input type="number" min="0" v-model.number="form.conexiones" />
-            <small v-if="planesLoading">Cargando planes...</small>
-            <small v-else-if="planesError" class="error">{{ planesError }}</small>
+      <div class="config-row" v-if="form.planType === 'Período'">
+        <div class="section config-plan-section">
+          <div class="section-head">
+            <h4>Configuración del plan</h4>
           </div>
-          <div class="field field-action">
-            <label>&nbsp;</label>
-            <button
-              class="btn-add circle"
-              type="button"
-              @click="syncPlanItems"
-              aria-label="Agregar conexión"
-              title="Agregar conexión"
-            >
-              <img src="/icon_add.png" alt="Agregar" class="icon-add">
-            </button>
+          <div class="row two">
+            <div class="field">
+              <label>Cantidad de Conexiones</label>
+              <input type="number" min="0" v-model.number="form.conexiones" />
+              <small v-if="planesLoading">Cargando planes...</small>
+              <small v-else-if="planesError" class="error">{{ planesError }}</small>
+            </div>
+            <div class="field field-action">
+              <label>&nbsp;</label>
+              <button
+                class="btn-add circle"
+                type="button"
+                @click="syncPlanItems"
+                aria-label="Agregar conexión"
+                title="Agregar conexión"
+              >
+                <img src="/icon_add.png" alt="Agregar" class="icon-add">
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="section">
-        <div class="section-head">
-          <h4>Configuración general</h4>
-        </div>
-        <div class="row two">
-          <div class="field">
-            <label>Período de Contratación (meses)</label>
+        <div class="section quote-period-section">
+          <div class="section-head">
+            <h4>Período de cotización</h4>
+          </div>
+          <div class="field compact-field">
             <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
           </div>
         </div>
@@ -891,6 +890,12 @@ watch(
 /* body */
 .card-body { display: flex; flex-direction: column; gap: 10px }
 
+.config-row { display: flex; gap: 12px; align-items: stretch }
+.config-row .section { margin: 0 }
+.config-plan-section { flex: 1 }
+.quote-period-section { flex: 0 0 220px }
+.compact-field input { max-width: 150px }
+
 /* sections */
 .section { border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px; padding: 10px; background: #fff }
 .section h4 { margin: 0 0 6px 0; color: #3e4b58; font-size: 12px; letter-spacing: 0.03em; text-transform: uppercase }
@@ -1013,6 +1018,9 @@ watch(
 }
 
 @media (max-width: 720px) {
+  .config-row { flex-direction: column; }
+  .quote-period-section { flex: 1 1 auto; }
+  .compact-field input { max-width: 100%; }
   .row.two { flex-direction: column; }
   .svc-controls { flex-wrap: wrap; }
 }
