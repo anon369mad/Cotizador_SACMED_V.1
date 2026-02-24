@@ -88,6 +88,7 @@ function ensureConditionsArray() {
 }
 
 function startEditCondition(i) {
+  if (!isQuoteEditable.value) return
   ensureConditionsArray()
   if (!canManageCondition(i)) return
   editIndex.value = i
@@ -95,6 +96,7 @@ function startEditCondition(i) {
 }
 
 function saveCondition(i) {
+  if (!isQuoteEditable.value) return
   ensureConditionsArray()
   if (!canManageCondition(i)) return
   const v = String(editText.value || '').trim()
@@ -119,6 +121,7 @@ function cancelEditCondition() {
 }
 
 function removeCondition(i) {
+  if (!isQuoteEditable.value) return
   ensureConditionsArray()
   if (!canManageCondition(i)) return
   if (i >= 0 && i < props.baseData.condiciones.length) {
@@ -134,7 +137,7 @@ function isServiceCondition(i) {
 }
 
 function canManageCondition(i) {
-  if (props.baseData?.lockConditionActions) return false
+  if (!isQuoteEditable.value || props.baseData?.lockConditionActions) return false
   return !isServiceCondition(i)
 }
 
@@ -227,6 +230,7 @@ const successMessage = ref('')
 const weasyPdfUrl = ref('')
 const showWeasyPreview = ref(false)
 const isQuoteConfirmed = computed(() => props.baseData.estado === 'CONFIRMADA')
+const isQuoteEditable = computed(() => !isQuoteConfirmed.value)
 
 function roundAmount(value) {
   return Math.round(Number(value) || 0)
@@ -295,6 +299,7 @@ function isDbItem(it) {
 }
 
 function startEditItem(it) {
+  if (!isQuoteEditable.value) return
   editItemId.value = it.id
   editQty.value = Number(it.qty || 1)
   editDiscount.value = Number(it.discountPct || 0)
@@ -303,6 +308,7 @@ function startEditItem(it) {
 }
 
 function saveItemChanges(it) {
+  if (!isQuoteEditable.value) return
   it.qty = Math.max(1, Number(editQty.value || 1))
   it.discountPct = Math.min(100, Math.max(0, Number(editDiscount.value || 0)))
 
@@ -374,6 +380,7 @@ function syncConditionsWithItems() {
 }
 
 function removeItem(id) {
+  if (!isQuoteEditable.value) return
   const idx = props.baseData.items.findIndex((i) => String(i.id) === String(id))
   if (idx !== -1) {
     props.baseData.items.splice(idx, 1)
@@ -529,6 +536,7 @@ async function updatePersistedDraft() {
 }
 
 async function saveDraft() {
+  if (!isQuoteEditable.value) return
   const monthsError = getMonthsValidationError()
   if (monthsError) {
     errorMessage.value = monthsError
@@ -603,9 +611,17 @@ async function printQuote() {
       throw new Error(monthsError)
     }
 
-    const idCotizacion = props.baseData.idCotizacion
-      ? await updatePersistedDraft()
-      : await buildAndPersistQuote()
+    let idCotizacion = props.baseData.idCotizacion
+
+    if (!isQuoteConfirmed.value) {
+      idCotizacion = props.baseData.idCotizacion
+        ? await updatePersistedDraft()
+        : await buildAndPersistQuote()
+    }
+
+    if (!idCotizacion) {
+      throw new Error('No se encontró una cotización confirmada para imprimir')
+    }
 
     await openWeasyPreview(idCotizacion)
   } catch (error) {
@@ -664,6 +680,7 @@ async function confirmQuote() {
 }
 
 async function discardQuote() {
+  if (!isQuoteEditable.value) return
   const shouldDiscard = window.confirm('¿Estás seguro de que deseas descartar esta cotización?')
   if (!shouldDiscard) return
 
@@ -754,8 +771,10 @@ async function discardQuote() {
       <td>{{ it.discountPct }}%</td>
       <td class="bold">${{ rowTotal(it).toFixed(0) }}</td>
       <td class="actions">
-        <button @click="startEditItem(it)">✏️</button>
-        <button @click="removeItem(it.id)">🗑️</button>
+        <template v-if="isQuoteEditable">
+          <button @click="startEditItem(it)">✏️</button>
+          <button @click="removeItem(it.id)">🗑️</button>
+        </template>
       </td>
     </template>
   </tr>
@@ -871,11 +890,21 @@ async function discardQuote() {
 
 <div class="final-actions">
 
-  <button class="btn-discard" :disabled="isSaving" @click="discardQuote">
+  <button
+    v-if="isQuoteEditable"
+    class="btn-discard"
+    :disabled="isSaving"
+    @click="discardQuote"
+  >
     Descartar
   </button>
 
-  <button class="btn-draft" :disabled="isSaving" @click="saveDraft">
+  <button
+    v-if="isQuoteEditable"
+    class="btn-draft"
+    :disabled="isSaving"
+    @click="saveDraft"
+  >
     {{ isSaving ? 'Guardando...' : 'Guardar borrador' }}
   </button>
 
