@@ -281,7 +281,12 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         f"El presupuesto incluye {gigabytes_incluidos} GB de almacenamiento en disco. Cualquier uso que exceda este límite se cobrará automáticamente a un valor de $5.000 más IVA por cada 5 GB adicionales.",
     ]
 
-    condiciones_pdf = condiciones_generales + condiciones_base_pdf
+    if es_cotizacion_unica:
+        condiciones_pdf = condiciones_generales
+        capacitacion_base_pdf = []
+        cobros_adicionales_base_pdf = []
+    else:
+        condiciones_pdf = condiciones_generales + condiciones_base_pdf
 
     modalidad_pago = "Pago único" if es_cotizacion_unica else f"Cada {meses} mes" + ("" if meses == 1 else "es")
 
@@ -358,10 +363,19 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
             return ""
         return f'<div class="section-title">{escape(title)}</div><ul>{item_list}</ul>'
 
-    condiciones_section = _render_section("Condiciones Generales:", payload.condiciones_generales)
-    capacitacion_section = _render_section("Capacitación plataforma:", payload.capacitacion)
-    cobros_adicionales_section = _render_section("Cobros adicionales:", payload.cobros_adicionales)
     is_unique_quote = (payload.tipo_cotizacion or "").strip().lower() == "única"
+    condiciones_section = _render_section("Condiciones Generales:", payload.condiciones_generales)
+    capacitacion_section = "" if is_unique_quote else _render_section("Capacitación plataforma:", payload.capacitacion)
+    cobros_adicionales_section = "" if is_unique_quote else _render_section("Cobros adicionales:", payload.cobros_adicionales)
+    observacion_section = ""
+    if not is_unique_quote:
+        observacion_section = """
+        <div class=\"section-title\">Observación:</div>
+        <ul class=\"observacion-list\">
+          <li>Todos los planes contratados llevan como servicio agenda médica, ficha clínica multiespecialista, telemedicina y herramientas administrativas.</li>
+        </ul>
+        """
+
     total_label = "Total"
     if not is_unique_quote:
         total_label = "Total período"
@@ -499,10 +513,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
           </tbody>
         </table>
 
-        <div class="section-title">Observación:</div>
-        <ul class="observacion-list">
-          <li>Todos los planes contratados llevan como servicio agenda médica, ficha clínica multiespecialista, telemedicina y herramientas administrativas.</li>
-        </ul>
+        {observacion_section}
         {condiciones_section}
         {capacitacion_section}
         {cobros_adicionales_section}
