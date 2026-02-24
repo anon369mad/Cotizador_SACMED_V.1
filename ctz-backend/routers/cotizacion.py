@@ -13,6 +13,7 @@ from models.cotizacion import Cotizacion
 from models.conexion_capacitacion import ConexionCapacitacion
 from models.capacitacion_plataforma import CapacitacionPlataforma
 from models.plan import Plan
+from models.prestacion import Prestacion
 from models.usuario import Usuario
 from models.iva import Iva
 from schemas.cotizacion import (
@@ -121,6 +122,38 @@ def _normalize_quote_type(raw_type: str | None) -> tuple[str, bool]:
     return "Período", False
 
 
+def _parse_conditions_text(raw_conditions: str | None) -> list[str]:
+    if not raw_conditions:
+        return []
+
+    parsed: list[str] = []
+    for line in raw_conditions.splitlines():
+        normalized = line.strip("• ").strip()
+        if normalized:
+            parsed.append(normalized)
+    return parsed
+
+
+def _is_electronic_signature_condition(condition: str) -> bool:
+    normalized = (condition or "").strip().lower()
+    return "firma" in normalized and ("electr" in normalized or "electrón" in normalized)
+
+
+def _merge_conditions(*groups: list[str]) -> list[str]:
+    merged: list[str] = []
+    seen: set[str] = set()
+    for group in groups:
+        for condition in group:
+            if _is_electronic_signature_condition(condition):
+                continue
+            key = condition.strip().lower()
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            merged.append(condition.strip())
+    return merged
+
+
 def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasperPayload:
     detalles = (
         db.query(CotizacionDetalle)
@@ -199,14 +232,32 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     descuento_periodo_monto = total_periodo_base * (descuento_periodo_pct / 100.0)
     total_periodo = total_periodo_base - descuento_periodo_monto
 
-    condiciones_texto = (cotizacion.condiciones_adicionales or "").strip()
-    condiciones_generales = []
-    if condiciones_texto:
-        condiciones_generales = [
-            linea.strip("• ").strip()
-            for linea in condiciones_texto.splitlines()
-            if linea.strip()
-        ]
+    condiciones_manual = _parse_conditions_text(cotizacion.condiciones_adicionales)
+
+    condiciones_servicios: list[str] = []
+    ids_prestaciones = {
+        detalle.id_prestacion
+        for detalle in detalles
+        if detalle.id_prestacion is not None
+    }
+    if ids_prestaciones:
+        prestaciones = (
+            db.query(Prestacion.id_prestacion, Prestacion.condiciones)
+            .filter(Prestacion.id_prestacion.in_(ids_prestaciones))
+            .all()
+        )
+        condiciones_por_prestacion = {
+            id_prestacion: condiciones
+            for id_prestacion, condiciones in prestaciones
+        }
+        for detalle in detalles:
+            if detalle.id_prestacion is None:
+                continue
+            condiciones_servicios.extend(
+                _parse_conditions_text(condiciones_por_prestacion.get(detalle.id_prestacion))
+            )
+
+    condiciones_generales = _merge_conditions(condiciones_manual, condiciones_servicios)
 
     condiciones_base_pdf = [
         "Los valores indicados son mensuales y deberán ser pagados desde la fecha que se acepten los términos y condiciones. https://beta-sacmed.movacaribe.com/TdToS.v2.0.2.pdf",
