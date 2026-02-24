@@ -421,9 +421,9 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         table.main col.col-descuento {{ width:15%; }}
         table.main col.col-total {{ width:15%; }}
         .money {{ text-align:right; white-space:nowrap; }}
-        .summary-wrap {{ display:flex; justify-content:flex-end; align-items:flex-start; gap:12px; margin-top:8px; }}
-        .summary-left {{ width:auto; min-width:280px; font-weight:600; line-height:1.7; text-align:right; padding-top:4px; }}
-        .summary-right {{ width:30%; margin-left:auto; border-collapse: collapse; table-layout: fixed; }}
+        .summary-left-cell {{ border:none !important; font-weight:600; line-height:1.7; text-align:center; padding:10px 6px 2px; }}
+        .summary-right-cell {{ border:none !important; padding:0 !important; }}
+        .summary-right {{ width:100%; border-collapse: collapse; table-layout: fixed; }}
         .summary-right td {{ border:1px solid #909090; padding:4px 6px; }}
         .summary-right tr:last-child td {{ background:#9ec3e8; font-weight:700; }}
         .section-title {{ margin:16px 0 7px; font-weight:700; text-decoration:underline; color:#325f8d; }}
@@ -473,27 +473,31 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
           </colgroup>
           <thead>
             <tr>
-              <th>Cantidad</th><th>Servicio</th><th>Unitario</th><th>Desc.</th><th>Total</th>
+              <th>Cantidad</th><th>Descripción</th><th>Precio unitario</th><th>Descuento</th><th>Total</th>
             </tr>
           </thead>
           <tbody>
             {item_rows}
+            <tr>
+              <td>&nbsp;</td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+              <td class="summary-left-cell" colspan="3">
+                <div>Total de conexiones simultáneas: {payload.conexiones_simultaneas or 0}</div>
+                <div>Usuarios: {escape(payload.usuarios or 'Ilimitados')}</div>
+              </td>
+              <td class="summary-right-cell" colspan="2">
+                <table class="summary-right">
+                  <tr><td>Subtotal</td><td class="money">$ {_format_currency(payload.subtotal)}</td></tr>
+                  <tr><td>IVA ({iva_pct_text})</td><td class="money">$ {_format_currency(payload.iva)}</td></tr>
+                  <tr><td>Total mensual</td><td class="money">$ {_format_currency(payload.total_mensual)}</td></tr>
+                  {discount_summary_row}
+                  <tr><td>{total_label}</td><td class="money">$ {_format_currency(payload.total_periodo)}</td></tr>
+                </table>
+              </td>
+            </tr>
           </tbody>
         </table>
-
-        <div class=\"summary-wrap\">
-          <div class=\"summary-left\">
-            <div>Total de conexiones simultáneas: {payload.conexiones_simultaneas or 0}</div>
-            <div>Usuarios: {escape(payload.usuarios or 'Ilimitados')}</div>
-          </div>
-                    <table class=\"summary-right\">
-                        <tr><td>Subtotal</td><td class=\"money\">$ {_format_currency(payload.subtotal)}</td></tr>
-                        <tr><td>IVA ({iva_pct_text})</td><td class=\"money\">$ {_format_currency(payload.iva)}</td></tr>
-                        <tr><td>Total mensual</td><td class=\"money\">$ {_format_currency(payload.total_mensual)}</td></tr>
-                        {discount_summary_row}
-                        <tr><td>{total_label}</td><td class=\"money\">$ {_format_currency(payload.total_periodo)}</td></tr>
-                    </table>
-        </div>
 
         <div class="section-title">Observación:</div>
         <ul class="observacion-list">
