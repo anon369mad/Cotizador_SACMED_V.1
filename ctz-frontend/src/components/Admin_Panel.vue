@@ -1051,10 +1051,10 @@ onMounted(loadData)
                       <span
                         v-if="quote.userDeleted"
                         class="deleted-user-badge"
-                        title="Usuario eliminado"
-                        aria-label="Usuario eliminado"
+                        title="Usuario no activo"
+                        aria-label="Usuario no activo"
                       >
-                        🗑️
+                        No activo
                       </span>
                       <span>· {{ quote.date }}</span>
                     </p>
@@ -1414,7 +1414,16 @@ onMounted(loadData)
 }
 .quote-list { max-height: 60vh; overflow: auto; }
 .quote-row-right { display: grid; gap: 6px; justify-items: end; }
-.deleted-user-badge { margin-left: 6px; font-size: 12px; opacity: 0.8; }
+.deleted-user-badge {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #c62828;
+  background: #fdecea;
+  border: 1px solid #f5b5b5;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
 .admin-preview { position: sticky; top: 88px; }
 .admin-preview-frame {
   border-radius: 14px;

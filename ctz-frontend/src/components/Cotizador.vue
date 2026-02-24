@@ -589,12 +589,6 @@ const minPeriodMonths = computed(() => {
   return conexiones === 1 || conexiones === 2 ? 3 : 1
 })
 
-const showRestrictedPeriodHint = computed(() => {
-  if (form.planType !== 'Período') return false
-  const conexiones = Number(form.conexiones || 0)
-  return conexiones === 1 || conexiones === 2
-})
-
 const isManualServiceMode = computed(() => (
   form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION
 ))
@@ -738,7 +732,6 @@ watch(
           <div class="field">
             <label>Período de Contratación (meses)</label>
             <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
-            <small v-if="showRestrictedPeriodHint">Para 1 o 2 conexiones, el período debe ser mayor o igual a 3 meses.</small>
           </div>
         </div>
       </div>
@@ -880,7 +873,7 @@ watch(
   margin-bottom: 14px;
   gap: 12px;
 }
-.card-header h3 { margin: 0; color: #1f2b3a; font-size: 20px; font-weight: 700 }
+.card-header h3 { margin: 0; color: #1f2b3a; font-size: 17px; font-weight: 700 }
 .muted { color: #6b747a; font-size: 12px }
 
 .mode-pill .pill {
@@ -896,11 +889,11 @@ watch(
 .mode-pill .pill.active { background: #00b3ff; color: white; border-color: #00b3ff }
 
 /* body */
-.card-body { display: flex; flex-direction: column; gap: 12px }
+.card-body { display: flex; flex-direction: column; gap: 10px }
 
 /* sections */
-.section { border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px; padding: 12px; background: #fff }
-.section h4 { margin: 0 0 8px 0; color: #3e4b58; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase }
+.section { border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px; padding: 10px; background: #fff }
+.section h4 { margin: 0 0 6px 0; color: #3e4b58; font-size: 12px; letter-spacing: 0.03em; text-transform: uppercase }
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px }
 
 .form-grid { display: grid; grid-template-columns: 1fr; }
