@@ -435,11 +435,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     if not item_rows:
         item_rows = """
         <tr>
-          <td>1</td>
-          <td>Suscripción SACMED Plan Starter</td>
-          <td class=\"money\">$ 0</td>
-          <td class=\"money\">$ 0</td>
-          <td class=\"money\">$ 0</td>
+          <td colspan=\"5\" class=\"empty-row\">No hay servicios agregados</td>
         </tr>
         """
 
@@ -524,6 +520,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         table.main col.col-unitario {{ width:16%; }}
         table.main col.col-descuento {{ width:15%; }}
         table.main col.col-total {{ width:15%; }}
+        .empty-row {{ text-align:center; color:#5f6b74; font-style:italic; }}
         .money {{ text-align:right; white-space:nowrap; }}
         .summary-left-cell {{ border:none !important; font-weight:600; line-height:1.7; text-align:center; padding:10px 6px 2px; }}
         .summary-right-cell {{ border:none !important; padding:0 !important; }}

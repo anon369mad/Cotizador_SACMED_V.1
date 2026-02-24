@@ -717,7 +717,10 @@ watch(
           </div>
           <div class="field field-action">
             <label>&nbsp;</label>
-            <button class="btn-add" type="button" @click="syncPlanItems">Agregar plan por conexiones</button>
+            <button class="btn-add plan-sync-btn" type="button" @click="syncPlanItems">
+              <img src="/icon_add.png" alt="Agregar plan" class="icon-add">
+              <span>Agregar plan por conexiones</span>
+            </button>
           </div>
         </div>
       </div>
@@ -981,6 +984,7 @@ watch(
 .btn-add { background: #08d308; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px }
 .icon-add { width: 16px; height: 16px }
 .btn-add.circle { width: 28px; height: 28px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center }
+.plan-sync-btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
 
 /* footer */
 .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 12px }
