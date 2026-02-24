@@ -27,6 +27,7 @@ const previewData = reactive({
   conexiones: 1,
   periodMonths: 3,
   condiciones: '',
+  observaciones: [],
   items: []
 })
 
@@ -38,6 +39,7 @@ const defaultPreview = () => ({
   conexiones: 1,
   periodMonths: 3,
   condiciones: '',
+  observaciones: [],
   items: []
 })
 
@@ -50,7 +52,8 @@ function normalizeQuote(quote) {
     ejecutivo: quote.ejecutivo ?? quote.user ?? base.ejecutivo,
     cliente: quote.cliente ?? quote.name ?? base.cliente,
     conexiones: quote.conexiones ?? quote.connections ?? base.conexiones,
-    condiciones: quote.condiciones ?? quote.conditions ?? base.condiciones
+    condiciones: quote.condiciones ?? quote.conditions ?? base.condiciones,
+    observaciones: quote.observaciones ?? quote.observations ?? base.observaciones
   }
 
   return {

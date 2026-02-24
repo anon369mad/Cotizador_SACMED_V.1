@@ -177,6 +177,15 @@ function splitConditionLines(rawConditions) {
   return String(rawConditions || '')
     .split(/\r?\n/)
     .map((entry) => entry.trim())
+    .filter((entry) => entry && !entry.toUpperCase().startsWith('__OBS__'))
+}
+
+function splitObservationLines(rawConditions) {
+  return String(rawConditions || '')
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.toUpperCase().startsWith('__OBS__'))
+    .map((entry) => entry.replace(/^__OBS__/i, '').trim())
     .filter(Boolean)
 }
 
@@ -468,6 +477,8 @@ function mapHistoryItem(item){
     items: [],
     conditions: parseConditionLines(item.condiciones_adicionales),
     rawConditions: item.condiciones_adicionales || '',
+    observations: splitObservationLines(item.condiciones_adicionales),
+    rawObservations: item.condiciones_adicionales || '',
     status: item.estado,
     id_iva: item.id_iva ?? null
   }
@@ -527,6 +538,7 @@ async function duplicateQuote(h){
         periodMonths: h.periods || 6,
         items: detailItems,
         conditions: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes),
+        observaciones: splitObservationLines(h.rawObservations),
         idCotizacion: null,
         estado: null
       }
@@ -591,7 +603,8 @@ async function openQuoteInTab(h, tabTitle) {
         periodMonths: h.periods || 6,
         items: detailItems,
         conditions: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes),
-        condiciones: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes)
+        condiciones: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes),
+        observaciones: splitObservationLines(h.rawObservations)
       }
     })
 
