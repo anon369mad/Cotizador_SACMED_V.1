@@ -107,6 +107,16 @@ function splitConditionText(conditionText) {
     .filter(Boolean)
 }
 
+function isQuoteOnRequestCondition(text) {
+  return /valor\s+a\s+cotizar/i.test(String(text || ''))
+}
+
+function sanitizeServiceConditions(conditionText) {
+  return splitConditionText(conditionText)
+    .filter((text) => !isQuoteOnRequestCondition(text))
+    .join('\n')
+}
+
 function getServiceConditionsFromItems() {
   const serviceConditions = []
   const seen = new Set()
@@ -147,7 +157,7 @@ function hydrateItemConditionsFromPrestaciones() {
   const conditionsByPrestacionId = new Map(
     prestaciones.value.map((prestacion) => [
       Number(prestacion.id_prestacion),
-      prestacion.condiciones || null
+      sanitizeServiceConditions(prestacion.condiciones)
     ])
   )
 
@@ -158,7 +168,7 @@ function hydrateItemConditionsFromPrestaciones() {
     const serviceConditions = conditionsByPrestacionId.get(Number(item.id_prestacion))
     if (!serviceConditions) continue
 
-    item.condiciones = serviceConditions
+    item.condiciones = sanitizeServiceConditions(serviceConditions)
     updated = true
   }
 
@@ -220,6 +230,7 @@ const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const prestaciones = ref([])
 const prestacionesLoading = ref(false)
 const prestacionesError = ref('')
+const serviceSelectionNotice = ref('')
 const planes = ref([])
 const planesLoading = ref(false)
 const planesError = ref('')
@@ -316,7 +327,7 @@ function addService() {
     qty: form.cantidad,
     unitValue: roundAmount(form.valor),
     discountPct: form.descuento,
-    condiciones: prestacionSeleccionada.condiciones || null,
+    condiciones: sanitizeServiceConditions(prestacionSeleccionada.condiciones),
     source: 'db'
   })
 
@@ -455,6 +466,8 @@ function syncPlanItems() {
 }
 
 function onSelectPrestacion() {
+  serviceSelectionNotice.value = ''
+
   if (form.seleccionado === MANUAL_SERVICE_OPTION) {
     form.manualServiceCurrency = 'CLP'
     form.moneda = form.manualServiceCurrency
@@ -468,6 +481,10 @@ function onSelectPrestacion() {
   )
 
   if (!prestacionSeleccionada) return
+
+  if (isQuoteOnRequestCondition(prestacionSeleccionada.condiciones)) {
+    serviceSelectionNotice.value = 'Este servicio se cotiza bajo evaluación comercial (valor a cotizar). El aviso no se incluirá en el PDF.'
+  }
 
   // guardamos el valor real de BD
   form.valor_original = Number(prestacionSeleccionada.valor_unitario || 0)
@@ -746,13 +763,14 @@ watch(
       <div class="section">
         <div class="section-head">
           <h4>Condiciones adicionales</h4>
-          <button class="btn-add circle">
-            <img src="/icon_add.png" alt="Agregar" class="icon-add" @click="addCondicion">
+          <button class="btn-add circle" type="button" @click="addCondicion">
+            <img src="/icon_add.png" alt="Agregar" class="icon-add">
           </button>
         </div>
         <div class="field">
-          <input v-model="form.condicion" placeholder="Ej: capacitación: costo $0" />
+          <input v-model="form.condicion" placeholder="Ej: capacitación: costo $0" @keyup.enter="addCondicion" />
         </div>
+        <small v-if="serviceSelectionNotice" class="selection-notice">{{ serviceSelectionNotice }}</small>
       </div>
     </div>
   </section>
@@ -774,6 +792,13 @@ watch(
 
 .cotizador-card.manual-service-active {
   width: min(860px, 100%);
+}
+
+.selection-notice {
+  display: block;
+  margin-top: 8px;
+  color: #8a5a00;
+  font-size: 12px;
 }
 
 /* header */
