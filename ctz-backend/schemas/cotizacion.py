@@ -29,6 +29,7 @@ class CotizacionUpdate(CotizacionBase):
 class CotizacionResponse(CotizacionBase):
     id_cotizacion: int
     nombre_usuario: Optional[str] = None
+    usuario_eliminado: bool = False
     subtotal: Optional[float] = None
     descuento_total: Optional[float] = None
     iva_monto: Optional[float] = None

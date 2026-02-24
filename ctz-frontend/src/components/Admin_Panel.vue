@@ -347,6 +347,7 @@ function mapHistoryItem(item) {
     company: item.nombre_cliente || 'Cliente sin nombre',
     idUsuario: item.id_usuario ?? null,
     user: item.nombre_usuario || `Usuario #${item.id_usuario}`,
+    userDeleted: Boolean(item.usuario_eliminado),
     rut: item.rut_cliente || '',
     date: formatDate(item.fecha_emision),
     plan: item.tipo || '—',
@@ -1045,7 +1046,18 @@ onMounted(loadData)
                 <li v-for="quote in filteredQuotes" :key="quote.id" class="entity-row quote-row">
                   <div>
                     <strong>{{ quote.company }}</strong>
-                    <p>{{ quote.user }} · {{ quote.date }}</p>
+                    <p>
+                      <span>{{ quote.user }}</span>
+                      <span
+                        v-if="quote.userDeleted"
+                        class="deleted-user-badge"
+                        title="Usuario eliminado"
+                        aria-label="Usuario eliminado"
+                      >
+                        🗑️
+                      </span>
+                      <span>· {{ quote.date }}</span>
+                    </p>
                     <small>{{ quote.plan }} · {{ quote.connections }} conexiones</small>
                   </div>
                   <div class="quote-row-right">
@@ -1402,6 +1414,7 @@ onMounted(loadData)
 }
 .quote-list { max-height: 60vh; overflow: auto; }
 .quote-row-right { display: grid; gap: 6px; justify-items: end; }
+.deleted-user-badge { margin-left: 6px; font-size: 12px; opacity: 0.8; }
 .admin-preview { position: sticky; top: 88px; }
 .admin-preview-frame {
   border-radius: 14px;
