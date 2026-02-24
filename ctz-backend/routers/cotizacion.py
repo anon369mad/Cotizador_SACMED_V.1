@@ -92,7 +92,9 @@ def attach_user_names(cotizaciones: list[Cotizacion], db: Session):
     nombres_por_id = {id_usuario: nombre for id_usuario, nombre in usuarios}
 
     for cot in cotizaciones:
-        cot.nombre_usuario = nombres_por_id.get(cot.id_usuario)
+        nombre_usuario = nombres_por_id.get(cot.id_usuario)
+        cot.nombre_usuario = nombre_usuario
+        cot.usuario_eliminado = cot.id_usuario is not None and not nombre_usuario
 
     return cotizaciones
 
