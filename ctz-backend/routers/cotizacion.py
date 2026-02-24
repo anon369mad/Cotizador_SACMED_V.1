@@ -10,7 +10,6 @@ from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from database.session import get_db
 from models.cotizacion import Cotizacion
-from models.conexion_capacitacion import ConexionCapacitacion
 from models.capacitacion_plataforma import CapacitacionPlataforma
 from models.plan import Plan
 from models.prestacion import Prestacion
@@ -301,25 +300,10 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         "En caso de que la cantidad de conexiones a contratar sea de una o dos, el primer pago debe ser trimestral (Total Mensual * 3) luego de pasar los 3 meses se genera facturación mensual.",
     ]
 
-    gigabytes_incluidos = 0
-    relacion_almacenamiento = (
-        db.query(ConexionCapacitacion)
-        .filter(
-            ConexionCapacitacion.activo.is_(True),
-            ConexionCapacitacion.conexiones <= conexiones,
-        )
-        .order_by(ConexionCapacitacion.conexiones.desc())
-        .first()
-    )
-    if not relacion_almacenamiento:
-        relacion_almacenamiento = (
-            db.query(ConexionCapacitacion)
-            .filter(ConexionCapacitacion.activo.is_(True))
-            .order_by(ConexionCapacitacion.conexiones.asc())
-            .first()
-        )
-    if relacion_almacenamiento:
-        gigabytes_incluidos = int(relacion_almacenamiento.gigabytes_almacenamiento or 0)
+    if conexiones <= 5:
+        gigabytes_incluidos = 10
+    else:
+        gigabytes_incluidos = conexiones + 5
 
     mensajes_incluidos = 0
     plan_referencia = (
