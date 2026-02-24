@@ -25,7 +25,6 @@ const feedbackType = ref('success')
 const users = ref([])
 const plans = ref([])
 const services = ref([])
-const trainingConnections = ref([])
 const platformTrainingRules = ref([])
 const ivaConfig = ref([])
 const additionalServicesPdf = ref({ has_file: false, filename: null, uploaded_at: null })
@@ -53,12 +52,6 @@ const planForm = reactive({
   activo: true,
   clp: true,
   mensajes_whatsapp: 0
-})
-const trainingModal = ref({ open: false, mode: 'create', id: null })
-const trainingConnectionsCollapsed = ref(true)
-const trainingForm = reactive({
-  conexiones: 1,
-  gigabytes_almacenamiento: 0
 })
 const platformTrainingModal = ref({ open: false, mode: 'create', id: null })
 const platformTrainingCollapsed = ref(true)
@@ -126,15 +119,13 @@ async function loadUsers() {
 }
 
 async function loadPrices() {
-  const [allPlans, allServices, allTrainingConnections, allPlatformTrainingRules] = await Promise.all([
+  const [allPlans, allServices, allPlatformTrainingRules] = await Promise.all([
     request('/planes'),
     request('/prestaciones'),
-    request('/conexiones-capacitacion'),
     request('/capacitaciones-plataforma')
   ])
   plans.value = Array.isArray(allPlans) ? allPlans : []
   services.value = Array.isArray(allServices) ? allServices : []
-  trainingConnections.value = Array.isArray(allTrainingConnections) ? allTrainingConnections : []
   platformTrainingRules.value = Array.isArray(allPlatformTrainingRules) ? allPlatformTrainingRules : []
 }
 
@@ -392,83 +383,11 @@ async function deletePrice(type, entry) {
   }
 }
 
-function openCreateTrainingConnection() {
-  trainingModal.value = { open: true, mode: 'create', id: null }
-  Object.assign(trainingForm, {
-    conexiones: 1,
-    gigabytes_almacenamiento: 0
-  })
-}
-
-function openEditTrainingConnection(entry) {
-  trainingModal.value = { open: true, mode: 'edit', id: entry.id_conexion_capacitacion }
-  Object.assign(trainingForm, {
-    conexiones: Number(entry.conexiones || 1),
-    gigabytes_almacenamiento: Number(entry.gigabytes_almacenamiento || 0)
-  })
-}
-
-function closeTrainingModal() {
-  trainingModal.value = { open: false, mode: 'create', id: null }
-}
-
-async function submitTrainingConnection() {
-  resetFeedback()
-  if (Number(trainingForm.conexiones || 0) < 1) {
-    showFeedback('Las conexiones deben ser mayor o igual a 1', 'error')
-    return
-  }
-
-  if (Number(trainingForm.gigabytes_almacenamiento || 0) < 0) {
-    showFeedback('Los gigabytes de almacenamiento no pueden ser negativos', 'error')
-    return
-  }
-
-  try {
-    const payload = {
-      conexiones: Number(trainingForm.conexiones || 0),
-      gigabytes_almacenamiento: Number(trainingForm.gigabytes_almacenamiento || 0)
-    }
-
-    const endpoint = trainingModal.value.mode === 'create'
-      ? '/conexiones-capacitacion'
-      : `/conexiones-capacitacion/${trainingModal.value.id}`
-    const method = trainingModal.value.mode === 'create' ? 'POST' : 'PUT'
-
-    await request(endpoint, {
-      method,
-      body: JSON.stringify(payload)
-    })
-
-    await loadPrices()
-    showFeedback(trainingModal.value.mode === 'create' ? 'Relación creada correctamente' : 'Relación actualizada correctamente')
-    closeTrainingModal()
-  } catch (error) {
-    showFeedback(error instanceof Error ? error.message : 'No se pudo guardar la relación', 'error')
-  }
-}
-
-async function deleteTrainingConnection(entry) {
-  if (!window.confirm(`¿Eliminar la relación ${entry.conexiones} conexiones / ${entry.gigabytes_almacenamiento} GB?`)) return
-
-  try {
-    await request(`/conexiones-capacitacion/${entry.id_conexion_capacitacion}`, { method: 'DELETE' })
-    showFeedback('Relación eliminada correctamente')
-    await loadPrices()
-  } catch (error) {
-    showFeedback(error instanceof Error ? error.message : 'No se pudo eliminar la relación', 'error')
-  }
-}
-
 function formatTrainingInterval(rule) {
   if (rule.conexiones_hasta == null) {
     return `${rule.conexiones_desde}+ conexiones`
   }
   return `${rule.conexiones_desde} a ${rule.conexiones_hasta} conexiones`
-}
-
-function toggleTrainingConnections() {
-  trainingConnectionsCollapsed.value = !trainingConnectionsCollapsed.value
 }
 
 function togglePlatformTraining() {
@@ -788,33 +707,6 @@ onMounted(loadData)
                 <button
                   class="collapse-toggle"
                   type="button"
-                  :aria-expanded="!trainingConnectionsCollapsed"
-                  @click="toggleTrainingConnections"
-                >
-                  <h3>Almacenamiento por conexión</h3>
-                  <span class="collapse-arrow" :class="{ collapsed: trainingConnectionsCollapsed }" aria-hidden="true">▾</span>
-                </button>
-                <button class="btn-primary add-price-btn" type="button" @click="openCreateTrainingConnection">+ Nueva relación</button>
-              </div>
-              <ul v-show="!trainingConnectionsCollapsed" class="training-list">
-                <li v-for="relation in trainingConnections" :key="relation.id_conexion_capacitacion" class="training-row">
-                  <div class="training-data">
-                    <strong>{{ relation.conexiones }} conexiones</strong>
-                    <span>{{ relation.gigabytes_almacenamiento }} GB de almacenamiento</span>
-                  </div>
-                  <div class="actions">
-                    <button class="icon-btn" type="button" @click="openEditTrainingConnection(relation)">✏️</button>
-                    <button class="icon-btn danger" type="button" @click="deleteTrainingConnection(relation)">🗑️</button>
-                  </div>
-                </li>
-              </ul>
-            </section>
-
-            <section class="prices-section training-section">
-              <div class="section-header prices-header collapsible-header">
-                <button
-                  class="collapse-toggle"
-                  type="button"
                   :aria-expanded="!platformTrainingCollapsed"
                   @click="togglePlatformTraining"
                 >
@@ -993,24 +885,6 @@ onMounted(loadData)
         <div class="price-modal-actions">
           <button class="icon-btn success" type="button" @click="submitPrice">✓</button>
           <button class="icon-btn danger" type="button" @click="closePriceModal">✕</button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="trainingModal.open" class="modal-backdrop">
-      <div class="modal">
-        <h3>{{ trainingModal.mode === 'create' ? 'Nueva relación de almacenamiento' : 'Editar relación de almacenamiento' }}</h3>
-        <label>
-          Conexiones
-          <input v-model.number="trainingForm.conexiones" type="number" min="1" />
-        </label>
-        <label>
-          Gigabytes de almacenamiento
-          <input v-model.number="trainingForm.gigabytes_almacenamiento" type="number" min="0" />
-        </label>
-        <div class="modal-actions">
-          <button class="btn-link" type="button" @click="closeTrainingModal">Cancelar</button>
-          <button class="btn-primary" type="button" @click="submitTrainingConnection">Guardar</button>
         </div>
       </div>
     </div>
