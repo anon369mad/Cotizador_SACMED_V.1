@@ -941,7 +941,7 @@ onMounted(loadData)
               <div>
                 <strong>{{ user.nombre }}</strong>
                 <p>{{ user.email }}</p>
-                <small>{{ user.rol === 'ADMIN' ? 'Administrador' : 'Usuario' }}</small>
+                <small>{{ user.rol === 'ADMIN' ? 'Administrador' : 'Usuario ventas' }}</small>
               </div>
               <div class="actions">
                 <button class="icon-btn" type="button" @click="openEditUser(user)">✏️</button>
