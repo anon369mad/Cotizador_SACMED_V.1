@@ -718,13 +718,13 @@ watch(
           <div class="field field-action">
             <label>&nbsp;</label>
             <button
-              class="btn-add circle plan-sync-btn"
+              class="btn-add circle"
               type="button"
               @click="syncPlanItems"
               aria-label="Agregar conexión"
               title="Agregar conexión"
             >
-              <span class="plus-symbol" aria-hidden="true">+</span>
+              <img src="/icon_add.png" alt="Agregar" class="icon-add">
             </button>
           </div>
         </div>
@@ -989,18 +989,6 @@ watch(
 .btn-add { background: #08d308; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px }
 .icon-add { width: 16px; height: 16px }
 .btn-add.circle { width: 28px; height: 28px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center }
-.btn-add.circle.plan-sync-btn {
-  width: 48px;
-  height: 48px;
-  background: #09c907;
-  box-shadow: 0 10px 20px rgba(9, 201, 7, 0.26);
-}
-.plus-symbol {
-  font-size: 36px;
-  line-height: 1;
-  font-weight: 300;
-  transform: translateY(-1px);
-}
 
 /* footer */
 .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 12px }
