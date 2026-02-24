@@ -132,6 +132,13 @@ function showFeedback(message, type = 'success') {
   feedbackType.value = type
 }
 
+function confirmDangerAction(label) {
+  const firstConfirmation = window.confirm(`¿Estás seguro de querer eliminar ${label}?`)
+  if (!firstConfirmation) return false
+
+  return window.confirm('Esta acción es permanente. ¿Confirmar eliminación?')
+}
+
 async function request(endpoint, options = {}) {
   const response = await fetch(`${apiBaseUrl}${endpoint}`, {
     headers: {
@@ -539,7 +546,7 @@ async function deleteUser(user) {
     return
   }
 
-  const confirmed = window.confirm(`¿Eliminar al usuario ${user.nombre}?`)
+  const confirmed = confirmDangerAction(`al usuario ${user.nombre}`)
   if (!confirmed) return
 
   try {
@@ -651,7 +658,7 @@ async function submitPrice() {
 
 async function deletePrice(type, entry) {
   const label = type === 'plan' ? entry.nombre : `servicio ${entry.nombre}`
-  if (!window.confirm(`¿Eliminar ${label}?`)) return
+  if (!confirmDangerAction(label)) return
 
   try {
     const endpoint = type === 'plan' ? `/planes/${entry.id_plan}` : `/prestaciones/${entry.id_prestacion}`
@@ -746,7 +753,7 @@ async function submitPlatformTrainingRule() {
 }
 
 async function deletePlatformTrainingRule(rule) {
-  if (!window.confirm(`¿Eliminar la relación ${formatTrainingInterval(rule)} / ${rule.horas_capacitacion} horas?`)) return
+  if (!confirmDangerAction(`la relación ${formatTrainingInterval(rule)} / ${rule.horas_capacitacion} horas`)) return
 
   try {
     await request(`/capacitaciones-plataforma/${rule.id_capacitacion_plataforma}`, { method: 'DELETE' })
@@ -976,7 +983,7 @@ onMounted(loadData)
 
             <section class="prices-section">
               <div class="section-header prices-header">
-                <h3>Prestaciones</h3>
+                <h3>Servicios</h3>
                 <button class="btn-primary add-price-btn" type="button" @click="openCreatePrice('servicio')">+ Nuevo servicio</button>
               </div>
               <ul class="cards-list prices-cards-list">
@@ -1176,7 +1183,7 @@ onMounted(loadData)
 
     <div v-if="planModal.open" class="modal-backdrop">
       <div class="modal price-modal">
-        <h3 class="price-modal-title">{{ planForm.nombre || (planModal.type === 'plan' ? 'Nuevo plan' : 'Nueva prestación') }}</h3>
+        <h3 class="price-modal-title">{{ planForm.nombre || (planModal.type === 'plan' ? 'Nuevo plan' : 'Nuevo servicio') }}</h3>
 
         <div class="price-modal-grid">
           <label class="price-modal-row">
