@@ -905,10 +905,13 @@ watch(
 
 .form-grid { display: grid; grid-template-columns: 1fr; }
 
-.row.two { display: flex; gap: 12px }
+.row.two { display: flex; gap: 12px; align-items: flex-start }
+.row.two .field { flex: 1 }
 .field { display: flex; flex-direction: column; gap: 6px }
 .field label { font-size: 12px; color: #6b747a }
-.field input { padding: 10px 6hopx; border-radius: 8px;border: 1px solid rgba(15, 21, 64, 0.24); font-size: 14px; background: #fbfdff;color: black; }
+.field input,
+.field select { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px;border: 1px solid rgba(15, 21, 64, 0.24); font-size: 14px; background: #fbfdff;color: black; }
+.field-action { flex: 0 0 auto; justify-content: flex-end; }
 
 /* items list */
 .item {align-items: center;justify-items: center; border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px;  background: #f8fbff; padding: 12px }
