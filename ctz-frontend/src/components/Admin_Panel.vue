@@ -133,10 +133,7 @@ function showFeedback(message, type = 'success') {
 }
 
 function confirmDangerAction(label) {
-  const firstConfirmation = window.confirm(`¿Estás seguro de querer eliminar ${label}?`)
-  if (!firstConfirmation) return false
-
-  return window.confirm('Esta acción es permanente. ¿Confirmar eliminación?')
+  return window.confirm(`¿Estás seguro de querer eliminar ${label}? Esta acción es permanente.`)
 }
 
 async function request(endpoint, options = {}) {
