@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import Preview from './Preview.vue'
 
 const props = defineProps({
   userName: {
@@ -30,6 +31,31 @@ const ivaConfig = ref([])
 const additionalServicesPdf = ref({ has_file: false, filename: null, uploaded_at: null })
 const additionalServicesFile = ref(null)
 const isUploadingAdditionalPdf = ref(false)
+const prestacionesCache = ref(null)
+const planesCache = ref(null)
+const quotes = ref([])
+const quoteSearch = ref('')
+const isLoadingQuotes = ref(false)
+const quoteError = ref('')
+
+const selectedQuote = reactive({
+  idUsuario: null,
+  ejecutivo: 'Usuario',
+  rut: '',
+  name: '—',
+  planType: 'Período',
+  connections: 1,
+  periodMonths: 3,
+  items: [],
+  conditions: [],
+  subtotal: null,
+  ivaMonto: null,
+  totalMensual: null,
+  totalHistorial: null,
+  idCotizacion: null,
+  estado: null,
+  id_iva: null
+})
 
 const userSearch = ref('')
 
@@ -83,6 +109,16 @@ const filteredUsers = computed(() => {
     [user.nombre, user.email, user.rol].some((field) =>
       String(field || '').toLowerCase().includes(term)
     )
+  )
+})
+
+const filteredQuotes = computed(() => {
+  const term = quoteSearch.value.trim().toLowerCase()
+  if (!term) return quotes.value
+
+  return quotes.value.filter((item) =>
+    [item.company, item.user, item.rut, item.plan, item.date, item.status]
+      .some((field) => String(field || '').toLowerCase().includes(term))
   )
 })
 
@@ -177,11 +213,254 @@ async function loadData() {
   isLoading.value = true
   resetFeedback()
   try {
-    await Promise.all([loadUsers(), loadPrices(), loadIva(), loadAdditionalServicesPdf()])
+    await Promise.all([loadUsers(), loadPrices(), loadIva(), loadAdditionalServicesPdf(), loadQuotes()])
   } catch (error) {
     showFeedback(error instanceof Error ? error.message : 'No se pudo cargar el panel', 'error')
   } finally {
     isLoading.value = false
+  }
+}
+
+function formatDate(value) {
+  if (!value) return '—'
+  const textValue = String(value).trim()
+  const isoDateMatch = textValue.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (isoDateMatch) {
+    const [, year, month, day] = isoDateMatch
+    return `${day}/${month}/${year}`
+  }
+
+  const date = new Date(textValue)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function getHistoryTotal(item) {
+  const monthlyTotal = toNumber(item.total)
+  const months = Math.max(1, toNumber(item.meses, 1))
+  const connections = toNumber(item.conexiones, 0)
+  const isUniquePlan = String(item.tipo || '').toUpperCase().includes('UNICA')
+
+  if (isUniquePlan) return monthlyTotal
+
+  const billedMonths = (connections === 1 || connections === 2) ? 3 : months
+  const basePeriodTotal = monthlyTotal * billedMonths
+  const discountPct = months >= 12 ? 10 : (months >= 6 ? 5 : 0)
+
+  return basePeriodTotal * (1 - discountPct / 100)
+}
+
+function splitConditionLines(rawConditions) {
+  return String(rawConditions || '')
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry && !entry.toUpperCase().startsWith('__OBS__'))
+}
+
+function splitObservationLines(rawConditions) {
+  return String(rawConditions || '')
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.toUpperCase().startsWith('__OBS__'))
+    .map((entry) => entry.replace(/^__OBS__/i, '').trim())
+    .filter(Boolean)
+}
+
+function normalizePlanType(value) {
+  return String(value || '').toUpperCase().includes('UNICA') ? 'Única' : 'Período'
+}
+
+function getConditionsFromDetailItem(item, prestaciones = [], planes = []) {
+  if (item?.id_prestacion != null) {
+    const prestacion = prestaciones.find(
+      (entry) => Number(entry.id_prestacion) === Number(item.id_prestacion)
+    )
+    if (!prestacion) return []
+
+    return splitConditionLines(prestacion.condiciones).map((text) => ({
+      text,
+      source: 'service',
+      itemId: item.id,
+      serviceName: prestacion.nombre || item.name || 'Servicio asociado'
+    }))
+  }
+
+  const itemName = String(item?.name || '').toLowerCase()
+  for (const plan of planes) {
+    const planName = String(plan?.nombre || '').trim()
+    if (!planName) continue
+    if (!itemName.includes(planName.toLowerCase())) continue
+
+    return splitConditionLines(plan.condiciones).map((text) => ({
+      text,
+      source: 'service',
+      itemId: item.id,
+      serviceName: planName
+    }))
+  }
+
+  return []
+}
+
+function buildPreviewConditions(rawConditions, detailItems, prestaciones = [], planes = []) {
+  const serviceConditions = []
+  const serviceTextSet = new Set()
+
+  for (const item of detailItems) {
+    const itemConditions = getConditionsFromDetailItem(item, prestaciones, planes)
+    for (const condition of itemConditions) {
+      const key = `${String(condition.itemId)}::${condition.text.toLowerCase()}`
+      if (serviceTextSet.has(key)) continue
+      serviceTextSet.add(key)
+      serviceConditions.push(condition)
+    }
+  }
+
+  const serviceOnlyText = new Set(
+    serviceConditions.map((condition) => condition.text.toLowerCase())
+  )
+
+  const manualConditions = splitConditionLines(rawConditions)
+    .filter((condition) => !serviceOnlyText.has(condition.toLowerCase()))
+    .map((text) => ({
+      text,
+      source: 'manual',
+      itemId: null,
+      serviceName: null
+    }))
+
+  return [...serviceConditions, ...manualConditions]
+}
+
+function mapHistoryItem(item) {
+  return {
+    id: item.id_cotizacion,
+    company: item.nombre_cliente || 'Cliente sin nombre',
+    idUsuario: item.id_usuario ?? null,
+    user: item.nombre_usuario || `Usuario #${item.id_usuario}`,
+    rut: item.rut_cliente || '',
+    date: formatDate(item.fecha_emision),
+    plan: item.tipo || '—',
+    connections: item.conexiones || 0,
+    periods: toNumber(item.meses, 6),
+    price: getHistoryTotal(item),
+    subtotal: toNumber(item.subtotal, 0),
+    ivaMonto: toNumber(item.iva_monto, 0),
+    totalMensual: toNumber(item.total, 0),
+    rawConditions: item.condiciones_adicionales || '',
+    observations: splitObservationLines(item.condiciones_adicionales),
+    status: item.estado,
+    id_iva: item.id_iva ?? null
+  }
+}
+
+function normalizeDetailItem(detail) {
+  return {
+    id: detail.id_detalle,
+    id_prestacion: detail.id_prestacion ?? null,
+    name: detail.descripcion || 'Servicio',
+    qty: Number(detail.cantidad || 0),
+    quantity: Number(detail.cantidad || 0),
+    unitValue: Number(detail.valor_unitario || 0),
+    value: Number(detail.valor_unitario || 0),
+    discountPct: Number(detail.descuento || 0),
+    discount: Number(detail.descuento || 0)
+  }
+}
+
+async function fetchQuoteDetails(idCotizacion) {
+  const detailRows = await request('/cotizacion_detalles')
+  return (Array.isArray(detailRows) ? detailRows : [])
+    .filter((detail) => Number(detail.id_cotizacion) === Number(idCotizacion))
+    .map(normalizeDetailItem)
+}
+
+async function getPrestaciones() {
+  if (Array.isArray(prestacionesCache.value)) {
+    return prestacionesCache.value
+  }
+  const prestaciones = await request('/prestaciones')
+  prestacionesCache.value = Array.isArray(prestaciones) ? prestaciones : []
+  return prestacionesCache.value
+}
+
+async function getPlanes() {
+  if (Array.isArray(planesCache.value)) {
+    return planesCache.value
+  }
+  const planes = await request('/planes')
+  planesCache.value = Array.isArray(planes) ? planes : []
+  return planesCache.value
+}
+
+function statusLabel(status) {
+  if (!status) return 'Borrador'
+  const normalized = status.toString().toLowerCase()
+  if (normalized.includes('confirm')) return 'Confirmada'
+  return 'Borrador'
+}
+
+function statusClass(status) {
+  return statusLabel(status) === 'Confirmada' ? 'confirmed' : 'draft'
+}
+
+function formatMoney(v) {
+  return '$' + Number(v || 0).toLocaleString('es-CL')
+}
+
+async function loadQuotes() {
+  isLoadingQuotes.value = true
+  quoteError.value = ''
+  try {
+    const data = await request('/cotizaciones')
+    quotes.value = (Array.isArray(data) ? data : []).map(mapHistoryItem)
+  } catch (error) {
+    quoteError.value = error instanceof Error ? error.message : 'No se pudieron cargar las cotizaciones'
+  } finally {
+    isLoadingQuotes.value = false
+  }
+}
+
+async function selectQuote(quote) {
+  quoteError.value = ''
+  Object.assign(selectedQuote, {
+    idUsuario: quote.idUsuario ?? null,
+    ejecutivo: quote.user || 'Usuario',
+    rut: quote.rut || '',
+    name: quote.company,
+    planType: normalizePlanType(quote.plan),
+    connections: quote.connections || 0,
+    periodMonths: quote.periods || 6,
+    items: [],
+    conditions: [],
+    subtotal: quote.subtotal ?? null,
+    ivaMonto: quote.ivaMonto ?? null,
+    totalMensual: quote.totalMensual ?? null,
+    totalHistorial: quote.price ?? null,
+    idCotizacion: quote.id,
+    estado: quote.status,
+    id_iva: quote.id_iva ?? null
+  })
+
+  try {
+    const [detailItems, prestaciones, planes] = await Promise.all([
+      fetchQuoteDetails(quote.id),
+      getPrestaciones(),
+      getPlanes()
+    ])
+    selectedQuote.items = detailItems
+    selectedQuote.conditions = buildPreviewConditions(quote.rawConditions, detailItems, prestaciones, planes)
+  } catch (error) {
+    quoteError.value = error instanceof Error ? error.message : 'No se pudieron cargar los detalles'
   }
 }
 
@@ -612,6 +891,17 @@ onMounted(loadData)
           </button>
           <button
             class="tab"
+            :class="{ active: activeTab === 'cotizaciones' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === 'cotizaciones'"
+            @click="activeTab = 'cotizaciones'"
+          >
+            <span class="tab-icon" aria-hidden="true">🧾</span>
+            <span>Cotizaciones</span>
+          </button>
+          <button
+            class="tab"
             :class="{ active: activeTab === 'iva' }"
             type="button"
             role="tab"
@@ -728,6 +1018,45 @@ onMounted(loadData)
                 </li>
               </ul>
             </section>
+          </div>
+        </section>
+
+        <section v-else-if="activeTab === 'cotizaciones'" class="card admin-quotes-card">
+          <div class="section-header">
+            <h3>Todas las cotizaciones</h3>
+            <button class="btn-primary" type="button" @click="loadQuotes">Actualizar</button>
+          </div>
+
+          <input
+            v-model="quoteSearch"
+            class="search"
+            placeholder="Buscar por cliente, ejecutivo o estado..."
+          />
+
+          <div class="admin-quotes-layout">
+            <div>
+              <div v-if="isLoadingQuotes" class="empty-state">Cargando cotizaciones...</div>
+              <div v-else-if="quoteError" class="empty-state">{{ quoteError }}</div>
+              <div v-else-if="!filteredQuotes.length" class="empty-state">No hay cotizaciones para mostrar.</div>
+              <ul v-else class="entity-list quote-list">
+                <li v-for="quote in filteredQuotes" :key="quote.id" class="entity-row quote-row">
+                  <div>
+                    <strong>{{ quote.company }}</strong>
+                    <p>{{ quote.user }} · {{ quote.date }}</p>
+                    <small>{{ quote.plan }} · {{ quote.connections }} conexiones</small>
+                  </div>
+                  <div class="quote-row-right">
+                    <span class="status" :class="statusClass(quote.status)">{{ statusLabel(quote.status) }}</span>
+                    <strong>{{ formatMoney(quote.price) }}</strong>
+                    <button class="icon-btn" type="button" @click="selectQuote(quote)">Ver</button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <aside class="admin-preview">
+              <Preview :quote="selectedQuote" />
+            </aside>
           </div>
         </section>
 
@@ -1052,6 +1381,28 @@ onMounted(loadData)
 .entity-list, .cards-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .entity-row { display: flex; justify-content: space-between; align-items: center; border: 1px solid #e1e6ef; border-radius: 10px; padding: 12px; }
 .entity-row p { margin: 4px 0; color: #4d627d; }
+.admin-quotes-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 14px;
+  align-items: start;
+}
+.quote-list { max-height: 60vh; overflow: auto; }
+.quote-row-right { display: grid; gap: 6px; justify-items: end; }
+.admin-preview { position: sticky; top: 88px; }
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid #d3dbe7;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.status.confirmed { background: #e8f8ef; color: #117c39; border-color: #b7e6c8; }
+.status.draft { background: #eef2f8; color: #4d627d; border-color: #d3dbe7; }
 .actions {
   display: flex;
   gap: 8px;
@@ -1337,6 +1688,8 @@ onMounted(loadData)
   height: 42px;
 }
 @media (max-width: 960px) {
+  .admin-quotes-layout { grid-template-columns: 1fr; }
+  .admin-preview { position: static; }
 }
 @media (max-width: 680px) {
   .dynamic-attribute-row { grid-template-columns: 1fr; }
