@@ -707,7 +707,10 @@ def listar_cotizaciones(
     if id_usuario is not None:
         query = query.filter(Cotizacion.id_usuario == id_usuario)
 
-    cotizaciones = query.all()
+    cotizaciones = query.order_by(
+        Cotizacion.fecha_emision.desc(),
+        Cotizacion.id_cotizacion.desc(),
+    ).all()
     return attach_user_names(cotizaciones, db)
 
 
