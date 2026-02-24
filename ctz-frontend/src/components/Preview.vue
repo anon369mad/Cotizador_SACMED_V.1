@@ -92,6 +92,18 @@
         <p v-else class="empty">No hay condiciones registradas.</p>
       </section>
 
+
+      <section class="sheet-section">
+        <h4>Observaciones</h4>
+        <ul class="conditions-list" v-if="observationEntries.length">
+          <li v-for="(observation, index) in observationEntries" :key="`obs-${index}`" class="condition-item">
+            <span class="cond-source manual">Observación</span>
+            <span class="cond-text">{{ observation }}</span>
+          </li>
+        </ul>
+        <p v-else class="empty">No hay observaciones registradas.</p>
+      </section>
+
       <footer class="sheet-footer">
         Documento generado por: <strong>{{ quote.ejecutivo || 'Usuario' }}</strong>
       </footer>
@@ -198,6 +210,21 @@ const conditionEntries = computed(() => {
   return String(source || '')
     .split(/\r?\n/)
     .map((line) => normalizeConditionEntry(line))
+    .filter(Boolean)
+})
+
+
+const observationEntries = computed(() => {
+  const source = props.quote.observaciones ?? props.quote.observations ?? []
+  if (Array.isArray(source)) {
+    return source
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+  }
+
+  return String(source || '')
+    .split(/\r?\n/)
+    .map((line) => String(line || '').trim())
     .filter(Boolean)
 })
 

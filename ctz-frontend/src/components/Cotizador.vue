@@ -51,6 +51,8 @@ const defaultForm = {
   conexiones: 1,
   condicion:'',
   condiciones: [],
+  observacion: '',
+  observaciones: [],
   cantidad: 1,
   moneda: 'CLP',
   valor: 0,
@@ -186,10 +188,25 @@ function normalizeInitialData(data) {
     cliente: data.cliente ?? data.name ?? '',
     conexiones: data.conexiones ?? data.connections ?? 1,
     condiciones: data.condiciones ?? data.conditions ?? '',
+    observaciones: data.observaciones ?? data.observations ?? '',
     items: Array.isArray(data.items)
       ? JSON.parse(JSON.stringify(data.items))
       : []
   }
+}
+
+function ensureObservationsArray() {
+  if (!Array.isArray(form.observaciones)) {
+    form.observaciones = String(form.observaciones || '')
+      .split(/\r?\n/)
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+    return
+  }
+
+  form.observaciones = form.observaciones
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)
 }
 
 const savedForm = localStorage.getItem(STORAGE_KEY.value)
@@ -215,6 +232,16 @@ function syncFromPreview(payload = {}) {
 
     form.condiciones = incomingConditions
       .map((entry) => normalizeConditionEntry(entry))
+      .filter(Boolean)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'observaciones')) {
+    const incomingObservations = Array.isArray(payload.observaciones)
+      ? payload.observaciones
+      : String(payload.observaciones || '').split(/\r?\n/)
+
+    form.observaciones = incomingObservations
+      .map((entry) => String(entry || '').trim())
       .filter(Boolean)
   }
 
@@ -354,6 +381,14 @@ function addCondicion() {
   })
   form.condicion = ''
 
+}
+
+function addObservacion() {
+  ensureObservationsArray()
+  const observacion = String(form.observacion || '').trim()
+  if (!observacion) return
+  form.observaciones.push(observacion)
+  form.observacion = ''
 }
 
 async function cargarPrestaciones() {
@@ -521,6 +556,7 @@ async function loadIva() {
 
 onMounted(() => {
   ensureConditionsArray()
+  ensureObservationsArray()
   syncConditionsWithItems()
   cargarPrestaciones()
   cargarPlanes()
@@ -573,6 +609,7 @@ function buildPreview() {
     planType: form.planType,
     periodMonths: form.periodMonths,
     conexiones: form.conexiones,
+    observaciones: form.observaciones,
     condiciones: form.condiciones,
     moneda: form.moneda,
     valorUf: Number(valorUf.value || 0),
@@ -585,9 +622,11 @@ watch(form, () => {
 }, { deep: true, immediate: true })
 
 watch(
-  [() => form.conexiones, () => form.planType, planes],
+  () => form.planType,
   () => {
-    syncPlanItems()
+    if (form.planType === 'Única') {
+      syncPlanItems()
+    }
   },
   { immediate: true }
 )
@@ -667,7 +706,7 @@ watch(
 
       <div class="section" v-if="form.planType === 'Período'">
         <div class="section-head">
-          <h4>Configuración del servicio</h4>
+          <h4>Configuración del plan</h4>
         </div>
         <div class="row two">
           <div class="field">
@@ -676,6 +715,18 @@ watch(
             <small v-if="planesLoading">Cargando planes...</small>
             <small v-else-if="planesError" class="error">{{ planesError }}</small>
           </div>
+          <div class="field field-action">
+            <label>&nbsp;</label>
+            <button class="btn-add" type="button" @click="syncPlanItems">Agregar plan por conexiones</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h4>Configuración general</h4>
+        </div>
+        <div class="row two">
           <div class="field">
             <label>Período de Contratación (meses)</label>
             <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
@@ -771,6 +822,18 @@ watch(
           <input v-model="form.condicion" placeholder="Ej: capacitación: costo $0" @keyup.enter="addCondicion" />
         </div>
         <small v-if="serviceSelectionNotice" class="selection-notice">{{ serviceSelectionNotice }}</small>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h4>Observaciones</h4>
+          <button class="btn-add circle" type="button" @click="addObservacion">
+            <img src="/icon_add.png" alt="Agregar" class="icon-add">
+          </button>
+        </div>
+        <div class="field">
+          <input v-model="form.observacion" placeholder="Ej: Todos los planes incluyen soporte base" @keyup.enter="addObservacion" />
+        </div>
       </div>
     </div>
   </section>

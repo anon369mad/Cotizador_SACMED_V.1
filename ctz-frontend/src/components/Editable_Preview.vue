@@ -47,6 +47,20 @@ const conditionsList = computed(() => {
     .filter(Boolean)
 })
 
+
+const observationsList = computed(() => {
+  const source = props.baseData.observaciones ?? props.baseData.observaciones_adicionales ?? []
+  if (Array.isArray(source)) {
+    return source
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+  }
+  return String(source || '')
+    .split(/\r?\n/)
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)
+})
+
 const editIndex = ref(-1)
 const editText = ref('')
 const editItemId = ref(null)
@@ -250,6 +264,21 @@ function getMonthsValidationError() {
   return ''
 }
 
+
+function composeStoredConditions() {
+  const conditionLines = (props.baseData.condiciones || [])
+    .map((entry) => String(entry?.text || '').trim())
+    .filter(Boolean)
+
+  const observationLines = observationsList.value
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)
+    .map((entry) => `__OBS__ ${entry}`)
+
+  const merged = [...conditionLines, ...observationLines]
+  return merged.length ? merged.join('\n') : null
+}
+
 function validateRequiredClientData() {
   return true
 }
@@ -411,7 +440,7 @@ async function buildAndPersistQuote() {
     descuento_total: items.value.reduce((s, it) => s + it.qty * it.unitValue * (it.discountPct / 100), 0),
     iva_monto: iva.value,
     total: total.value,
-    condiciones_adicionales: props.baseData.condiciones?.map((c) => c.text).join('\n') || null
+    condiciones_adicionales: composeStoredConditions()
   }
 
   const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones`, {
@@ -477,7 +506,7 @@ async function updatePersistedDraft() {
     descuento_total: items.value.reduce((s, it) => s + it.qty * it.unitValue * (it.discountPct / 100), 0),
     iva_monto: iva.value,
     total: total.value,
-    condiciones_adicionales: props.baseData.condiciones?.map((c) => c.text).join('\n') || null
+    condiciones_adicionales: composeStoredConditions()
   }
 
   const headerResponse = await fetch(`${apiBaseUrl}/cotizaciones/${idCotizacion}`, {
@@ -810,6 +839,18 @@ async function discardQuote() {
       </li>
     </ul>
   
+</div>
+
+
+<div class="conditions" v-if="observationsList.length">
+  <h5 class="conditions-title">Observaciones</h5>
+  <ul class="conditions-list">
+    <li v-for="(o, i) in observationsList" :key="`obs-${i}`" class="conditions-item">
+      <span class="cond-service cond-service-manual">Observación</span>
+      <span class="cond-text cond-text-manual">{{ o }}</span>
+      <span></span>
+    </li>
+  </ul>
 </div>
 
 <div v-if="showWeasyPreview && weasyPdfUrl" class="weasy-preview-overlay" @click.self="closeWeasyPreview">

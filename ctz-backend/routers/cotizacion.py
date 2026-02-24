@@ -122,17 +122,36 @@ def _normalize_quote_type(raw_type: str | None) -> tuple[str, bool]:
     return "Período", False
 
 
-def _parse_conditions_text(raw_conditions: str | None) -> list[str]:
+def _split_conditions_and_observations(raw_conditions: str | None) -> tuple[list[str], list[str]]:
     if not raw_conditions:
-        return []
+        return [], []
 
-    parsed: list[str] = []
+    conditions: list[str] = []
+    observations: list[str] = []
     for line in raw_conditions.splitlines():
         normalized = line.strip("• ").strip()
-        if normalized:
-            parsed.append(normalized)
-    return parsed
+        if not normalized:
+            continue
 
+        if normalized.upper().startswith("__OBS__"):
+            observation_text = normalized[7:].strip(" :-")
+            if observation_text:
+                observations.append(observation_text)
+            continue
+
+        conditions.append(normalized)
+
+    return conditions, observations
+
+
+def _parse_conditions_text(raw_conditions: str | None) -> list[str]:
+    conditions, _ = _split_conditions_and_observations(raw_conditions)
+    return conditions
+
+
+def _parse_observations_text(raw_conditions: str | None) -> list[str]:
+    _, observations = _split_conditions_and_observations(raw_conditions)
+    return observations
 
 def _is_quote_on_request_condition(condition: str) -> bool:
     normalized = (condition or "").strip().lower()
@@ -236,6 +255,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     total_periodo = total_periodo_base - descuento_periodo_monto
 
     condiciones_manual = _parse_conditions_text(cotizacion.condiciones_adicionales)
+    observaciones_manual = _parse_observations_text(cotizacion.condiciones_adicionales)
 
     condiciones_servicios: list[str] = []
     ids_prestaciones = {
@@ -378,6 +398,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         condiciones_generales=condiciones_pdf,
         capacitacion=capacitacion_base_pdf,
         cobros_adicionales=cobros_adicionales_base_pdf,
+        observaciones=observaciones_manual,
         items=items,
     )
 
@@ -434,14 +455,16 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
     condiciones_section = _render_section("Condiciones Generales:", payload.condiciones_generales)
     capacitacion_section = "" if is_unique_quote else _render_section("Capacitación plataforma:", payload.capacitacion)
     cobros_adicionales_section = "" if is_unique_quote else _render_section("Cobros adicionales:", payload.cobros_adicionales)
-    observacion_section = ""
-    if not is_unique_quote:
-        observacion_section = """
-        <div class=\"section-title\">Observación:</div>
-        <ul class=\"observacion-list\">
-          <li>Todos los planes contratados llevan como servicio agenda médica, ficha clínica multiespecialista, telemedicina y herramientas administrativas.</li>
-        </ul>
-        """
+    observacion_items = []
+    for observation in getattr(payload, "observaciones", []) or []:
+        normalized_observation = str(observation or "").strip()
+        if normalized_observation:
+            observacion_items.append(normalized_observation)
+
+    if not is_unique_quote and any((item.descripcion or "").strip() for item in payload.items):
+        observacion_items.insert(0, "Todos los planes contratados llevan como servicio agenda médica, ficha clínica multiespecialista, telemedicina y herramientas administrativas.")
+
+    observacion_section = _render_section("Observaciones:", observacion_items)
 
     total_label = "Total"
     if not is_unique_quote:
