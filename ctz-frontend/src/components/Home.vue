@@ -105,27 +105,38 @@ const history = ref([])
 const isLoadingHistory = ref(false)
 const historyError = ref('')
 const historySearch = ref('')
+const historyStatusFilter = ref('all')
+const historyDateFrom = ref('')
+const historyDateTo = ref('')
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const prestacionesCache = ref(null)
 const planesCache = ref(null)
 
 const filteredHistory = computed(() => {
   const term = historySearch.value.trim().toLowerCase()
-  if (!term) return history.value
-
   return history.value.filter((item) => {
-    const searchableFields = [
-      item.company,
-      item.user,
-      item.rut,
-      item.plan,
-      item.date,
-      item.status
-    ]
+    const companyMatches = !term || String(item.company || '').toLowerCase().includes(term)
 
-    return searchableFields.some((field) =>
-      String(field || '').toLowerCase().includes(term)
-    )
+    const statusType = normalizeStatus(item.status)
+    const statusMatches =
+      historyStatusFilter.value === 'all' ||
+      historyStatusFilter.value === statusType
+
+    let dateMatches = true
+    if (statusType === 'confirmed' && (historyDateFrom.value || historyDateTo.value)) {
+      if (!item.dateRaw) {
+        dateMatches = false
+      } else {
+        if (historyDateFrom.value && item.dateRaw < historyDateFrom.value) {
+          dateMatches = false
+        }
+        if (historyDateTo.value && item.dateRaw > historyDateTo.value) {
+          dateMatches = false
+        }
+      }
+    }
+
+    return companyMatches && statusMatches && dateMatches
   })
 })
 
@@ -467,6 +478,7 @@ function mapHistoryItem(item){
     user: item.nombre_usuario || `Usuario #${item.id_usuario}`,
     rut: item.rut_cliente || '',
     date: formatDate(item.fecha_emision),
+    dateRaw: item.fecha_emision || null,
     plan: item.tipo || '—',
     connections: item.conexiones || 0,
     periods: toNumber(item.meses, 6),
@@ -721,8 +733,26 @@ onUnmounted(() => {
             <input
               v-model="historySearch"
               class="search"
-              placeholder="Buscar por cliente, ejecutivo o estado..."
+              placeholder="Buscar solo por cliente..."
             />
+            <div class="history-filters">
+              <label class="filter-label">
+                Estado
+                <select v-model="historyStatusFilter" class="filter-input">
+                  <option value="all">Todos</option>
+                  <option value="draft">Borrador</option>
+                  <option value="confirmed">Confirmada</option>
+                </select>
+              </label>
+              <label class="filter-label">
+                Desde
+                <input v-model="historyDateFrom" class="filter-input" type="date" />
+              </label>
+              <label class="filter-label">
+                Hasta
+                <input v-model="historyDateTo" class="filter-input" type="date" />
+              </label>
+            </div>
 
             <div v-if="isLoadingHistory" class="list-empty">Cargando historial...</div>
             <div v-else-if="historyError" class="list-empty error">{{ historyError }}</div>
@@ -803,6 +833,36 @@ onUnmounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+.history-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.filter-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #42516f;
+  gap: 6px;
+}
+
+.filter-input {
+  border: 1px solid #d7deea;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #0f2140;
+  background: white;
+}
+
+@media (max-width: 760px) {
+  .history-filters {
+    grid-template-columns: 1fr;
+  }
 }
 
 .topbar {
