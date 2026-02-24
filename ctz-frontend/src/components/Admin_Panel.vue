@@ -1037,7 +1037,7 @@ onMounted(loadData)
           />
 
           <div class="admin-quotes-layout">
-            <div>
+            <div class="admin-quotes-list-panel">
               <div v-if="isLoadingQuotes" class="empty-state">Cargando cotizaciones...</div>
               <div v-else-if="quoteError" class="empty-state">{{ quoteError }}</div>
               <div v-else-if="!filteredQuotes.length" class="empty-state">No hay cotizaciones para mostrar.</div>
@@ -1392,9 +1392,13 @@ onMounted(loadData)
 .entity-row p { margin: 4px 0; color: #4d627d; }
 .admin-quotes-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   align-items: start;
+}
+.admin-quotes-list-panel,
+.admin-preview {
+  min-width: 0;
 }
 .quote-list { max-height: 60vh; overflow: auto; }
 .quote-row-right { display: grid; gap: 6px; justify-items: end; }
