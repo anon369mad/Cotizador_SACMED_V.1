@@ -134,9 +134,14 @@ def _parse_conditions_text(raw_conditions: str | None) -> list[str]:
     return parsed
 
 
-def _is_electronic_signature_condition(condition: str) -> bool:
+def _is_quote_on_request_condition(condition: str) -> bool:
     normalized = (condition or "").strip().lower()
-    return "firma" in normalized and ("electr" in normalized or "electrón" in normalized)
+    return "valor a cotizar" in normalized
+
+
+def _is_sacmed_signature_service(service_name: str | None) -> bool:
+    normalized = (service_name or "").strip().lower()
+    return "firma" in normalized and "electr" in normalized and "sacmed" in normalized
 
 
 def _merge_conditions(*groups: list[str]) -> list[str]:
@@ -144,8 +149,6 @@ def _merge_conditions(*groups: list[str]) -> list[str]:
     seen: set[str] = set()
     for group in groups:
         for condition in group:
-            if _is_electronic_signature_condition(condition):
-                continue
             key = condition.strip().lower()
             if not key or key in seen:
                 continue
@@ -242,20 +245,33 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     }
     if ids_prestaciones:
         prestaciones = (
-            db.query(Prestacion.id_prestacion, Prestacion.condiciones)
+            db.query(Prestacion.id_prestacion, Prestacion.nombre, Prestacion.condiciones)
             .filter(Prestacion.id_prestacion.in_(ids_prestaciones))
             .all()
         )
-        condiciones_por_prestacion = {
-            id_prestacion: condiciones
-            for id_prestacion, condiciones in prestaciones
-        }
+
+        condiciones_por_prestacion = {}
+        omitir_valor_a_cotizar = False
+        if len(ids_prestaciones) == 1 and prestaciones:
+            _, nombre_servicio, _ = prestaciones[0]
+            omitir_valor_a_cotizar = _is_sacmed_signature_service(nombre_servicio)
+
+        for id_prestacion, _, condiciones in prestaciones:
+            condiciones_por_prestacion[id_prestacion] = condiciones
+
         for detalle in detalles:
             if detalle.id_prestacion is None:
                 continue
-            condiciones_servicios.extend(
-                _parse_conditions_text(condiciones_por_prestacion.get(detalle.id_prestacion))
+            condiciones = _parse_conditions_text(
+                condiciones_por_prestacion.get(detalle.id_prestacion)
             )
+            if omitir_valor_a_cotizar:
+                condiciones = [
+                    condition
+                    for condition in condiciones
+                    if not _is_quote_on_request_condition(condition)
+                ]
+            condiciones_servicios.extend(condiciones)
 
     condiciones_generales = _merge_conditions(condiciones_manual, condiciones_servicios)
 
