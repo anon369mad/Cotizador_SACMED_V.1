@@ -85,16 +85,22 @@ def attach_user_names(cotizaciones: list[Cotizacion], db: Session):
         return cotizaciones
 
     usuarios = (
-        db.query(Usuario.id_usuario, Usuario.nombre)
+        db.query(Usuario.id_usuario, Usuario.nombre, Usuario.activo)
         .filter(Usuario.id_usuario.in_(user_ids))
         .all()
     )
-    nombres_por_id = {id_usuario: nombre for id_usuario, nombre in usuarios}
+    usuarios_por_id = {
+        id_usuario: {
+            "nombre": nombre,
+            "activo": activo,
+        }
+        for id_usuario, nombre, activo in usuarios
+    }
 
     for cot in cotizaciones:
-        nombre_usuario = nombres_por_id.get(cot.id_usuario)
-        cot.nombre_usuario = nombre_usuario
-        cot.usuario_eliminado = cot.id_usuario is not None and not nombre_usuario
+        usuario = usuarios_por_id.get(cot.id_usuario)
+        cot.nombre_usuario = usuario["nombre"] if usuario else None
+        cot.usuario_eliminado = cot.id_usuario is not None and (not usuario or not usuario["activo"])
 
     return cotizaciones
 
