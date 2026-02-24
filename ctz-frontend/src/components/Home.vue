@@ -708,9 +708,12 @@ onUnmounted(() => {
 </div>
 
     <main
-       class="container-home"
-        :class="{ 'container-parent': currentView === 'parentAdd' }"
-        >
+      class="container-home"
+      :class="{
+        'container-parent': currentView === 'parentAdd',
+        'container-home--tabs': currentView === 'tabs'
+      }"
+    >
       <template v-if="currentView === 'home'">
         <section class="main-area">
           <div class="hist-card">
@@ -821,24 +824,26 @@ onUnmounted(() => {
 .topbar-left { display: flex; flex-direction: column; }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 .topbar-right .user {
-  background: linear-gradient(135deg, rgba(26,163,255,0.08), rgba(2,22,66,0.04));
+  background: linear-gradient(135deg, rgba(34,197,94,0.14), rgba(15,118,110,0.1));
   padding: 8px 12px;
   border-radius: 20px;
-  color: #0f2140;
+  color: #0f5132;
   display: flex;
   align-items: center;
   gap: 8px;
   max-width: 200px;
-  border: 1px solid rgba(26,163,255,0.15);
+  border: 1px solid rgba(34,197,94,0.32);
   transition: all 0.2s ease;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.24);
 }
 .topbar-right .user:hover {
-  background: linear-gradient(135deg, rgba(26,163,255,0.12), rgba(2,22,66,0.06));
-  border-color: rgba(26,163,255,0.25);
+  background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(15,118,110,0.14));
+  border-color: rgba(34,197,94,0.42);
 }
 .user-icon {
   font-size: 16px;
   min-width: 16px;
+  color: #16a34a;
 }
 .user-name {
   font-size: 13px;
@@ -882,6 +887,10 @@ onUnmounted(() => {
   width: 100%;
   justify-content: center;
   padding: clamp(12px, 2.5vw, 24px) clamp(12px, 4vw, 72px);
+}
+
+.container-home--tabs {
+  padding-top: clamp(6px, 1.1vw, 12px);
 }
 
 .main-area {
@@ -963,7 +972,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px 0;
+  padding: 4px 12px 0;
   border-bottom: 1px solid #e6eef7;
   overflow-x: auto;
   white-space: nowrap;
