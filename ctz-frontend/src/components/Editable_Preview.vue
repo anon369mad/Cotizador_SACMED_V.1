@@ -565,16 +565,20 @@ async function printQuote() {
     return
   }
 
-  if (!props.baseData.idCotizacion) {
-    errorMessage.value = 'No se encontró una cotización confirmada para imprimir.'
-    return
-  }
-
   isSaving.value = true
   errorMessage.value = ''
 
   try {
-    await openWeasyPreview(props.baseData.idCotizacion)
+    const monthsError = getMonthsValidationError()
+    if (monthsError) {
+      throw new Error(monthsError)
+    }
+
+    const idCotizacion = props.baseData.idCotizacion
+      ? await updatePersistedDraft()
+      : await buildAndPersistQuote()
+
+    await openWeasyPreview(idCotizacion)
   } catch (error) {
     errorMessage.value = error instanceof Error
       ? error.message
