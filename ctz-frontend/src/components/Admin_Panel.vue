@@ -1024,7 +1024,10 @@ onMounted(loadData)
         <section v-else-if="activeTab === 'cotizaciones'" class="card admin-quotes-card">
           <div class="section-header">
             <h3>Todas las cotizaciones</h3>
-            <button class="btn-primary" type="button" @click="loadQuotes">Actualizar</button>
+            <button class="btn-primary refresh-btn" type="button" @click="loadQuotes">
+              <span aria-hidden="true">↻</span>
+              <span>Actualizar</span>
+            </button>
           </div>
 
           <input
@@ -1055,7 +1058,9 @@ onMounted(loadData)
             </div>
 
             <aside class="admin-preview">
-              <Preview :quote="selectedQuote" />
+              <div class="admin-preview-frame">
+                <Preview :quote="selectedQuote" />
+              </div>
             </aside>
           </div>
         </section>
@@ -1304,13 +1309,13 @@ onMounted(loadData)
 .content { padding: 20px 24px; }
 .tab-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   margin: 0 auto 14px;
   padding: 6px;
   border-radius: 12px;
   background: #dce1e6;
-  width: min(880px, 100%);
+  width: min(1040px, 100%);
 }
 .tab {
   border: 1px solid transparent;
@@ -1323,7 +1328,7 @@ onMounted(loadData)
   justify-content: center;
   gap: 8px;
   color: #61758e;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
@@ -1334,6 +1339,10 @@ onMounted(loadData)
 }
 .tab span:last-child {
   white-space: nowrap;
+}
+.tab:nth-child(3) span:last-child,
+.tab:nth-child(5) span:last-child {
+  font-size: 13px;
 }
 .tab.active {
   background: #f8f8f9;
@@ -1383,13 +1392,19 @@ onMounted(loadData)
 .entity-row p { margin: 4px 0; color: #4d627d; }
 .admin-quotes-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
   gap: 14px;
   align-items: start;
 }
 .quote-list { max-height: 60vh; overflow: auto; }
 .quote-row-right { display: grid; gap: 6px; justify-items: end; }
 .admin-preview { position: sticky; top: 88px; }
+.admin-preview-frame {
+  border-radius: 14px;
+  background: #f7f9fc;
+  border: 1px solid #dce3ee;
+  padding: 10px;
+}
 .status {
   display: inline-flex;
   align-items: center;
@@ -1581,6 +1596,14 @@ onMounted(loadData)
 .icon-btn.success { background: #34d058; color: #fff; }
 
 .btn-primary { border: none; background: #0ea5e9; color: #fff; border-radius: 8px; padding: 9px 14px; cursor: pointer; }
+.refresh-btn {
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+}
 .add-price-btn {
   border-radius: 999px;
   padding: 10px 18px;
