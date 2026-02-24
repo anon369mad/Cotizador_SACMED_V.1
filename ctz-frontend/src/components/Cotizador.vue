@@ -699,6 +699,15 @@ watch(
       </div>
 
       <div class="config-row" v-if="form.planType === 'Período'">
+        <div class="section quote-period-section">
+          <div class="section-head">
+            <h4>Período de cotización</h4>
+          </div>
+          <div class="field compact-field">
+            <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
+          </div>
+        </div>
+
         <div class="section config-plan-section">
           <div class="section-head">
             <h4>Configuración del plan</h4>
@@ -722,15 +731,6 @@ watch(
                 <img src="/icon_add.png" alt="Agregar" class="icon-add">
               </button>
             </div>
-          </div>
-        </div>
-
-        <div class="section quote-period-section">
-          <div class="section-head">
-            <h4>Período de cotización</h4>
-          </div>
-          <div class="field compact-field">
-            <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
           </div>
         </div>
       </div>
@@ -892,9 +892,9 @@ watch(
 
 .config-row { display: flex; gap: 12px; align-items: stretch }
 .config-row .section { margin: 0 }
-.config-plan-section { flex: 1 }
-.quote-period-section { flex: 0 0 220px }
-.compact-field input { max-width: 150px }
+.quote-period-section { flex: 0 0 180px }
+.config-plan-section { flex: 1 1 auto }
+.compact-field input { max-width: 120px }
 
 /* sections */
 .section { border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px; padding: 10px; background: #fff }
