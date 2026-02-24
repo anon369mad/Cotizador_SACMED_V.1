@@ -175,6 +175,29 @@ def _merge_conditions(*groups: list[str]) -> list[str]:
     return merged
 
 
+def _quote_has_plan_item(detalles: list[CotizacionDetalle], db: Session) -> bool:
+    if not detalles:
+        return False
+
+    plan_names = {
+        (plan_name or "").strip().lower()
+        for (plan_name,) in db.query(Plan.nombre).filter(Plan.activo.is_(True)).all()
+        if (plan_name or "").strip()
+    }
+    if not plan_names:
+        return False
+
+    for detalle in detalles:
+        descripcion = (detalle.descripcion or "").strip().lower()
+        if not descripcion:
+            continue
+
+        if any(plan_name in descripcion for plan_name in plan_names):
+            return True
+
+    return False
+
+
 def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasperPayload:
     detalles = (
         db.query(CotizacionDetalle)
@@ -236,6 +259,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         total_mensual = subtotal + iva
 
     tipo_cotizacion, es_cotizacion_unica = _normalize_quote_type(cotizacion.tipo)
+    incluye_plan = _quote_has_plan_item(detalles, db)
 
     meses = max(1, int(cotizacion.meses or 1))
     conexiones = int(cotizacion.conexiones or 0)
@@ -357,7 +381,10 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         capacitacion_base_pdf = []
         cobros_adicionales_base_pdf = []
     else:
-        condiciones_pdf = condiciones_generales + condiciones_base_pdf
+        condiciones_pdf = condiciones_generales + (condiciones_base_pdf if incluye_plan else [])
+        if not incluye_plan:
+            capacitacion_base_pdf = []
+            cobros_adicionales_base_pdf = []
 
     modalidad_pago = "Pago único" if es_cotizacion_unica else f"Cada {meses} mes" + ("" if meses == 1 else "es")
 
