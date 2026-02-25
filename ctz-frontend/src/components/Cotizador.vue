@@ -711,6 +711,15 @@ watch(
         <div class="section config-plan-section">
           <div class="section-head">
             <h4>Configuración del plan</h4>
+            <button
+              class="btn-add circle"
+              type="button"
+              @click="syncPlanItems"
+              aria-label="Agregar conexión"
+              title="Agregar conexión"
+            >
+              <img src="/icon_add.png" alt="Agregar" class="icon-add">
+            </button>
           </div>
           <div class="row two">
             <div class="field">
@@ -718,18 +727,6 @@ watch(
               <input type="number" min="0" v-model.number="form.conexiones" />
               <small v-if="planesLoading">Cargando planes...</small>
               <small v-else-if="planesError" class="error">{{ planesError }}</small>
-            </div>
-            <div class="field field-action">
-              <label>&nbsp;</label>
-              <button
-                class="btn-add circle"
-                type="button"
-                @click="syncPlanItems"
-                aria-label="Agregar conexión"
-                title="Agregar conexión"
-              >
-                <img src="/icon_add.png" alt="Agregar" class="icon-add">
-              </button>
             </div>
           </div>
         </div>
@@ -909,7 +906,6 @@ watch(
 .field label { font-size: 12px; color: #6b747a }
 .field input,
 .field select { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px;border: 1px solid rgba(15, 21, 64, 0.24); font-size: 14px; background: #fbfdff;color: black; }
-.field-action { flex: 0 0 auto; justify-content: flex-end; }
 
 /* items list */
 .item {align-items: center;justify-items: center; border: 1px solid rgba(15, 21, 64, 0.08); border-radius: 10px;  background: #f8fbff; padding: 12px }
