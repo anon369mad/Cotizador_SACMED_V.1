@@ -171,7 +171,7 @@ function resetAll() {
   align-items: stretch;
   padding: 10px;
   background: #f5f7fb;
-  width: max-content;
+  width: fit-content;
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(15, 21, 64, 0.06);
 }
