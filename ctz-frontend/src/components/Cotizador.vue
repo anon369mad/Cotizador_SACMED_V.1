@@ -890,6 +890,7 @@ watch(
 
 .config-row { display: flex; gap: 12px; align-items: stretch }
 .config-row .section { margin: 0 }
+.config-row .section-head { min-height: 34px }
 .quote-period-section { flex: 0 0 180px }
 .config-plan-section { flex: 1 1 auto }
 .compact-field input { max-width: 120px }
