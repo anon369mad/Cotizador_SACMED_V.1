@@ -15,16 +15,8 @@ const props = defineProps({
   }
 })
 
-const mode = ref('add') // for demo: 'add' or 'hist'
-const currentView = ref('home') // 'home' or 'cotizador'
-
-function handleChange(newMode) {
-  mode.value = newMode
-}
-
-watch(currentView, (view) => {
-  mode.value = view === 'tabs' ? 'hist' : 'add'
-}, { immediate: true })
+const currentView = ref('home') // 'home' = historial, 'tabs' = cotizador
+const mode = computed(() => (currentView.value === 'tabs' ? 'hist' : 'add'))
 
 function handleAction(action) {
   if (action === 'add') {
@@ -43,6 +35,7 @@ function handleAction(action) {
   }
 
   if (action === 'hist') {
+    reconcileActiveTab()
     currentView.value = 'home'
   }
 }
@@ -123,12 +116,8 @@ function onBack() {
 }
 
 function handleBackFromQuote() {
-  if (activeTab.value) {
-    closeTab(activeTabId.value)
-  } else {
-    reconcileActiveTab()
-    currentView.value = tabs.value.length ? 'tabs' : 'home'
-  }
+  reconcileActiveTab()
+  currentView.value = 'home'
 }
 
 watch(tabs, () => {
@@ -862,7 +851,7 @@ onUnmounted(() => {
 
     </main>
 
-    <AddOrHist :initial="mode" position="left" @change="handleChange" @action="handleAction" />
+    <AddOrHist :initial="mode" position="left" @action="handleAction" />
   </div>
 </template>
 
