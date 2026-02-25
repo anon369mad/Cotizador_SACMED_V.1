@@ -303,7 +303,8 @@ const periodTotal = computed(() => {
 
 const periodTotalLabel = computed(() => {
   if (!showMonths.value) return 'Total'
-  const label = isReducedConnectionPlan.value ? 'Total trimestral' : 'Total período'
+  const months = Math.max(1, Number(props.quote.periodMonths ?? props.quote.periods ?? 1))
+  const label = months === 3 ? 'Total trimestral' : `Total (Cada ${months} mes${months === 1 ? '' : 'es'})`
   if (periodDiscountPct.value > 0) return `${label} con descuento`
   return label
 })

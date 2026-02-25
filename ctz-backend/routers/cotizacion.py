@@ -483,11 +483,11 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
 
     total_label = "Total"
     if not is_unique_quote:
-        total_label = "Total período"
-        if (payload.conexiones_simultaneas or 0) in (1, 2):
+        meses = max(1, int(payload.meses or 1))
+        if meses == 3:
             total_label = "Total trimestral"
         else:
-            total_label = f"Total ({payload.meses} mes" + ("" if payload.meses == 1 else "es") + ")"
+            total_label = f"Total (Cada {meses} mes" + ("" if meses == 1 else "es") + ")"
 
     period_discount_pct = max(0.0, float(getattr(payload, 'descuento_periodo_pct', 0.0) or 0.0))
     period_discount_amount = max(0.0, float(getattr(payload, 'descuento_periodo_monto', 0.0) or 0.0))

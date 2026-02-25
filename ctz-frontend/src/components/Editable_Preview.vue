@@ -301,7 +301,8 @@ function validateRequiredClientData() {
 
 const periodTotalLabel = computed(() => {
   if (props.baseData.planType !== 'Período') return `Total (${periodDescriptor.value})`
-  const baseLabel = isReducedConnectionPlan.value ? 'Total trimestral' : `Total (${periodDescriptor.value})`
+  const selectedMonths = Math.max(1, Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1))
+  const baseLabel = selectedMonths === 3 ? 'Total trimestral' : `Total (${periodDescriptor.value})`
   if (periodDiscountPct.value > 0) return `${baseLabel} con descuento`
   return baseLabel
 })
