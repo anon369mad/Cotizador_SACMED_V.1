@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue'
+import { computed, defineProps, defineEmits } from 'vue'
 
 const props = defineProps({
   initial: { type: String, default: 'add' }, // 'add' or 'hist'
@@ -16,19 +16,13 @@ const props = defineProps({
 })
 const emit = defineEmits(['change', 'action'])
 
-const isHistory = ref(props.initial === 'hist')
+const isHistory = computed(() => props.initial === 'hist')
 
 function toggle() {
-  const action = isHistory.value ? 'hist' : 'add' // action corresponding to the icon clicked
-  isHistory.value = !isHistory.value
-  emit('change', isHistory.value ? 'hist' : 'add')
+  const action = isHistory.value ? 'hist' : 'add'
+  emit('change', props.initial)
   emit('action', action)
 }
-
-// react to prop changes if parent changes initial
-watch(() => props.initial, (v) => {
-  isHistory.value = v === 'hist'
-})
 </script>
 
 <style scoped>
