@@ -63,6 +63,8 @@ const observationsList = computed(() => {
 
 const editIndex = ref(-1)
 const editText = ref('')
+const editObservationIndex = ref(-1)
+const editObservationText = ref('')
 const editItemId = ref(null)
 const editQty = ref(1)
 const editDiscount = ref(0)
@@ -84,6 +86,25 @@ function ensureConditionsArray() {
 
   props.baseData.condiciones = props.baseData.condiciones
     .map((entry) => normalizeConditionEntry(entry))
+    .filter(Boolean)
+}
+
+function ensureObservationsArray() {
+  if (!props.baseData.observaciones) {
+    props.baseData.observaciones = [...observationsList.value]
+    return
+  }
+
+  if (!Array.isArray(props.baseData.observaciones)) {
+    props.baseData.observaciones = String(props.baseData.observaciones || '')
+      .split(/\r?\n/)
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+    return
+  }
+
+  props.baseData.observaciones = props.baseData.observaciones
+    .map((entry) => String(entry || '').trim())
     .filter(Boolean)
 }
 
@@ -118,6 +139,44 @@ function saveCondition(i) {
 function cancelEditCondition() {
   editIndex.value = -1
   editText.value = ''
+}
+
+function startEditObservation(i) {
+  if (!isQuoteEditable.value) return
+  ensureObservationsArray()
+  editObservationIndex.value = i
+  editObservationText.value = props.baseData.observaciones[i] || ''
+}
+
+function saveObservation(i) {
+  if (!isQuoteEditable.value) return
+  ensureObservationsArray()
+  const value = String(editObservationText.value || '').trim()
+  if (!value) {
+    props.baseData.observaciones.splice(i, 1)
+  } else {
+    props.baseData.observaciones.splice(i, 1, value)
+  }
+  emit('sync-form', {
+    observaciones: props.baseData.observaciones
+  })
+  cancelEditObservation()
+}
+
+function cancelEditObservation() {
+  editObservationIndex.value = -1
+  editObservationText.value = ''
+}
+
+function removeObservation(i) {
+  if (!isQuoteEditable.value) return
+  ensureObservationsArray()
+  if (i >= 0 && i < props.baseData.observaciones.length) {
+    props.baseData.observaciones.splice(i, 1)
+    emit('sync-form', {
+      observaciones: props.baseData.observaciones
+    })
+  }
 }
 
 function removeCondition(i) {
@@ -883,9 +942,19 @@ function backToHistory() {
   <h5 class="conditions-title">Observaciones</h5>
   <ul class="conditions-list">
     <li v-for="(o, i) in observationsList" :key="`obs-${i}`" class="conditions-item">
-      <span class="cond-service cond-service-manual">Observación</span>
-      <span class="cond-text cond-text-manual">{{ o }}</span>
-      <span></span>
+      <template v-if="editObservationIndex === i">
+        <input class="condition-input" v-model="editObservationText" />
+        <button class="cond-action" @click="saveObservation(i)">Guardar</button>
+        <button class="cond-action" @click="cancelEditObservation">Cancelar</button>
+      </template>
+      <template v-else>
+        <span class="cond-service cond-service-manual">Observación</span>
+        <span class="cond-text cond-text-manual">{{ o }}</span>
+        <span class="conditions-item-actions" v-if="isQuoteEditable">
+          <button @click="startEditObservation(i)" title="Editar">✏️</button>
+          <button @click="removeObservation(i)" title="Eliminar">🗑️</button>
+        </span>
+      </template>
     </li>
   </ul>
 </div>
