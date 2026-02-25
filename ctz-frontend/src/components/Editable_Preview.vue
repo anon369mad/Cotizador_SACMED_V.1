@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
-const emit = defineEmits(['discard', 'sync-form', 'quote-saved', 'history-changed', 'quote-finalized'])
+const emit = defineEmits(['discard', 'sync-form', 'quote-saved', 'history-changed', 'quote-finalized', 'back'])
 
 const props = defineProps({
   baseData: {
@@ -712,6 +712,11 @@ async function discardQuote() {
     isSaving.value = false
   }
 }
+
+function backToHistory() {
+  resetWeasyPreview()
+  emit('back')
+}
 </script>
 
 
@@ -879,6 +884,7 @@ async function discardQuote() {
     <div class="weasy-preview-header">
       <h5>Vista previa PDF (WeasyPrint)</h5>
       <div class="weasy-preview-actions">
+        <button class="btn-back-inline" @click="backToHistory">Volver al historial</button>
         <button class="btn-close" @click="closeWeasyPreview">Cerrar</button>
       </div>
     </div>
@@ -891,6 +897,15 @@ async function discardQuote() {
 </div>
 
 <div class="final-actions">
+
+  <button
+    class="final-btn btn-back"
+    :disabled="isSaving"
+    @click="backToHistory"
+  >
+    <span class="btn-icon" aria-hidden="true">↩</span>
+    <span>Volver al historial</span>
+  </button>
 
   <button
     v-if="isQuoteEditable"
@@ -1257,6 +1272,19 @@ async function discardQuote() {
   background: #334155;
 }
 
+.btn-back-inline {
+  background: #0f766e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.btn-back-inline:hover {
+  background: #115e59;
+}
+
 /* === BOTONES FINALES === */
 .final-actions {
   margin-top: 24px;
@@ -1294,6 +1322,16 @@ async function discardQuote() {
   font-size: 14px;
   line-height: 1;
   font-weight: 700;
+}
+
+.btn-back {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.btn-back:hover:not(:disabled) {
+  border-color: #60a5fa;
+  background: #eff6ff;
 }
 
 /* DESCARTAR */
