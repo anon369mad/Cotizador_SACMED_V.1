@@ -1269,7 +1269,7 @@ async function discardQuote() {
   padding: 10px 16px;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   border: 1px solid #cbd5e1;
   background: #ffffff;
