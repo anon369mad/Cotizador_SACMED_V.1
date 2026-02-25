@@ -5,6 +5,7 @@ class CotizacionDetalleBase(BaseModel):
     id_cotizacion: int
     id_prestacion: Optional[int] = None
     descripcion: Optional[str] = Field(default=None, max_length=255)
+    observaciones: Optional[str] = Field(default=None, max_length=1000)
     cantidad: int
     valor_unitario: float
     descuento: float = 0
@@ -23,3 +24,4 @@ class CotizacionDetalleResponse(CotizacionDetalleBase):
 class CotizacionDetalleUpdate(BaseModel):
     cantidad: Optional[int]
     descuento: Optional[float]
+    observaciones: Optional[str] = Field(default=None, max_length=1000)

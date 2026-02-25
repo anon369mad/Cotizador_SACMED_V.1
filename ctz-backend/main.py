@@ -42,6 +42,23 @@ def ensure_conexiones_almacenamiento_table():
 
 
 
+
+
+def ensure_cotizacion_detalle_observaciones_column():
+    inspector = inspect(engine)
+    if "cotizacion_detalle" not in inspector.get_table_names():
+        return
+
+    with engine.begin() as connection:
+        columns = {column["name"] for column in inspector.get_columns("cotizacion_detalle")}
+        if "observaciones" not in columns:
+            connection.execute(
+                text(
+                    "ALTER TABLE cotizacion_detalle "
+                    "ADD COLUMN observaciones VARCHAR(1000) NULL"
+                )
+            )
+
 def ensure_capacitaciones_plataforma_table():
     inspector = inspect(engine)
     if "capacitaciones_plataforma" not in inspector.get_table_names():
@@ -71,6 +88,7 @@ ensure_plan_whatsapp_column()
 ensure_conexiones_almacenamiento_table()
 ensure_capacitaciones_plataforma_table()
 ensure_conexiones_almacenamiento_storage_column()
+ensure_cotizacion_detalle_observaciones_column()
 
 app.add_middleware(
     CORSMiddleware,

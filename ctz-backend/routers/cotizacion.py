@@ -288,6 +288,23 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     condiciones_manual = _parse_conditions_text(cotizacion.condiciones_adicionales)
     observaciones_manual = _parse_observations_text(cotizacion.condiciones_adicionales)
 
+    observaciones_detalle: list[str] = []
+    for detalle in detalles:
+        observacion = str(getattr(detalle, "observaciones", "") or "").strip()
+        if observacion:
+            observaciones_detalle.append(observacion)
+
+    observaciones_combined: list[str] = []
+    observaciones_vistas: set[str] = set()
+    for source in (observaciones_detalle, observaciones_manual):
+        for observacion in source:
+            normalized = observacion.strip()
+            key = normalized.lower()
+            if not key or key in observaciones_vistas:
+                continue
+            observaciones_vistas.add(key)
+            observaciones_combined.append(normalized)
+
     condiciones_servicios: list[str] = []
     ids_prestaciones = {
         detalle.id_prestacion
@@ -417,7 +434,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         condiciones_generales=condiciones_pdf,
         capacitacion=capacitacion_base_pdf,
         cobros_adicionales=cobros_adicionales_base_pdf,
-        observaciones=observaciones_manual,
+        observaciones=observaciones_combined,
         items=items,
     )
 

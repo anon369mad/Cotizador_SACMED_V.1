@@ -104,7 +104,8 @@ function createEmptyQuote() {
     connections: 1,
     periodMonths: 3,
     items: [],
-    conditions: []
+    conditions: [],
+    observations: []
   }
 }
 
@@ -181,6 +182,7 @@ const previewQuote = reactive({
   periodMonths: 3,
   items: [],
   conditions: [],
+  observations: [],
   subtotal: null,
   ivaMonto: null,
   totalMensual: null,
@@ -200,7 +202,8 @@ function normalizeDetailItem(detail) {
     unitValue: Number(detail.valor_unitario || 0),
     value: Number(detail.valor_unitario || 0),
     discountPct: Number(detail.descuento || 0),
-    discount: Number(detail.descuento || 0)
+    discount: Number(detail.descuento || 0),
+    observaciones: String(detail.observaciones || '').trim()
   }
 }
 
@@ -383,6 +386,7 @@ async function selectHistory(h){
   previewQuote.periodMonths = h.periods || 6
   previewQuote.items = []
   previewQuote.conditions = []
+  previewQuote.observations = []
   previewQuote.subtotal = h.subtotal ?? null
   previewQuote.ivaMonto = h.ivaMonto ?? null
   previewQuote.totalMensual = h.totalMensual ?? null
@@ -400,6 +404,9 @@ async function selectHistory(h){
 
     previewQuote.items = detailItems
     previewQuote.conditions = buildPreviewConditions(h.rawConditions, detailItems, prestaciones, planes)
+    previewQuote.observations = detailItems
+      .map((detail) => String(detail.observaciones || '').trim())
+      .filter(Boolean)
   } catch (error) {
     historyError.value = error instanceof Error
       ? error.message
@@ -581,7 +588,7 @@ async function duplicateQuote(h){
         periodMonths: h.periods || 6,
         items: detailItems,
         conditions: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes),
-        observaciones: splitObservationLines(h.rawObservations),
+        observaciones: (h.observations || []),
         idCotizacion: null,
         estado: null
       }
@@ -647,7 +654,7 @@ async function openQuoteInTab(h, tabTitle) {
         items: detailItems,
         conditions: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes),
         condiciones: extractManualConditions(h.rawConditions, detailItems, prestaciones, planes),
-        observaciones: splitObservationLines(h.rawObservations)
+        observaciones: detailItems.map((detail) => String(detail.observaciones || '').trim()).filter(Boolean)
       }
     })
 

@@ -17,6 +17,7 @@ def crear_detalle(data: CotizacionDetalleCreate, db: Session = Depends(get_db)):
         id_prestacion=data.id_prestacion,
         cantidad=data.cantidad,
         descripcion=data.descripcion,
+        observaciones=data.observaciones,
         valor_unitario=data.valor_unitario,
         descuento=descuento_pct,
         subtotal=subtotal,
