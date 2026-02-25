@@ -354,6 +354,14 @@ function composeStoredConditions() {
   return merged.length ? merged.join('\n') : null
 }
 
+function composeObservationText() {
+  const lines = observationsList.value
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)
+
+  return lines.length ? lines.join('\n') : null
+}
+
 function validateRequiredClientData() {
   return true
 }
@@ -485,7 +493,7 @@ async function replaceQuoteDetails(idCotizacion) {
     }
   }
 
-  for (const item of props.baseData.items || []) {
+  for (const [index, item] of (props.baseData.items || []).entries()) {
     const createResponse = await fetch(`${apiBaseUrl}/cotizacion_detalles`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -493,6 +501,7 @@ async function replaceQuoteDetails(idCotizacion) {
         id_cotizacion: idCotizacion,
         id_prestacion: item.id_prestacion ?? null,
         descripcion: item.name ?? null,
+        observaciones: index === 0 ? composeObservationText() : null,
         cantidad: item.qty,
         valor_unitario: item.unitValue,
         descuento: item.discountPct ?? 0
@@ -538,11 +547,12 @@ async function buildAndPersistQuote() {
     throw new Error('La respuesta no incluyó el id de cotización')
   }
 
-  for (const item of props.baseData.items || []) {
+  for (const [index, item] of (props.baseData.items || []).entries()) {
     const detailPayload = {
       id_cotizacion: idCotizacion,
       id_prestacion: item.id_prestacion ?? null,
       descripcion: item.name ?? null,
+      observaciones: index === 0 ? composeObservationText() : null,
       cantidad: item.qty,
       valor_unitario: item.unitValue,
       descuento: item.discountPct ?? 0

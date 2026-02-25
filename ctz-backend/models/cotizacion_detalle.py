@@ -11,6 +11,7 @@ class CotizacionDetalle(Base):
     id_cotizacion = Column(Integer, ForeignKey("cotizaciones.id_cotizacion"))
     id_prestacion = Column(Integer, ForeignKey("prestaciones.id_prestacion"))
     descripcion= Column(String(255))
+    observaciones = Column(String(1000))
     cantidad = Column(Integer, nullable=False)
     valor_unitario = Column(DECIMAL(10,2))
     descuento = Column(DECIMAL(10,2))

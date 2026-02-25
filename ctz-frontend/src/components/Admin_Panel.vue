@@ -48,6 +48,7 @@ const selectedQuote = reactive({
   periodMonths: 3,
   items: [],
   conditions: [],
+  observations: [],
   subtotal: null,
   ivaMonto: null,
   totalMensual: null,
@@ -378,7 +379,8 @@ function normalizeDetailItem(detail) {
     unitValue: Number(detail.valor_unitario || 0),
     value: Number(detail.valor_unitario || 0),
     discountPct: Number(detail.descuento || 0),
-    discount: Number(detail.descuento || 0)
+    discount: Number(detail.descuento || 0),
+    observaciones: String(detail.observaciones || '').trim()
   }
 }
 
@@ -447,6 +449,7 @@ async function selectQuote(quote) {
     periodMonths: quote.periods || 6,
     items: [],
     conditions: [],
+    observations: [],
     subtotal: quote.subtotal ?? null,
     ivaMonto: quote.ivaMonto ?? null,
     totalMensual: quote.totalMensual ?? null,
@@ -464,6 +467,9 @@ async function selectQuote(quote) {
     ])
     selectedQuote.items = detailItems
     selectedQuote.conditions = buildPreviewConditions(quote.rawConditions, detailItems, prestaciones, planes)
+    selectedQuote.observations = detailItems
+      .map((detail) => String(detail.observaciones || '').trim())
+      .filter(Boolean)
   } catch (error) {
     quoteError.value = error instanceof Error ? error.message : 'No se pudieron cargar los detalles'
   }
