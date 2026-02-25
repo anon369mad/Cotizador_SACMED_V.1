@@ -1097,7 +1097,7 @@ async function discardQuote() {
 }
 .conditions-item {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1.7fr 0.8fr;
   align-items: center;
   gap: 10px;
 }
@@ -1120,10 +1120,8 @@ async function discardQuote() {
 }
 .conditions-item .cond-text {
   flex: 1 1 auto;
-  margin-right: 8px;
-  border-radius: 999px;
+  border-radius: 9px;
   font-size: 11px;
-  font-weight: 600;
   text-align: center;
 }
 
@@ -1257,8 +1255,8 @@ async function discardQuote() {
 /* === BOTONES FINALES === */
 .final-actions {
   margin-top: 24px;
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
 }
 

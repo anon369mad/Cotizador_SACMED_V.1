@@ -891,7 +891,7 @@ watch(
 .config-row { display: flex; gap: 12px; align-items: stretch }
 .config-row .section { margin: 0 }
 .config-row .section-head {
-  min-height: 52px;
+  min-height: 45px;
   align-items: flex-start;
 }
 .config-row .section-head h4 {
