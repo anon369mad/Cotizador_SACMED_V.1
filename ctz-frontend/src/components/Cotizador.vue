@@ -593,6 +593,32 @@ const isManualServiceMode = computed(() => (
   form.planType === 'Única' && form.seleccionado === MANUAL_SERVICE_OPTION
 ))
 
+function validateRut(value) {
+  const cleaned = String(value || '').replace(/\./g, '').replace(/-/g, '').toUpperCase()
+  if (!cleaned) return true
+  if (!/^\d{7,8}[\dK]$/.test(cleaned)) return false
+
+  const body = cleaned.slice(0, -1)
+  const dv = cleaned.slice(-1)
+
+  let sum = 0
+  let factor = 2
+  for (let index = body.length - 1; index >= 0; index -= 1) {
+    sum += Number(body[index]) * factor
+    factor = factor === 7 ? 2 : factor + 1
+  }
+
+  const remainder = 11 - (sum % 11)
+  let expectedDv = ''
+  if (remainder === 11) expectedDv = '0'
+  else if (remainder === 10) expectedDv = 'K'
+  else expectedDv = String(remainder)
+
+  return dv === expectedDv
+}
+
+const rutError = computed(() => !validateRut(form.rut))
+
 function buildPreview() {
   return {
     idUsuario: form.idUsuario ?? null,

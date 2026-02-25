@@ -449,14 +449,17 @@ function stopHistoryAutoRefresh() {
 
 
 function statusLabel(status){
-  if (!status) return 'Borrador'
-  const normalized = status.toString().toLowerCase()
-  if (normalized.includes('confirm')) return 'Confirmada'
-  return 'Borrador'
+  return normalizeStatus(status) === 'confirmed' ? 'Confirmada' : 'Borrador'
 }
 
 function statusClass(status){
-  return statusLabel(status) === 'Confirmada' ? 'confirmed' : 'draft'
+  return normalizeStatus(status)
+}
+
+function normalizeStatus(status) {
+  if (!status) return 'draft'
+  const normalized = String(status).trim().toLowerCase()
+  return normalized.includes('confirm') ? 'confirmed' : 'draft'
 }
 
 function formatDate(value){
