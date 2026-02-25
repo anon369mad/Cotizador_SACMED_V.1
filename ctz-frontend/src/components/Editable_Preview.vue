@@ -206,8 +206,8 @@ const periodMonthsForTotal = computed(() => {
 const periodDiscountPct = computed(() => {
   if (props.baseData.planType !== 'Período') return 0
   const months = Math.max(1, Number(props.baseData.periodMonths ?? props.baseData.periods ?? 1))
-  if (months >= 12) return 10
-  if (months >= 6) return 5
+  if (months === 12) return 10
+  if (months === 6) return 5
   return 0
 })
 

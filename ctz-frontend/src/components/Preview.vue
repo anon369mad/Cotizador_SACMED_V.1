@@ -277,8 +277,8 @@ const monthlyTotal = computed(() => {
 const periodDiscountPct = computed(() => {
   if (!showMonths.value) return 0
   const months = Math.max(1, Number(props.quote.periodMonths ?? props.quote.periods ?? 1))
-  if (months >= 12) return 10
-  if (months >= 6) return 5
+  if (months === 12) return 10
+  if (months === 6) return 5
   return 0
 })
 

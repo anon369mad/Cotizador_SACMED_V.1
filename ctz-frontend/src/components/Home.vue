@@ -496,7 +496,7 @@ function getHistoryTotal(item) {
 
   const billedMonths = (connections === 1 || connections === 2) ? 3 : months
   const basePeriodTotal = monthlyTotal * billedMonths
-  const discountPct = months >= 12 ? 10 : (months >= 6 ? 5 : 0)
+  const discountPct = months === 12 ? 10 : (months === 6 ? 5 : 0)
 
   return basePeriodTotal * (1 - discountPct / 100)
 }
