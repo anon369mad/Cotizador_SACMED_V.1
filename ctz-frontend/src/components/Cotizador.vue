@@ -425,6 +425,8 @@ async function cargarPlanes() {
     planes.value = (Array.isArray(data) ? data : [])
       .filter((it) => it.activo)
       .sort((a, b) => Number(a.conexiones_incluidas || 0) - Number(b.conexiones_incluidas || 0))
+
+    syncPlanItems()
   } catch (error) {
     planesError.value = error instanceof Error
       ? error.message
@@ -644,11 +646,18 @@ watch(form, () => {
 watch(
   () => form.planType,
   () => {
-    if (form.planType === 'Única') {
-      syncPlanItems()
-    }
+    syncPlanItems()
   },
   { immediate: true }
+)
+
+watch(
+  () => form.conexiones,
+  () => {
+    if (form.planType === 'Período') {
+      syncPlanItems()
+    }
+  }
 )
 
 watch(
