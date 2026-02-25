@@ -231,6 +231,8 @@ const weasyPdfUrl = ref('')
 const showWeasyPreview = ref(false)
 const isQuoteConfirmed = computed(() => props.baseData.estado === 'CONFIRMADA')
 const isQuoteEditable = computed(() => !isQuoteConfirmed.value)
+const confirmActionLabel = computed(() => (isQuoteConfirmed.value ? 'Imprimir' : 'Confirmar cotización'))
+const confirmActionIcon = computed(() => (isQuoteConfirmed.value ? '🖨️' : '✅'))
 
 function roundAmount(value) {
   return Math.round(Number(value) || 0)
@@ -892,28 +894,31 @@ async function discardQuote() {
 
   <button
     v-if="isQuoteEditable"
-    class="btn-discard"
+    class="final-btn btn-discard"
     :disabled="isSaving"
     @click="discardQuote"
   >
-    Descartar
+    <span class="btn-icon" aria-hidden="true">🗑️</span>
+    <span>{{ isSaving ? 'Procesando...' : 'Descartar' }}</span>
   </button>
 
   <button
     v-if="isQuoteEditable"
-    class="btn-draft"
+    class="final-btn btn-draft"
     :disabled="isSaving"
     @click="saveDraft"
   >
-    {{ isSaving ? 'Guardando...' : 'Guardar borrador' }}
+    <span class="btn-icon" aria-hidden="true">💾</span>
+    <span>{{ isSaving ? 'Guardando...' : 'Guardar borrador' }}</span>
   </button>
 
   <button
-    class="btn-confirm"
+    class="final-btn btn-confirm"
     :disabled="isSaving"
     @click="isQuoteConfirmed ? printQuote() : confirmQuote()"
   >
-    {{ isSaving ? 'Guardando...' : (isQuoteConfirmed ? 'Imprimir' : 'Confirmar cotización') }}
+    <span class="btn-icon" aria-hidden="true">{{ isSaving ? '⏳' : confirmActionIcon }}</span>
+    <span>{{ isSaving ? 'Guardando...' : confirmActionLabel }}</span>
   </button>
 </div>
 <p v-if="errorMessage" class="status-message error">{{ errorMessage }}</p>
@@ -1257,47 +1262,69 @@ async function discardQuote() {
   margin-top: 24px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
-.final-actions button {
-  padding: 9px 18px;
-  border-radius: 8px;
+.final-btn {
+  padding: 11px 18px;
+  border-radius: 10px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   border: none;
-  transition: all 0.2s ease;
+  transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+}
+
+.final-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.final-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-icon {
+  font-size: 15px;
+  line-height: 1;
 }
 
 /* DESCARTAR */
 .btn-discard {
-  background: #e2e8f0;
-  color: #334155;
+  background: linear-gradient(135deg, #e5e7eb, #cfd5df);
+  color: #1f2937;
 }
 
-.btn-discard:hover {
-  background: #cbd5e1;
+.btn-discard:hover:not(:disabled) {
+  box-shadow: 0 12px 20px rgba(55, 65, 81, 0.2);
 }
 
 /* BORRADOR */
 .btn-draft {
-  background: #2563eb;
+  background: linear-gradient(135deg, #295ee8, #1d4ed8);
   color: white;
 }
 
-.btn-draft:hover {
-  background: #1d4ed8;
+.btn-draft:hover:not(:disabled) {
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
 }
 
 /* CONFIRMAR */
 .btn-confirm {
-  background: #00b3ff;
+  background: linear-gradient(135deg, #16a5e2, #0284c7);
   color: white;
 }
 
-.btn-confirm:hover {
-  background: #0c3c67;
+.btn-confirm:hover:not(:disabled) {
+  box-shadow: 0 12px 24px rgba(2, 132, 199, 0.35);
 }
 
 
