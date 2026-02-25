@@ -158,7 +158,17 @@ const subtotal = computed(() =>
 )
 
 const ivaPct = ref(Number(props.baseData.ivaPorcentaje ?? props.baseData.porcentajeIva ?? 19))
-const activeIvaId = ref(Number(props.baseData.idIva ?? 1))
+const activeIvaId = ref(
+  props.baseData.idIva != null && Number.isFinite(Number(props.baseData.idIva))
+    ? Number(props.baseData.idIva)
+    : null
+)
+
+function normalizeOptionalId(rawValue) {
+  if (rawValue === null || rawValue === undefined || rawValue === '') return null
+  const normalized = Number(rawValue)
+  return Number.isFinite(normalized) && normalized > 0 ? normalized : null
+}
 
 onMounted(async () => {
   try {
@@ -438,11 +448,11 @@ async function replaceQuoteDetails(idCotizacion) {
 async function buildAndPersistQuote() {
   const payload = {
     tipo: props.baseData.planType === 'Única' ? 'UNICA' : 'PERIODO',
-    id_cliente: Number(props.baseData.idCliente ?? 1),
+    id_cliente: normalizeOptionalId(props.baseData.idCliente),
     nombre_cliente: props.baseData.cliente ?? null,
     rut_cliente: props.baseData.rut ?? null,
-    id_usuario: Number(props.baseData.idUsuario ?? 1),
-    id_iva: Number(activeIvaId.value || 1),
+    id_usuario: normalizeOptionalId(props.baseData.idUsuario),
+    id_iva: normalizeOptionalId(activeIvaId.value),
     meses: props.baseData.planType === 'Única' ? null : props.baseData.periodMonths,
     conexiones: props.baseData.conexiones ?? 0,
     subtotal: subtotal.value,
@@ -504,11 +514,11 @@ async function updatePersistedDraft() {
 
   const payload = {
     tipo: props.baseData.planType === 'Única' ? 'UNICA' : 'PERIODO',
-    id_cliente: Number(props.baseData.idCliente ?? 1),
+    id_cliente: normalizeOptionalId(props.baseData.idCliente),
     nombre_cliente: props.baseData.cliente ?? null,
     rut_cliente: props.baseData.rut ?? null,
-    id_usuario: Number(props.baseData.idUsuario ?? 1),
-    id_iva: Number(activeIvaId.value || 1),
+    id_usuario: normalizeOptionalId(props.baseData.idUsuario),
+    id_iva: normalizeOptionalId(activeIvaId.value),
     meses: props.baseData.planType === 'Única' ? null : props.baseData.periodMonths,
     conexiones: props.baseData.conexiones ?? 0,
     subtotal: subtotal.value,
