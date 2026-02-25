@@ -40,6 +40,10 @@ function handleAction(action) {
   }
 }
 
+function goToHistory() {
+  handleAction('hist')
+}
+
 const tabs = ref([])
 /*
 tab = {
@@ -726,6 +730,10 @@ onUnmounted(() => {
     </header>
      <div v-if="currentView === 'tabs'" class="tabs-bar">
 
+  <button class="history-compact" type="button" @click="goToHistory">
+    ← Historial
+  </button>
+
   <div
     v-for="t in tabs"
     :key="t.id"
@@ -1064,6 +1072,21 @@ onUnmounted(() => {
   border-bottom: 1px solid #e6eef7;
   overflow-x: auto;
   white-space: nowrap;
+}
+
+.history-compact {
+  border: 1px solid #cdd9eb;
+  background: #f6f9ff;
+  color: #0f2140;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.history-compact:hover {
+  background: #eaf2ff;
 }
 
 .tab {
