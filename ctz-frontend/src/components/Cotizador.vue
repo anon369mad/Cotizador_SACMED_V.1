@@ -706,7 +706,6 @@ watch(
           <div class="field compact-field">
             <label>Cantidad de meses</label>
             <input type="number" :min="minPeriodMonths" v-model.number="form.periodMonths" />
-            <small>Meses que deseas incluir en la cotización del plan.</small>
           </div>
         </div>
 
