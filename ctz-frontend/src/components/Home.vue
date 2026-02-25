@@ -29,7 +29,7 @@ watch(currentView, (view) => {
 function handleAction(action) {
   if (action === 'add') {
     localStorage.removeItem('cotizador_form_v1')
-    const id = Date.now() + Math.random()
+    const id = createTabId()
 
 
     tabs.value.push({
@@ -57,9 +57,33 @@ tab = {
 */
 
 const activeTabId = ref(null)
+const activeTab = computed(() => tabs.value.find((tab) => tab.id === activeTabId.value) || null)
+
+function createTabId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function reconcileActiveTab() {
+  if (!tabs.value.length) {
+    activeTabId.value = null
+    if (currentView.value === 'tabs') {
+      currentView.value = 'home'
+    }
+    return
+  }
+
+  const hasActiveTab = tabs.value.some((tab) => tab.id === activeTabId.value)
+  if (!hasActiveTab) {
+    activeTabId.value = tabs.value[0].id
+  }
+}
+
 function closeTab(id) {
   const idx = tabs.value.findIndex(t => t.id === id)
-  if (idx === -1) return
+  if (idx === -1) {
+    reconcileActiveTab()
+    return
+  }
 
   tabs.value.splice(idx, 1)
 
@@ -73,6 +97,8 @@ function closeTab(id) {
   if (!tabs.value.length) {
     currentView.value = 'home'
   }
+
+  reconcileActiveTab()
 }
 
 
@@ -97,12 +123,17 @@ function onBack() {
 }
 
 function handleBackFromQuote() {
-  if (activeTabId.value != null) {
+  if (activeTab.value) {
     closeTab(activeTabId.value)
   } else {
-    currentView.value = 'home'
+    reconcileActiveTab()
+    currentView.value = tabs.value.length ? 'tabs' : 'home'
   }
 }
+
+watch(tabs, () => {
+  reconcileActiveTab()
+}, { deep: true })
 function logout() {
   // Emitir evento de logout al componente padre (App.vue)
   const event = new CustomEvent('logout')
@@ -544,7 +575,7 @@ async function duplicateQuote(h){
       getPrestaciones(),
       getPlanes()
     ])
-    const id = Date.now() + Math.random()
+    const id = createTabId()
 
     tabs.value.push({
       id,
@@ -604,7 +635,7 @@ async function openQuoteInTab(h, tabTitle) {
       getPrestaciones(),
       getPlanes()
     ])
-    const id = Date.now() + Math.random()
+    const id = createTabId()
 
     tabs.value.push({
       id,
@@ -818,7 +849,7 @@ onUnmounted(() => {
   <section class="main-area main-area--tabs">
     <Parent_Add
   :key="activeTabId"
-  :quote="tabs.find(t => t.id === activeTabId)?.data"
+  :quote="activeTab?.data"
   :tab-id="activeTabId"
   @back="handleBackFromQuote"
   @history-changed="loadHistory"
