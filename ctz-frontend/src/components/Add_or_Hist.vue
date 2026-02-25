@@ -30,6 +30,7 @@ function toggle() {
   position: fixed;
   right: 24px;
   bottom: 24px;
+  z-index: 1200;
   width: 64px;
   height: 64px;
   border-radius: 50%;
