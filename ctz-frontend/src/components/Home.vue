@@ -95,6 +95,14 @@ function onBack() {
   console.log('Home: onBack called')
   currentView.value = 'home'
 }
+
+function handleBackFromQuote() {
+  if (activeTabId.value != null) {
+    closeTab(activeTabId.value)
+  } else {
+    currentView.value = 'home'
+  }
+}
 function logout() {
   // Emitir evento de logout al componente padre (App.vue)
   const event = new CustomEvent('logout')
@@ -812,7 +820,7 @@ onUnmounted(() => {
   :key="activeTabId"
   :quote="tabs.find(t => t.id === activeTabId)?.data"
   :tab-id="activeTabId"
-  @back="currentView = 'home'"
+  @back="handleBackFromQuote"
   @history-changed="loadHistory"
   @quote-finalized="handleQuoteFinalized"
 />

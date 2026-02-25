@@ -884,7 +884,6 @@ function backToHistory() {
     <div class="weasy-preview-header">
       <h5>Vista previa PDF (WeasyPrint)</h5>
       <div class="weasy-preview-actions">
-        <button class="btn-back-inline" @click="backToHistory">Volver al historial</button>
         <button class="btn-close" @click="closeWeasyPreview">Cerrar</button>
       </div>
     </div>
@@ -897,16 +896,6 @@ function backToHistory() {
 </div>
 
 <div class="final-actions">
-
-  <button
-    class="final-btn btn-back"
-    :disabled="isSaving"
-    @click="backToHistory"
-  >
-    <span class="btn-icon" aria-hidden="true">↩</span>
-    <span>Volver al historial</span>
-  </button>
-
   <button
     v-if="isQuoteEditable"
     class="final-btn btn-discard"
