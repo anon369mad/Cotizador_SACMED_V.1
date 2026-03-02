@@ -72,4 +72,5 @@ class CotizacionJasperPayload(BaseModel):
     capacitacion: list[str] = Field(default_factory=list)
     cobros_adicionales: list[str] = Field(default_factory=list)
     observaciones: list[str] = Field(default_factory=list)
+    incluye_plan: bool = False
     items: list[CotizacionJasperItem] = Field(default_factory=list)

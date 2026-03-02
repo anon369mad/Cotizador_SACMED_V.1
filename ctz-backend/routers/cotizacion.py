@@ -438,6 +438,7 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
         capacitacion=capacitacion_base_pdf,
         cobros_adicionales=cobros_adicionales_base_pdf,
         observaciones=observaciones_combined,
+        incluye_plan=incluye_plan,
         items=items,
     )
 
@@ -496,7 +497,7 @@ def _build_weasy_html(payload: CotizacionJasperPayload) -> str:
         if normalized_observation:
             observacion_items.append(normalized_observation)
 
-    if not is_unique_quote and any((item.descripcion or "").strip() for item in payload.items):
+    if (not is_unique_quote) and payload.incluye_plan:
         observacion_items.insert(0, "Todos los planes contratados llevan como servicio agenda médica, ficha clínica multiespecialista, telemedicina y herramientas administrativas.")
 
     observacion_section = _render_section("Observaciones:", observacion_items)
