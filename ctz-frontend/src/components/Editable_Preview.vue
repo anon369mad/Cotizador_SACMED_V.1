@@ -284,6 +284,10 @@ const totalPeriod = computed(() => {
   return roundAmount(periodBaseTotal.value - periodDiscountAmount.value)
 })
 
+const persistedQuoteTotal = computed(() =>
+  props.baseData.planType === 'Única' ? total.value : totalPeriod.value
+)
+
 const periodDescriptor = computed(() => {
   if (props.baseData.planType === 'Única') {
     return 'Pago único'
@@ -527,7 +531,7 @@ async function buildAndPersistQuote() {
     subtotal: subtotal.value,
     descuento_total: items.value.reduce((s, it) => s + it.qty * it.unitValue * (it.discountPct / 100), 0),
     iva_monto: iva.value,
-    total: total.value,
+    total: persistedQuoteTotal.value,
     condiciones_adicionales: composeStoredConditions()
   }
 
@@ -594,7 +598,7 @@ async function updatePersistedDraft() {
     subtotal: subtotal.value,
     descuento_total: items.value.reduce((s, it) => s + it.qty * it.unitValue * (it.discountPct / 100), 0),
     iva_monto: iva.value,
-    total: total.value,
+    total: persistedQuoteTotal.value,
     condiciones_adicionales: composeStoredConditions()
   }
 

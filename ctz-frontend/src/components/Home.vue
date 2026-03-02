@@ -494,13 +494,15 @@ function toNumber(value, fallback = 0) {
 }
 
 function getHistoryTotal(item) {
-  const monthlyTotal = toNumber(item.total)
-  const months = Math.max(1, toNumber(item.meses, 1))
-  const connections = toNumber(item.conexiones, 0)
+  const storedTotal = toNumber(item.total)
   const isUniquePlan = String(item.tipo || '').toUpperCase().includes('UNICA')
 
-  if (isUniquePlan) return monthlyTotal
+  if (storedTotal > 0) return storedTotal
+  if (isUniquePlan) return storedTotal
 
+  const monthlyTotal = toNumber(item.subtotal, 0) + toNumber(item.iva_monto, 0)
+  const months = Math.max(1, toNumber(item.meses, 1))
+  const connections = toNumber(item.conexiones, 0)
   const billedMonths = (connections === 1 || connections === 2) ? 3 : months
   const basePeriodTotal = monthlyTotal * billedMonths
   const discountPct = months === 12 ? 10 : (months === 6 ? 5 : 0)
@@ -523,7 +525,9 @@ function mapHistoryItem(item){
     price: getHistoryTotal(item),
     subtotal: toNumber(item.subtotal, 0),
     ivaMonto: toNumber(item.iva_monto, 0),
-    totalMensual: toNumber(item.total, 0),
+    totalMensual: String(item.tipo || '').toUpperCase().includes('UNICA')
+      ? toNumber(item.total, 0)
+      : toNumber(item.subtotal, 0) + toNumber(item.iva_monto, 0),
     items: [],
     conditions: parseConditionLines(item.condiciones_adicionales),
     rawConditions: item.condiciones_adicionales || '',

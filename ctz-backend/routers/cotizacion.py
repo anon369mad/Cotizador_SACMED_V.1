@@ -262,9 +262,8 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     if iva == 0:
         iva = subtotal * (porcentaje / 100.0)
 
-    total_mensual = _to_float(cotizacion.total)
-    if total_mensual == 0:
-        total_mensual = subtotal + iva
+    total_mensual = subtotal + iva
+    total_guardado = _to_float(cotizacion.total)
 
     tipo_cotizacion, es_cotizacion_unica = _normalize_quote_type(cotizacion.tipo)
     incluye_plan = _quote_has_plan_item(detalles, db)
@@ -284,6 +283,13 @@ def _build_jasper_payload(cotizacion: Cotizacion, db: Session) -> CotizacionJasp
     total_periodo_base = total_mensual if es_cotizacion_unica else (total_mensual * meses_cobro)
     descuento_periodo_monto = total_periodo_base * (descuento_periodo_pct / 100.0)
     total_periodo = total_periodo_base - descuento_periodo_monto
+
+    if total_guardado > 0:
+        if es_cotizacion_unica:
+            total_mensual = total_guardado
+            total_periodo = total_guardado
+        else:
+            total_periodo = total_guardado
 
     condiciones_manual = _parse_conditions_text(cotizacion.condiciones_adicionales)
     observaciones_manual = _parse_observations_text(cotizacion.condiciones_adicionales)
